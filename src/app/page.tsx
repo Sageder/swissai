@@ -4,6 +4,7 @@ import { useState, useRef } from "react"
 import { MapContainer, type MapRef } from "@/components/map-container"
 import { Sidebar } from "@/components/sidebar"
 import { BottomDock } from "@/components/bottom-dock"
+import { MapSearch } from "@/components/map-search"
 import { motion } from "framer-motion"
 
 export default function Dashboard() {
@@ -18,10 +19,16 @@ export default function Dashboard() {
     }
   }
 
-
   const handleViewChange = (view: string) => {
     setActiveView(view)
     console.log(`[v0] Switched to ${view} view`)
+  }
+
+  const handleLocationSelect = (coordinates: [number, number], name: string, boundingBox?: [number, number, number, number]) => {
+    console.log(`Flying to ${name} at coordinates:`, coordinates)
+    if (mapRef.current) {
+      mapRef.current.flyToLocation(coordinates, 14, boundingBox)
+    }
   }
 
   return (
@@ -39,6 +46,17 @@ export default function Dashboard() {
             className="absolute inset-0"
           >
             <MapContainer ref={mapRef} />
+          </motion.div>
+
+          {/* Search Overlay */}
+          <motion.div
+            animate={{
+              left: sidebarExpanded ? "340px" : "80px",
+            }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+            className="absolute top-4 z-40"
+          >
+            <MapSearch onLocationSelect={handleLocationSelect} />
           </motion.div>
 
           {/* Bottom Dock - Positioned to not overlap with sidebar */}

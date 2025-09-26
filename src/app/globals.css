@@ -116,7 +116,22 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* POI Marker Styling - Following Tutorial Pattern */
+.poi-marker {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.poi-marker:hover {
+  transform: scale(1.1);
+}
+
+.poi-marker svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
