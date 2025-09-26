@@ -22,7 +22,18 @@ import {
   sendVehicle,
   sendHelicopter,
   addBlatten,
-  createTestAlert
+  createTestAlert,
+  initializeCrisisNodes,
+  createSampleCrisisScenario,
+  clearCrisisNodes,
+  getCrisisNodes,
+  getCrisisConnections,
+  addCrisisNode,
+  addCrisisConnection,
+  createCrisisGraphFromLLM,
+  createCrisisWorkflow,
+  createCrisisHierarchy,
+  validateLLMGraphData
 } from '@/lib/util';
 import { useData } from '@/lib/data-context';
 import {
@@ -38,7 +49,10 @@ import {
   Target,
   Car,
   Building,
-  Bell
+  Bell,
+  Network,
+  Plus,
+  Link
 } from 'lucide-react';
 
 interface DebugAgentPanelProps {
@@ -372,6 +386,240 @@ export function DebugAgentPanel({ isOpen, onClose, liveMode, onLiveModeToggle }:
               >
                 <Bell className="w-4 h-4 mr-1" />
                 Test Alert
+              </Button>
+            </div>
+          </div>
+
+          {/* Crisis Node Editor Controls */}
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-gray-300">Crisis Node Editor:</div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={initializeCrisisNodes}
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Network className="w-4 h-4 mr-1" />
+                Clear All
+              </Button>
+              <Button
+                onClick={createSampleCrisisScenario}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Play className="w-4 h-4 mr-1" />
+                Sample Scenario
+              </Button>
+              <Button
+                onClick={() => {
+                  const nodeId = addCrisisNode({
+                    type: 'alert',
+                    title: 'New Alert',
+                    description: 'Custom alert',
+                    status: 'active',
+                    position: { x: Math.random() * 400 + 100, y: Math.random() * 300 + 100 },
+                    severity: 'medium'
+                  });
+                  console.log('Added new crisis node:', nodeId);
+                }}
+                size="sm"
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Node
+              </Button>
+              <Button
+                onClick={() => {
+                  const nodes = getCrisisNodes();
+                  const connections = getCrisisConnections();
+                  if (nodes.length > 1) {
+                    const fromNode = nodes[0];
+                    const toNode = nodes[1];
+                    const connId = addCrisisConnection({
+                      from: fromNode.id,
+                      to: toNode.id,
+                      type: 'data_flow',
+                      status: 'active',
+                      label: 'Connection'
+                    });
+                    console.log('Added new crisis connection:', connId);
+                  } else {
+                    console.log('Need at least 2 nodes to create connection');
+                  }
+                }}
+                size="sm"
+                className="bg-cyan-600 hover:bg-cyan-700"
+              >
+                <Link className="w-4 h-4 mr-1" />
+                Add Connection
+              </Button>
+              <Button
+                onClick={clearCrisisNodes}
+                size="sm"
+                variant="outline"
+                className="border-gray-600 text-gray-300 hover:bg-gray-800 col-span-2"
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Clear All Nodes
+              </Button>
+            </div>
+          </div>
+
+          {/* LLM Graph Creation Functions */}
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-gray-300">LLM Graph Creation:</div>
+            <div className="grid grid-cols-1 gap-2">
+              <Button
+                onClick={() => {
+                  // Test LLM graph creation with sample data
+                  const sampleLLMData = {
+                    nodes: [
+                      {
+                        id: 'llm_alert_1',
+                        type: 'alert' as const,
+                        title: 'LLM Generated Alert',
+                        description: 'AI-detected crisis',
+                        status: 'active',
+                        severity: 'high' as const,
+                        position: { x: 100, y: 100 }
+                      },
+                      {
+                        id: 'llm_response_1',
+                        type: 'response' as const,
+                        title: 'LLM Response Plan',
+                        description: 'AI-generated response',
+                        status: 'pending',
+                        severity: 'medium' as const,
+                        position: { x: 300, y: 100 }
+                      },
+                      {
+                        id: 'llm_resource_1',
+                        type: 'resource' as const,
+                        title: 'LLM Resource',
+                        description: 'AI-allocated resource',
+                        status: 'available',
+                        severity: 'low' as const,
+                        position: { x: 200, y: 250 }
+                      }
+                    ],
+                    connections: [
+                      {
+                        from: 'llm_alert_1',
+                        to: 'llm_response_1',
+                        type: 'response' as const,
+                        label: 'TRIGGERS'
+                      },
+                      {
+                        from: 'llm_response_1',
+                        to: 'llm_resource_1',
+                        type: 'coordination' as const,
+                        label: 'DEPLOYS'
+                      }
+                    ]
+                  };
+
+                  const validation = validateLLMGraphData(sampleLLMData);
+                  if (validation.valid) {
+                    createCrisisGraphFromLLM(sampleLLMData);
+                    console.log('Created LLM graph successfully');
+                  } else {
+                    console.error('LLM graph validation failed:', validation.errors);
+                  }
+                }}
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <Network className="w-4 h-4 mr-1" />
+                Test LLM Graph
+              </Button>
+
+              <Button
+                onClick={() => {
+                  // Test crisis workflow creation
+                  createCrisisWorkflow({
+                    alert: {
+                      title: 'Earthquake Alert',
+                      description: 'Magnitude 6.2 detected',
+                      severity: 'high'
+                    },
+                    monitoring: [
+                      { title: 'Seismic Monitor', description: 'Real-time tracking', position: { x: 50, y: 200 } },
+                      { title: 'GPS Tracker', description: 'Location monitoring', position: { x: 150, y: 200 } }
+                    ],
+                    responses: [
+                      { title: 'Emergency Response', description: 'Immediate action', position: { x: 100, y: 300 } },
+                      { title: 'Evacuation Plan', description: 'Zone A & B', position: { x: 250, y: 300 } }
+                    ],
+                    resources: [
+                      { title: 'Fire Department', description: '3 Units', position: { x: 50, y: 400 } },
+                      { title: 'Medical Teams', description: '2 Units', position: { x: 200, y: 400 } }
+                    ],
+                    authorities: [
+                      { title: 'Crisis Commander', description: 'Overall coordination', position: { x: 300, y: 200 } }
+                    ]
+                  });
+                  console.log('Created crisis workflow');
+                }}
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
+                <Play className="w-4 h-4 mr-1" />
+                Crisis Workflow
+              </Button>
+
+              <Button
+                onClick={() => {
+                  // Test crisis hierarchy creation
+                  createCrisisHierarchy({
+                    root: {
+                      title: 'Crisis Command Center',
+                      description: 'Central coordination hub',
+                      type: 'authority'
+                    },
+                    levels: [
+                      {
+                        level: 0,
+                        nodes: [
+                          {
+                            title: 'Emergency Response Team',
+                            description: 'First responders',
+                            type: 'response',
+                            connections: ['root']
+                          },
+                          {
+                            title: 'Medical Team',
+                            description: 'Healthcare response',
+                            type: 'response',
+                            connections: ['root']
+                          }
+                        ]
+                      },
+                      {
+                        level: 1,
+                        nodes: [
+                          {
+                            title: 'Fire Department',
+                            description: 'Fire suppression',
+                            type: 'resource',
+                            connections: ['level_0_node_0']
+                          },
+                          {
+                            title: 'Police Department',
+                            description: 'Security and order',
+                            type: 'resource',
+                            connections: ['level_0_node_0']
+                          }
+                        ]
+                      }
+                    ]
+                  });
+                  console.log('Created crisis hierarchy');
+                }}
+                size="sm"
+                className="bg-teal-600 hover:bg-teal-700"
+              >
+                <Network className="w-4 h-4 mr-1" />
+                Crisis Hierarchy
               </Button>
             </div>
           </div>

@@ -20,18 +20,22 @@ const exampleMonitoringStations = [
   {
     sensorId: 'sensor-1',
     name: 'Glacier Monitoring Station 1',
-    location: { lat: 46.5197, lng: 7.8725 },
-    sensorType: 'movement',
+    location: { name: 'Glacier Station 1', lat: 46.5197, lng: 7.8725 },
+    sensorType: 'glacier_movement' as const,
     readings: [],
-    alertThresholds: { warning: 1.0, alert: 1.5, critical: 2.0 }
+    alertThresholds: { warning: 1.0, alert: 1.5, critical: 2.0 },
+    responsibleOrganization: 'WSL' as const,
+    batteryStatus: 85,
+    connectivity: 'online' as const
   }
 ];
 
 const exampleResources = [
   {
     resourceId: 'heli-1',
+    type: 'helicopter' as const,
     location: { name: 'Air Rescue Base', lat: 46.5197, lng: 7.8725 },
-    status: 'active',
+    status: 'available' as const,
     currentAssignment: 'standby'
   }
 ];
@@ -40,8 +44,16 @@ const exampleAuthorities = [
   {
     authorityId: 'police-1',
     name: 'Valais Cantonal Police',
-    location: { lat: 46.5197, lng: 7.8725 },
-    currentStatus: 'active'
+    type: 'police' as const,
+    level: 'cantonal' as const,
+    jurisdiction: 'Valais Canton',
+    specialization: ['Emergency Response', 'Public Safety'],
+    contact: {
+      phone: '+41 27 322 11 11',
+      email: 'info@police.vs.ch'
+    },
+    currentStatus: 'available' as const,
+    location: { name: 'Police Station', lat: 46.5197, lng: 7.8725 }
   }
 ];
 
