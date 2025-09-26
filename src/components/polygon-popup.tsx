@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Pencil, Check, X, Trash2, Edit3 } from "lucide-react"
+import { Pencil, Check, X, Trash2, Edit3, Zap } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import type { PolygonData } from "./polygon-editor"
@@ -16,6 +16,7 @@ interface PolygonPopupProps {
   onUpdateName: (polygonId: string, newName: string) => void
   onEdit: (polygonId: string) => void
   onDelete: (polygonId: string) => void
+  onActions?: (polygon: PolygonData) => void
 }
 
 export function PolygonPopup({ 
@@ -24,7 +25,8 @@ export function PolygonPopup({
   onClose, 
   onUpdateName, 
   onEdit, 
-  onDelete 
+  onDelete,
+  onActions
 }: PolygonPopupProps) {
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState("")
@@ -167,24 +169,36 @@ export function PolygonPopup({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onEdit(polygon.id)}
-                  className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
-                >
-                  <Edit3 size={14} className="mr-1" />
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onDelete(polygon.id)}
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  <Trash2 size={14} />
-                </Button>
+              <div className="space-y-2 pt-2">
+                {onActions && (
+                  <Button
+                    size="sm"
+                    onClick={() => onActions(polygon)}
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white border-orange-600"
+                  >
+                    <Zap size={14} className="mr-2" />
+                    Actions
+                  </Button>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onEdit(polygon.id)}
+                    className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <Edit3 size={14} className="mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onDelete(polygon.id)}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>

@@ -169,7 +169,7 @@ export function MapSearch({ onLocationSelect, className }: MapSearchProps) {
                 <Card className="absolute top-full left-0 right-0 mt-1 z-50 bg-background/95 backdrop-blur-sm border-border/50">
                     <CardContent className="p-4 text-center text-muted-foreground">
                         <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No places found for "{query}"</p>
+                        <p className="text-sm">No places found for &quot;{query}&quot;</p>
                         <p className="text-xs">Try a different search term</p>
                     </CardContent>
                 </Card>

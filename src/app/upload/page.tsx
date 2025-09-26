@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { uploadCoreData, validateCoreData } from '@/utils/simple-upload';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -14,7 +15,7 @@ export default function UploadPage() {
   const handleUpload = async () => {
     setIsUploading(true);
     setUploadStatus(null);
-    
+
     try {
       const success = await uploadCoreData();
       setUploadStatus(success ? '✅ Complete data upload successful!' : '❌ Upload failed!');
@@ -28,7 +29,7 @@ export default function UploadPage() {
   const handleValidate = async () => {
     setIsValidating(true);
     setValidationStatus(null);
-    
+
     try {
       const isValid = await validateCoreData();
       setValidationStatus(isValid ? '✅ Complete data validation passed!' : '❌ Data validation failed!');
@@ -53,7 +54,7 @@ export default function UploadPage() {
 
         <Card className="p-8">
           <h2 className="text-2xl font-semibold mb-6">Firebase Data Upload</h2>
-          
+
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h3 className="font-semibold text-blue-900 mb-2">📊 Complete Simulation Data</h3>
@@ -73,15 +74,15 @@ export default function UploadPage() {
             </div>
 
             <div className="flex space-x-4">
-              <Button 
+              <Button
                 onClick={handleUpload}
                 disabled={isUploading}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3"
               >
                 {isUploading ? '⏳ Uploading...' : '🚀 Upload Complete Data to Firebase'}
               </Button>
-              
-              <Button 
+
+              <Button
                 onClick={handleValidate}
                 disabled={isValidating}
                 variant="outline"
@@ -92,9 +93,8 @@ export default function UploadPage() {
             </div>
 
             {uploadStatus && (
-              <div className={`p-4 rounded-lg ${
-                uploadStatus.includes('✅') ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-              }`}>
+              <div className={`p-4 rounded-lg ${uploadStatus.includes('✅') ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                }`}>
                 <p className={uploadStatus.includes('✅') ? 'text-green-800' : 'text-red-800'}>
                   {uploadStatus}
                 </p>
@@ -102,9 +102,8 @@ export default function UploadPage() {
             )}
 
             {validationStatus && (
-              <div className={`p-4 rounded-lg ${
-                validationStatus.includes('✅') ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-              }`}>
+              <div className={`p-4 rounded-lg ${validationStatus.includes('✅') ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                }`}>
                 <p className={validationStatus.includes('✅') ? 'text-green-800' : 'text-red-800'}>
                   {validationStatus}
                 </p>
@@ -118,8 +117,8 @@ export default function UploadPage() {
           <div className="space-y-3 text-gray-700">
             <p>1. <strong>Upload Data:</strong> Click the upload button above to load all simulation data to Firebase</p>
             <p>2. <strong>Validate:</strong> Use the validate button to confirm the data was uploaded correctly</p>
-            <p>3. <strong>Start Simulation:</strong> Go to <a href="/simulation" className="text-blue-600 hover:underline">/simulation</a> to run the emergency scenario</p>
-            <p>4. <strong>View Dashboard:</strong> Return to <a href="/" className="text-blue-600 hover:underline">/</a> to see the main dashboard</p>
+            <p>3. <strong>Start Simulation:</strong> Go to <Link href="/simulation" className="text-blue-600 hover:underline">/simulation</Link> to run the emergency scenario</p>
+            <p>4. <strong>View Dashboard:</strong> Return to <Link href="/" className="text-blue-600 hover:underline">/</Link> to see the main dashboard</p>
           </div>
         </Card>
 

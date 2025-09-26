@@ -16,13 +16,19 @@ interface AIChatProps {
 
 export function AIChat({ isOpen, onClose }: AIChatProps) {
     const [input, setInput] = useState('');
-    const { messages, sendMessage, isLoading } = useChat();
+    const [isLoading, setIsLoading] = useState(false);
+    const { messages, sendMessage } = useChat();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (input.trim()) {
-            sendMessage({ text: input });
-            setInput('');
+        if (input.trim() && !isLoading) {
+            setIsLoading(true);
+            try {
+                await sendMessage({ text: input });
+                setInput('');
+            } finally {
+                setIsLoading(false);
+            }
         }
     };
 
@@ -109,11 +115,11 @@ export function AIChat({ isOpen, onClose }: AIChatProps) {
                                                                         {part.type.replace('tool-', '').replace(/([A-Z])/g, ' $1').trim()}
                                                                     </Badge>
                                                                     <span className="text-xs text-muted-foreground">
-                                                                        {part.toolCall ? 'Calling...' : 'Result'}
+                                                                        {part.toolCallId ? 'Calling...' : 'Result'}
                                                                     </span>
                                                                 </div>
                                                                 <pre className="text-xs overflow-x-auto">
-                                                                    {JSON.stringify(part.toolCall || part.toolResult, null, 2)}
+                                                                    {JSON.stringify(part.input || part.output || part, null, 2)}
                                                                 </pre>
                                                             </div>
                                                         );
