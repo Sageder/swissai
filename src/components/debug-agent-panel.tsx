@@ -18,7 +18,8 @@ import {
   shouldShowPOIs,
   getCurrentPOIs,
   onPOIVisibilityChange,
-  onTimelineVisibilityChange
+  onTimelineVisibilityChange,
+  createTestAlert
 } from '@/lib/util';
 import { useData } from '@/lib/data-context';
 import {
@@ -31,7 +32,8 @@ import {
   Activity,
   Shield,
   Truck,
-  Target
+  Target,
+  Bell
 } from 'lucide-react';
 
 interface DebugAgentPanelProps {
@@ -232,6 +234,16 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
               >
                 <Trash2 className="w-4 h-4 mr-1" />
                 Clear All
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={createTestAlert}
+                size="sm"
+                className="flex-1 bg-purple-600 hover:bg-purple-700"
+              >
+                <Bell className="w-4 h-4 mr-1" />
+                Test Alert
               </Button>
             </div>
           </div>
