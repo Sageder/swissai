@@ -204,6 +204,12 @@ function MapWithData() {
           onClose={handleCrisisManagementClose}
           event={crisisEvent}
         />
+
+        {/* Debug Agent Panel */}
+        <DebugAgentPanel
+          isOpen={debugPanelOpen}
+          onClose={() => setDebugPanelOpen(false)}
+        />
       </div>
 
       {/* Overlays */}
