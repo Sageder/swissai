@@ -496,3 +496,30 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c; // Distance in kilometers
 }
+
+/**
+ * Create a test alert for debugging purposes
+ */
+export const createTestAlert = (): void => {
+  // Import alert service dynamically to avoid circular dependencies
+  import('@/lib/alert-service').then(({ createAlert }) => {
+    createAlert({
+      title: 'Debug Test Alert',
+      message: 'This is a test alert created from the debug panel',
+      type: 'info',
+      severity: 'medium',
+      category: 'system',
+      source: 'Debug Panel',
+      actions: [
+        {
+          id: 'dismiss',
+          label: 'Dismiss',
+          type: 'secondary',
+          action: () => console.log('Alert dismissed')
+        }
+      ]
+    });
+  }).catch((error) => {
+    console.error('Failed to create test alert:', error);
+  });
+};

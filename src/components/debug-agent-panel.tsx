@@ -20,7 +20,8 @@ import {
   onPOIVisibilityChange,
   onTimelineVisibilityChange,
   sendVehicle,
-  addBlatten
+  addBlatten,
+  createTestAlert
 } from '@/lib/util';
 import { useData } from '@/lib/data-context';
 import {
@@ -35,7 +36,8 @@ import {
   Truck,
   Target,
   Car,
-  Building
+  Building,
+  Bell
 } from 'lucide-react';
 
 interface DebugAgentPanelProps {
@@ -99,7 +101,11 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
 
   const handleEmergencySetup = () => {
     showTimeline();
-    addAllPOIs([...monitoringStations, ...resources, ...authorities]);
+    addAllPOIs({
+      monitoringStations,
+      resources,
+      authorities
+    });
   };
 
   const handleAddBlatten = () => {
@@ -291,6 +297,16 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
               >
                 <Trash2 className="w-4 h-4 mr-1" />
                 Clear All
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={createTestAlert}
+                size="sm"
+                className="flex-1 bg-purple-600 hover:bg-purple-700"
+              >
+                <Bell className="w-4 h-4 mr-1" />
+                Test Alert
               </Button>
             </div>
           </div>
