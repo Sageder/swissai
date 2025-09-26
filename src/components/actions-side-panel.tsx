@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { PolygonData } from "./polygon-editor";
-import { generateTextWithFirebaseData } from "@/lib/agent";
 
 interface ActionsSidePanelProps {
   isOpen: boolean;
@@ -87,7 +86,7 @@ export function ActionsSidePanel({ isOpen, onClose, polygon }: ActionsSidePanelP
     setError(null);
     
     try {
-      const prompt = `Analyze this emergency polygon area and generate comprehensive emergency response recommendations:
+      const prompt = `You are an emergency response AI assistant. Analyze this emergency polygon area and generate comprehensive emergency response recommendations.
 
 Polygon Details:
 - Name: ${polygonData.name}
@@ -101,28 +100,96 @@ Please provide:
 3. Timeline breakdown (immediate, short-term, long-term actions)
 4. Nearby resource recommendations
 
-Format as JSON with the structure:
+Respond ONLY with valid JSON in this exact structure:
 {
   "situation": "brief assessment",
   "riskLevel": "low|medium|high|critical",
-  "actions": [array of action objects],
+  "actions": [
+    {
+      "id": "unique_id",
+      "category": "evacuation|medical|communication|resources|coordination",
+      "title": "Action title",
+      "description": "Action description",
+      "priority": "immediate|high|medium|low",
+      "timeline": "time estimate",
+      "resources": ["resource1", "resource2"]
+    }
+  ],
   "timeline": {
-    "immediate": [actions for 0-1 hour],
-    "shortTerm": [actions for 1-24 hours], 
-    "longTerm": [actions for 1+ days]
+    "immediate": [],
+    "shortTerm": [],
+    "longTerm": []
   },
-  "nearbyResources": [list of recommended resources]
+  "nearbyResources": ["resource1", "resource2"]
 }`;
 
-      const result = await generateTextWithFirebaseData(prompt);
-      const resultText = typeof result === 'string' ? result : result.text || JSON.stringify(result);
+      // Call the chat API route with proper message format
+      console.log('Sending request to /api/chat...');
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              id: 'emergency-analysis-1',
+              role: 'user',
+              content: prompt,
+              createdAt: new Date()
+            }
+          ]
+        })
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      // Read the streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      let fullResponse = '';
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('0:')) {
+            try {
+              const jsonStr = line.substring(2);
+              const parsed = JSON.parse(jsonStr);
+              if (parsed.content) {
+                fullResponse += parsed.content;
+              }
+            } catch (e) {
+              // Skip invalid JSON lines
+            }
+          }
+        }
+      }
       
       // Try to parse JSON response
       let parsedResponse: EmergencyResponse;
       try {
-        parsedResponse = JSON.parse(resultText);
+        // Clean the response to extract JSON
+        const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
+        const jsonStr = jsonMatch ? jsonMatch[0] : fullResponse;
+        parsedResponse = JSON.parse(jsonStr);
       } catch {
         // Fallback to mock data if parsing fails
+        console.warn('Failed to parse AI response, using mock data');
         parsedResponse = generateMockResponse(polygonData);
       }
       
