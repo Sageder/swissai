@@ -47,7 +47,6 @@ function DashboardContent() {
   const [actionsPanelOpen, setActionsPanelOpen] = useState(false);
   const [actionsPanelPolygon, setActionsPanelPolygon] = useState<PolygonData | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [liveMode, setLiveMode] = useState(false);
   const mapRef = useRef<MapRef>(null);
 
   // Initialize alert context for programmatic use
@@ -253,26 +252,6 @@ function DashboardContent() {
     setSearchOpen(false);
   };
 
-  const handleLiveModeToggle = () => {
-    setLiveMode(!liveMode);
-  };
-
-  // Function to programmatically enable live mode (for future use)
-  // Can be called from external systems or AI agents
-  const enableLiveMode = () => {
-    setLiveMode(true);
-  };
-
-  // Function to programmatically disable live mode (for future use)
-  // Can be called from external systems or AI agents
-  const disableLiveMode = () => {
-    setLiveMode(false);
-  };
-
-  // Expose functions globally for programmatic access (for future use)
-  // window.enableLiveMode = enableLiveMode;
-  // window.disableLiveMode = disableLiveMode;
-
   const handleLocationSelect = (coordinates: [number, number], name: string, boundingBox?: [number, number, number, number]) => {
     if (mapRef.current) {
       mapRef.current.flyToLocation(coordinates, 14, boundingBox);
@@ -290,24 +269,11 @@ function DashboardContent() {
     setActionsPanelPolygon(null);
   };
 
-  
+
 
   return (
     <TimeProvider>
-      <div className={`h-screen w-full bg-background text-foreground overflow-hidden dark relative ${liveMode ? 'border-4 border-dashed border-red-500' : ''}`}>
-        {/* Live Mode Badge */}
-        {liveMode && (
-          <div className="absolute top-4 right-4 z-50">
-            <div className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg">
-              <div className="w-2 h-2 bg-red-300 rounded-full animate-ping"></div>
-              LIVE
-            </div>
-          </div>
-        )}
-
-        {/* Alert Container */}
-        <AlertContainer />
-
+      <div className="h-screen w-full bg-background text-foreground overflow-hidden dark">
         {/* Timeline - Fixed at top */}
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-96">
           <Timeline />
@@ -319,34 +285,12 @@ function DashboardContent() {
           <div className="flex-1 relative">
             {/* Full-screen Map */}
             <div className="absolute inset-0">
-              <MapContainer ref={mapRef} pois={allPOIs} />
-
-              {/* MapSearch Overlay - Centered */}
-              {searchOpen && (
-                <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
-                  <div className="pointer-events-auto">
-                    <MapSearch
-                      onLocationSelect={handleLocationSelect}
-                      className="w-96"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-        </div>
-
-        {/* Main Layout Container */}
-        <div className="relative h-full flex">
-          {/* Main Content Area - Full Width */}
-          <div className="flex-1 relative">
-            {/* Full-screen Map */}
-            <div className="absolute inset-0">
-              <MapContainer 
-                ref={mapRef} 
-                pois={allPOIs} 
+              <MapContainer
+                ref={mapRef}
+                pois={allPOIs}
                 onPolygonClick={handlePolygonClick}
               />
-              
+
               {/* MapSearch Overlay - Centered */}
               {searchOpen && (
                 <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
@@ -424,27 +368,8 @@ function DashboardContent() {
           onClose={handleCloseOverlay}
         />
 
-<<<<<<< HEAD
-        {/* AI Chat Overlay */}
-        <AIChat
-          isOpen={aiChatOpen}
-          onClose={handleAIChatClose}
-        />
-
-        {/* Crisis Management Overlay */}
-        <CrisisManagement
-          isOpen={crisisManagementOpen}
-          onClose={handleCrisisManagementClose}
-          event={crisisEvent}
-        />
-
-        {/* Debug Agent Panel */}
-        <DebugAgentPanel
-          isOpen={debugPanelOpen}
-          onClose={() => setDebugPanelOpen(false)}
-          liveMode={liveMode}
-          onLiveModeToggle={handleLiveModeToggle}
-        />
+        {/* Alert Container */}
+        <AlertContainer />
       </div>
     </TimeProvider>
   );
