@@ -275,6 +275,8 @@ export function getCurrentPOIs(): any[] {
   return currentPOIs;
 }
 
+
+
 /**
  * Subscribe to timeline visibility changes
  */
@@ -360,10 +362,10 @@ async function getDirections(
     }
 
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${from.lng},${from.lat};${to.lng},${to.lat}?geometries=geojson&access_token=${mapboxToken}`;
-    
+
     const response = await fetch(url);
     const data = await response.json();
-    
+
     if (data.routes && data.routes.length > 0) {
       const route = data.routes[0];
       return {
@@ -372,7 +374,7 @@ async function getDirections(
         duration: route.duration
       };
     }
-    
+
     return null;
   } catch (error) {
     console.error('Error getting directions:', error);
@@ -388,8 +390,8 @@ async function getDirections(
  * @param duration - Duration of the journey in milliseconds (default: 30000 = 30 seconds)
  */
 export async function sendVehicle(
-  fromPOIId: string, 
-  toPOIId: string, 
+  fromPOIId: string,
+  toPOIId: string,
   vehicleType: VehicleMovement['vehicleType'] = 'fire_truck',
   duration: number = 30000
 ): Promise<void> {
@@ -489,11 +491,11 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   const R = 6371; // Radius of the Earth in kilometers
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c; // Distance in kilometers
 }
 
@@ -505,8 +507,8 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
  * @param duration - Duration of the journey in milliseconds (default: 20000 = 20 seconds)
  */
 export async function sendHelicopter(
-  fromPOIId: string, 
-  toPOIId: string, 
+  fromPOIId: string,
+  toPOIId: string,
   duration: number = 20000
 ): Promise<void> {
   if (!dataContextRef) {
@@ -540,12 +542,12 @@ export async function sendHelicopter(
   // Create direct route coordinates for helicopter (straight line in the air)
   const numPoints = Math.max(3, Math.ceil(distance * 2)); // More points for longer distances
   const coordinates: [number, number, number][] = [];
-  
+
   for (let i = 0; i <= numPoints; i++) {
     const progress = i / numPoints;
     const lat = fromPOI.metadata.coordinates.lat + (toPOI.metadata.coordinates.lat - fromPOI.metadata.coordinates.lat) * progress;
     const lng = fromPOI.metadata.coordinates.long + (toPOI.metadata.coordinates.long - fromPOI.metadata.coordinates.long) * progress;
-    
+
     // Add altitude to coordinates (Mapbox expects [lng, lat, altitude])
     coordinates.push([lng, lat, 500]); // 500 meters altitude
   }

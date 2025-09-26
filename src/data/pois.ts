@@ -25,7 +25,7 @@ export const blattentPOIs: POI[] = [
   {
     id: "blatten-research-station",
     title: "ETH Zurich Alpine Research Station",
-    description: "High-altitude research facility studying climate change and glaciology in the Swiss Alps",
+    description: "High-altitude research facility • Climate change studies • Operational",
     type: "research",
     severity: "high",
     metadata: {
@@ -40,7 +40,7 @@ export const blattentPOIs: POI[] = [
   {
     id: "blatten-environmental-sensor",
     title: "Environmental Monitoring Sensor",
-    description: "Automated weather and environmental data collection point for avalanche prediction",
+    description: "Weather monitoring station • Battery: 89% • Normal readings • FOEN",
     type: "sensor",
     severity: "medium",
     metadata: {

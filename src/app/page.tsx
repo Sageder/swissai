@@ -32,6 +32,7 @@ function MapWithData() {
   const [currentPOIs, setCurrentPOIs] = useState<any[]>([]);
   const [debugPanelOpen, setDebugPanelOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [liveMode, setLiveMode] = useState(false);
   const mapRef = useRef<MapRef>(null);
 
   // Initialize alert context for programmatic use
@@ -70,16 +71,16 @@ function MapWithData() {
         resources,
         authorities
       });
-      
+
       // Add Blatten city center
       addBlatten();
-      
+
       // Wait a bit then send a vehicle from research station to Blatten
       setTimeout(async () => {
         const currentPOIs = getCurrentPOIs();
         const blattenPOI = currentPOIs.find(poi => poi.id === 'blatten-city-center');
         const researchPOI = currentPOIs.find(poi => poi.id === 'blatten-research-station');
-        
+
         if (blattenPOI && researchPOI) {
           await sendVehicle(researchPOI.id, blattenPOI.id, 'fire_truck', 20000); // 20 second journey
         }
@@ -155,6 +156,26 @@ function MapWithData() {
     setSearchOpen(false);
   };
 
+  const handleLiveModeToggle = () => {
+    setLiveMode(!liveMode);
+  };
+
+  // Function to programmatically enable live mode (for future use)
+  // Can be called from external systems or AI agents
+  const enableLiveMode = () => {
+    setLiveMode(true);
+  };
+
+  // Function to programmatically disable live mode (for future use)
+  // Can be called from external systems or AI agents
+  const disableLiveMode = () => {
+    setLiveMode(false);
+  };
+
+  // Expose functions globally for programmatic access (for future use)
+  // window.enableLiveMode = enableLiveMode;
+  // window.disableLiveMode = disableLiveMode;
+
   const handleLocationSelect = (coordinates: [number, number], name: string, boundingBox?: [number, number, number, number]) => {
     if (mapRef.current) {
       mapRef.current.flyToLocation(coordinates, 14, boundingBox);
@@ -163,7 +184,17 @@ function MapWithData() {
   };
 
   return (
-    <div className="h-screen w-full bg-background text-foreground overflow-hidden dark">
+    <div className={`h-screen w-full bg-background text-foreground overflow-hidden dark relative ${liveMode ? 'border-4 border-dashed border-red-500' : ''}`}>
+      {/* Live Mode Badge */}
+      {liveMode && (
+        <div className="absolute top-4 right-4 z-50">
+          <div className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg">
+            <div className="w-2 h-2 bg-red-300 rounded-full animate-ping"></div>
+            LIVE
+          </div>
+        </div>
+      )}
+
       {/* Alert Container */}
       <AlertContainer />
 
@@ -179,7 +210,7 @@ function MapWithData() {
           {/* Full-screen Map */}
           <div className="absolute inset-0">
             <MapContainer ref={mapRef} pois={allPOIs} />
-            
+
             {/* MapSearch Overlay - Centered */}
             {searchOpen && (
               <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
@@ -222,6 +253,8 @@ function MapWithData() {
         <DebugAgentPanel
           isOpen={debugPanelOpen}
           onClose={() => setDebugPanelOpen(false)}
+          liveMode={liveMode}
+          onLiveModeToggle={handleLiveModeToggle}
         />
       </div>
 

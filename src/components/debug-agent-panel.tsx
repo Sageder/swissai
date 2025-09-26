@@ -44,9 +44,11 @@ import {
 interface DebugAgentPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  liveMode: boolean;
+  onLiveModeToggle: () => void;
 }
 
-export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
+export function DebugAgentPanel({ isOpen, onClose, liveMode, onLiveModeToggle }: DebugAgentPanelProps) {
   const { monitoringStations, authorities, resources, vehicleMovements, isLoading } = useData();
   const [state, setState] = useState(getStateSummary());
   const [isExpanded, setIsExpanded] = useState(false);
@@ -116,7 +118,7 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
   const handleSendVehicle = async () => {
     // First add Blatten if not already added
     addBlatten();
-    
+
     // Get current POIs to find one to send vehicle from
     const currentPOIs = getCurrentPOIs();
     if (currentPOIs.length === 0) {
@@ -133,7 +135,7 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
 
     // Find another POI to send vehicle from (prefer research station)
     const fromPOI = currentPOIs.find(poi => poi.id === 'blatten-research-station') || currentPOIs[0];
-    
+
     // Send vehicle from the other POI to Blatten
     await sendVehicle(fromPOI.id, blattenPOI.id, 'fire_truck', 15000); // 15 second journey
   };
@@ -147,7 +149,7 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
 
     // First add Blatten if not already added
     addBlatten();
-    
+
     // Get current POIs to find one to send helicopter from
     const currentPOIs = getCurrentPOIs();
     if (currentPOIs.length === 0) {
@@ -164,7 +166,7 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
 
     // Find another POI to send helicopter from (prefer research station)
     const fromPOI = currentPOIs.find(poi => poi.id === 'blatten-research-station') || currentPOIs[0];
-    
+
     try {
       // Send helicopter from the other POI to Blatten
       await sendHelicopter(fromPOI.id, blattenPOI.id, 10000); // 10 second journey
@@ -208,6 +210,21 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
         </CardHeader>
 
         <CardContent className="space-y-4">
+          {/* Live Mode Toggle */}
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-gray-300">Live Mode:</div>
+            <Button
+              onClick={onLiveModeToggle}
+              size="sm"
+              className={`w-full ${liveMode ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 hover:bg-gray-700'}`}
+            >
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${liveMode ? 'bg-red-300' : 'bg-gray-400'}`}></div>
+                {liveMode ? 'LIVE MODE ACTIVE' : 'Enable Live Mode'}
+              </div>
+            </Button>
+          </div>
+
           {/* State Display */}
           <div className="space-y-2">
             <div className="text-sm font-medium text-gray-300">Current State:</div>
@@ -220,6 +237,9 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
               </Badge>
               <Badge variant={vehicleMovements.length > 0 ? "default" : "secondary"} className="text-xs">
                 Vehicles: {vehicleMovements.length}
+              </Badge>
+              <Badge variant={liveMode ? "destructive" : "secondary"} className="text-xs">
+                Live: {liveMode ? 'ON' : 'OFF'}
               </Badge>
             </div>
           </div>
