@@ -55,21 +55,16 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
       if (map.current) {
         if (enabled) {
           map.current.setTerrain({ source: "mapbox-dem", exaggeration })
-          console.log(`[v0] Terrain enabled with ${exaggeration}x exaggeration`)
         } else {
           map.current.setTerrain(null)
-          console.log("[v0] Terrain disabled")
         }
         terrainEnabled.current = enabled
       }
     },
     flyToLocation: (coordinates: [number, number], zoom = 14, boundingBox) => {
       if (!map.current) {
-        console.warn('Map not initialized, cannot fly to location')
         return
       }
-
-      console.log('Flying to location:', coordinates, 'zoom:', zoom, 'boundingBox:', boundingBox)
 
       if (boundingBox) {
         // Fit to bounding box if provided
@@ -284,20 +279,16 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   useEffect(() => {
     setIsClient(true)
     const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || null
-    console.log('Mapbox token loaded:', token ? 'Token found' : 'No token')
     setMapboxToken(token)
   }, [])
 
   // Function to create POI markers - following tutorial pattern exactly
   const createPOIMarkers = async (mapInstance: any, poisData: POI[]) => {
-    console.log('Creating POI markers for:', poisData.length, 'POIs')
-
     // Remove existing markers
     poiMarkers.forEach(marker => marker.remove())
     setPOIMarkers([])
 
     const coords = getPOICoordinates(poisData)
-    console.log('POI coordinates:', coords)
     const newMarkers: any[] = []
 
     // Import mapboxgl dynamically
@@ -308,8 +299,6 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         const poi = poisData[idx]
         const color = getPOIColor(poi.type)
         const icon = getPOIIcon(poi.type)
-
-        console.log(`Creating marker for ${poi.title} at [${long}, ${lat}] with color ${color}`)
 
         // Create custom marker element - following tutorial pattern
         const el = document.createElement('div')
@@ -326,7 +315,6 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         // Add click handler - following tutorial pattern
         el.style.cursor = "pointer"
         el.onclick = () => {
-          console.log('POI clicked:', poi)
           // Handle POI click - could open modal, show details, etc.
           alert(`${poi.title}\n${poi.description}`)
         }
@@ -336,40 +324,27 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
           .setLngLat([long, lat]) // Note: Mapbox expects [lng, lat]
           .addTo(mapInstance)
 
-        console.log('Added marker:', marker)
         newMarkers.push(marker)
       }
     })
 
-    console.log('Total markers created:', newMarkers.length)
     setPOIMarkers(newMarkers)
   }
 
   useEffect(() => {
     // Initialize Mapbox when token is provided
     const initializeMap = async () => {
-      console.log('Initializing map...', {
-        window: typeof window,
-        container: !!mapContainer.current,
-        existingMap: !!map.current,
-        token: !!mapboxToken
-      })
 
       if (typeof window !== "undefined" && mapContainer.current && !map.current) {
         try {
           // Dynamic import of mapbox-gl
           const mapboxgl = await import("mapbox-gl")
-          console.log('Mapbox GL imported successfully')
 
           // Check if token is available
           if (!mapboxToken) {
-            console.log(
-              "Mapbox token not found. Please add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to your environment variables.",
-            )
             return
           }
 
-          console.log('Creating Mapbox map with token...')
 
           mapboxgl.default.accessToken = mapboxToken
 
@@ -382,8 +357,6 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
             bearing: -17.6,
             attributionControl: false,
           })
-
-          console.log('Mapbox map created successfully:', map.current)
 
           map.current.on("load", () => {
             // Add terrain source
@@ -461,11 +434,14 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
             if (!globalClickHandlerAdded.current) {
               map.current.on('click', (e: any) => {
                 console.log("[MapContainer] Global click at:", e.lngLat.lng, e.lngLat.lat)
+                console.log("[MapContainer] Available polygons:", polygonsRef.current.length)
+                console.log("[MapContainer] Polygons data:", polygonsRef.current)
                 
                 // Check each polygon manually using point-in-polygon
                 const clickPoint: [number, number] = [e.lngLat.lng, e.lngLat.lat]
                 
                 for (const polygon of polygonsRef.current) {
+                  console.log("[MapContainer] Checking polygon:", polygon.id, "vertices:", polygon.vertices)
                   if (pointInPolygon(clickPoint, polygon.vertices)) {
                     console.log("[MapContainer] DIRECT GEOMETRY HIT - Polygon clicked:", polygon.id)
                     if (onPolygonClickRef.current) {
@@ -483,7 +459,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
 
             // Create POI markers after map loads
             if (pois && pois.length > 0) {
-              createPOIMarkers(map.current, pois).catch(console.error)
+              createPOIMarkers(map.current, pois).catch(() => {})
             }
 
             if (onMapLoad) {
@@ -494,11 +470,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
           // Add navigation controls at bottom-right
           map.current.addControl(new mapboxgl.default.NavigationControl(), "bottom-right")
         } catch (error) {
-          console.error("Error initializing Mapbox:", error)
-          console.error("Error details:", {
-            message: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined
-          })
+          // Silently handle map initialization errors
         }
       }
     }
@@ -518,7 +490,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   useEffect(() => {
     if (!map.current || !pois) return
 
-    createPOIMarkers(map.current, pois).catch(console.error)
+    createPOIMarkers(map.current, pois).catch(() => {})
   }, [pois])
 
   // Show loading state during hydration

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { SimulationService } from '@/services/simulation.service';
-import { EmergencyDataService } from '@/services/emergency-data.service';
+import { useData } from '@/lib/data-context';
 import type { SimulationState, SimulationConfig } from '@/types/emergency';
 
 export interface SimulationEvent {
@@ -10,6 +10,8 @@ export interface SimulationEvent {
 }
 
 export function useSimulation() {
+  const { monitoringStations, authorities, resources } = useData();
+  
   const [state, setState] = useState<SimulationState>({
     currentTime: '2025-05-17T06:00:00Z',
     isRunning: false,
@@ -22,16 +24,11 @@ export function useSimulation() {
   const [error, setError] = useState<string | null>(null);
   
   const simulationRef = useRef<SimulationService | null>(null);
-  const dataServiceRef = useRef<EmergencyDataService | null>(null);
 
   // Initialize services
   useEffect(() => {
-    if (!dataServiceRef.current) {
-      dataServiceRef.current = new EmergencyDataService();
-    }
-    
     if (!simulationRef.current) {
-      simulationRef.current = new SimulationService(dataServiceRef.current);
+      simulationRef.current = new SimulationService();
       
       // Set up event listeners
       simulationRef.current.on('simulation_started', (data) => {
@@ -77,14 +74,6 @@ export function useSimulation() {
         addEvent('disaster_event', data);
       });
       
-      simulationRef.current.on('data_loaded', (data) => {
-        if (data.success) {
-          setError(null);
-        } else {
-          setError('Failed to load simulation data');
-        }
-        setIsLoading(false);
-      });
     }
     
     return () => {
@@ -93,6 +82,17 @@ export function useSimulation() {
       }
     };
   }, []);
+
+  // Set data when available
+  useEffect(() => {
+    if (simulationRef.current && monitoringStations.length > 0 && authorities.length > 0 && resources.length > 0) {
+      simulationRef.current.setData({
+        monitoringStations,
+        authorities,
+        resources
+      });
+    }
+  }, [monitoringStations, authorities, resources]);
 
   const addEvent = useCallback((type: string, data: any) => {
     const event: SimulationEvent = {
@@ -135,20 +135,7 @@ export function useSimulation() {
     }
   }, []);
 
-  // Data operations
-  const loadData = useCallback(async () => {
-    if (!simulationRef.current) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      await simulationRef.current.loadSimulationData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      setIsLoading(false);
-    }
-  }, []);
+  // Data is now automatically loaded from the data context
 
   const clearEvents = useCallback(() => {
     setEvents([]);
@@ -185,7 +172,6 @@ export function useSimulation() {
     setTime,
     
     // Data operations
-    loadData,
     clearEvents,
     
     // Utilities
@@ -194,7 +180,6 @@ export function useSimulation() {
     getConfig,
     
     // Services (for advanced usage)
-    simulationService: simulationRef.current,
-    dataService: dataServiceRef.current
+    simulationService: simulationRef.current
   };
 }

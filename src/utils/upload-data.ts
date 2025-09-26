@@ -1,7 +1,6 @@
 import { EmergencyDataService } from '@/services/emergency-data.service';
 
 export async function uploadSimulationData() {
-  console.log('🚀 Starting data upload to Firebase...');
   
   const dataService = new EmergencyDataService();
   
@@ -53,30 +52,18 @@ export async function uploadSimulationData() {
       timelineEvents: timelineEventsData
     };
 
-    console.log('📊 Uploading data:');
-    console.log(`   - ${simulationData.events.length} events`);
-    console.log(`   - ${simulationData.monitoringStations.length} monitoring stations`);
-    console.log(`   - ${simulationData.authorities.length} authorities`);
-    console.log(`   - ${simulationData.resources.length} resources`);
-    console.log(`   - ${simulationData.evacuees.length} evacuees`);
-    console.log(`   - ${simulationData.decisions.length} decisions`);
-    console.log(`   - ${simulationData.timelineEvents.length} timeline events`);
+    // Uploading data
 
     await dataService.uploadSimulationData(simulationData);
     
-    console.log('✅ Data upload completed successfully!');
-    console.log('🎯 You can now start the simulation in the browser.');
-    
     return true;
   } catch (error) {
-    console.error('❌ Data upload failed:', error);
     return false;
   }
 }
 
 // Function to validate data after upload
 export async function validateUploadedData() {
-  console.log('🔍 Validating uploaded data...');
   
   const dataService = new EmergencyDataService();
   
