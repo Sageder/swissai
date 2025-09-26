@@ -7,12 +7,10 @@ import { SettingsOverlay } from "@/components/overlays/settings-overlay";
 import { Timeline } from "@/components/timeline";
 import { TimeProvider } from "@/lib/time-context";
 import { DataProvider, useData } from "@/lib/data-context";
-import { MapSearch } from "@/components/map-search";
 import { AIChat } from "@/components/ai-chat";
 import { AlertContainer } from "@/components/alerts/alert-container";
 import { CrisisManagement } from "@/components/crisis-management";
 import { DebugAgentPanel } from "@/components/debug-agent-panel";
-import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { convertResourcesToPOIs, convertMonitoringStationsToPOIs, combinePOIs } from "@/utils/resource-to-poi";
 import { blattentPOIs } from "@/data/pois";
@@ -129,15 +127,6 @@ function MapWithData() {
     setActiveView(view);
   };
 
-  const handleLocationSelect = (
-    coordinates: [number, number],
-    name: string,
-    boundingBox?: [number, number, number, number]
-  ) => {
-    if (mapRef.current) {
-      mapRef.current.flyToLocation(coordinates, 14, boundingBox);
-    }
-  };
 
   const handleCloseOverlay = () => {
     setActiveView("map");
@@ -175,18 +164,6 @@ function MapWithData() {
             <MapContainer ref={mapRef} pois={allPOIs} />
           </div>
 
-          {/* Search Overlay - Positioned on the right side */}
-          <div className="absolute top-4 right-4 z-40 flex gap-2">
-            <MapSearch onLocationSelect={handleLocationSelect} />
-            <Button
-              onClick={() => setDebugPanelOpen(!debugPanelOpen)}
-              variant="outline"
-              size="sm"
-              className="bg-gray-900/80 border-gray-600 text-gray-300 hover:bg-gray-800"
-            >
-              Debug
-            </Button>
-          </div>
         </div>
 
         <Sidebar
