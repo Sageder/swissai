@@ -4,6 +4,7 @@
  */
 
 import { MonitoringStation, Authority, Resource } from '@/types/emergency';
+import type { VehicleMovement } from '@/lib/data-context';
 
 // Global state for controlling UI elements
 let showTimelineFlag = false;
@@ -13,6 +14,19 @@ let currentPOIs: any[] = [];
 // Callbacks for notifying components of state changes
 const timelineCallbacks: (() => void)[] = [];
 const poiCallbacks: (() => void)[] = [];
+
+// Global reference to data context functions (will be set by the app)
+let dataContextRef: {
+  addVehicleMovement: (movement: Omit<VehicleMovement, 'id' | 'currentPosition' | 'progress' | 'status'>) => void;
+} | null = null;
+
+/**
+ * Set the data context reference for vehicle movements
+ * This should be called by the app to provide access to data context functions
+ */
+export function setDataContextRef(ref: typeof dataContextRef): void {
+  dataContextRef = ref;
+}
 
 /**
  * Show the timeline component
@@ -329,6 +343,158 @@ export function getStateSummary(): {
     poisVisible: showPOIFlag,
     poiCount: currentPOIs.length
   };
+}
+
+/**
+ * Get directions from Mapbox Directions API
+ */
+async function getDirections(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number }
+): Promise<{ coordinates: [number, number][]; distance: number; duration: number } | null> {
+  try {
+    const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+    if (!mapboxToken) {
+      console.warn('Mapbox token not available, using direct route');
+      return null;
+    }
+
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${from.lng},${from.lat};${to.lng},${to.lat}?geometries=geojson&access_token=${mapboxToken}`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if (data.routes && data.routes.length > 0) {
+      const route = data.routes[0];
+      return {
+        coordinates: route.geometry.coordinates,
+        distance: route.distance,
+        duration: route.duration
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting directions:', error);
+    return null;
+  }
+}
+
+/**
+ * Send a vehicle from one POI to another POI
+ * @param fromPOIId - ID of the source POI
+ * @param toPOIId - ID of the destination POI
+ * @param vehicleType - Type of vehicle to send
+ * @param duration - Duration of the journey in milliseconds (default: 30000 = 30 seconds)
+ */
+export async function sendVehicle(
+  fromPOIId: string, 
+  toPOIId: string, 
+  vehicleType: VehicleMovement['vehicleType'] = 'fire_truck',
+  duration: number = 30000
+): Promise<void> {
+  if (!dataContextRef) {
+    console.error('Data context not available for vehicle movement');
+    return;
+  }
+
+  // Find the source and destination POIs
+  const fromPOI = currentPOIs.find(poi => poi.id === fromPOIId);
+  const toPOI = currentPOIs.find(poi => poi.id === toPOIId);
+
+  if (!fromPOI || !toPOI) {
+    console.error(`POI not found: from=${fromPOIId}, to=${toPOIId}`);
+    return;
+  }
+
+  // Get directions from Mapbox
+  const route = await getDirections(
+    { lat: fromPOI.metadata.coordinates.lat, lng: fromPOI.metadata.coordinates.long },
+    { lat: toPOI.metadata.coordinates.lat, lng: toPOI.metadata.coordinates.long }
+  );
+
+  let finalDuration = duration;
+  let routeData = undefined;
+
+  if (route) {
+    // Use Mapbox route data
+    routeData = route;
+    // Convert duration from seconds to milliseconds, but cap it for demo purposes
+    finalDuration = Math.min(route.duration * 1000, 60000); // Max 60 seconds for demo
+  } else {
+    // Fallback to direct distance calculation
+    const distance = calculateDistance(
+      fromPOI.metadata.coordinates.lat,
+      fromPOI.metadata.coordinates.long,
+      toPOI.metadata.coordinates.lat,
+      toPOI.metadata.coordinates.long
+    );
+    finalDuration = duration === 30000 ? Math.max(10000, distance * 72) : duration;
+  }
+
+  // Create vehicle movement
+  const movement: Omit<VehicleMovement, 'id' | 'currentPosition' | 'progress' | 'status'> = {
+    from: {
+      lat: fromPOI.metadata.coordinates.lat,
+      lng: fromPOI.metadata.coordinates.long,
+      name: fromPOI.title
+    },
+    to: {
+      lat: toPOI.metadata.coordinates.lat,
+      lng: toPOI.metadata.coordinates.long,
+      name: toPOI.title
+    },
+    startTime: Date.now(),
+    duration: finalDuration,
+    vehicleType,
+    route: routeData
+  };
+
+  dataContextRef.addVehicleMovement(movement);
+  console.log(`Vehicle (${vehicleType}) sent from ${fromPOI.title} to ${toPOI.title}${route ? ' via roads' : ' via direct route'}`);
+}
+
+/**
+ * Add Blatten city center as a POI
+ */
+export function addBlatten(): void {
+  const blattenPOI = {
+    id: 'blatten-city-center',
+    title: 'Blatten City Center - HAZARD ZONE',
+    description: 'Main administrative and commercial center of Blatten village - Currently under landslide threat',
+    type: 'hazard' as const,
+    severity: 'high' as const,
+    metadata: {
+      coordinates: {
+        lat: 46.4208,
+        long: 7.8219
+      }
+    },
+    contact: 'blatten@valais.ch',
+    status: 'active' as const
+  };
+
+  // Remove existing Blatten POI if it exists
+  currentPOIs = currentPOIs.filter(poi => poi.id !== 'blatten-city-center');
+  currentPOIs = [...currentPOIs, blattenPOI];
+  showPOIFlag = true;
+  poiCallbacks.forEach(callback => callback());
+  console.log('Added Blatten city center to POI display');
+}
+
+/**
+ * Calculate distance between two coordinates using Haversine formula
+ */
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Radius of the Earth in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Distance in kilometers
 }
 
 /**

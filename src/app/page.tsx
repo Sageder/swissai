@@ -3,9 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { MapContainer, type MapRef } from "@/components/map-container";
 import { Sidebar } from "@/components/sidebar";
-import { BottomDock } from "@/components/bottom-dock";
 import { SettingsOverlay } from "@/components/overlays/settings-overlay";
-import { AnalyticsOverlay } from "@/components/overlays/analytics-overlay";
 import { Timeline } from "@/components/timeline";
 import { TimeProvider } from "@/lib/time-context";
 import { DataProvider, useData } from "@/lib/data-context";
@@ -20,14 +18,13 @@ import { convertResourcesToPOIs, convertMonitoringStationsToPOIs, combinePOIs } 
 import { blattentPOIs } from "@/data/pois";
 import { useAlert } from "@/lib/alert-context";
 import { setAlertContext, createLandslideAlert, setCrisisManagementCallback } from "@/lib/alert-service";
-import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange } from "@/lib/util";
+import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, addBlatten, sendVehicle, addAllPOIs } from "@/lib/util";
 
 // Component that uses data context
 function MapWithData() {
-  const { resources, monitoringStations, isLoading } = useData();
+  const { resources, monitoringStations, authorities, isLoading, addVehicleMovement } = useData();
   const alertContext = useAlert();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const [dockHeight, setDockHeight] = useState(33); // percentage
   const [activeView, setActiveView] = useState("map");
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [crisisManagementOpen, setCrisisManagementOpen] = useState(false);
@@ -48,6 +45,11 @@ function MapWithData() {
     });
   }, [alertContext]);
 
+  // Initialize data context reference for utility functions
+  useEffect(() => {
+    setDataContextRef({ addVehicleMovement });
+  }, [addVehicleMovement]);
+
   // Demo alert for Blatten landslide
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -56,6 +58,36 @@ function MapWithData() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Demo vehicle movement scenario
+  useEffect(() => {
+    if (isLoading || resources.length === 0) return;
+
+    const timer = setTimeout(() => {
+      // Set up emergency scenario
+      addAllPOIs({
+        monitoringStations,
+        resources,
+        authorities
+      });
+      
+      // Add Blatten city center
+      addBlatten();
+      
+      // Wait a bit then send a vehicle from research station to Blatten
+      setTimeout(async () => {
+        const currentPOIs = getCurrentPOIs();
+        const blattenPOI = currentPOIs.find(poi => poi.id === 'blatten-city-center');
+        const researchPOI = currentPOIs.find(poi => poi.id === 'blatten-research-station');
+        
+        if (blattenPOI && researchPOI) {
+          await sendVehicle(researchPOI.id, blattenPOI.id, 'fire_truck', 20000); // 20 second journey
+        }
+      }, 3000);
+    }, 5000); // Start demo 5 seconds after component mounts
+
+    return () => clearTimeout(timer);
+  }, [isLoading, resources, monitoringStations, authorities]);
 
   // Keyboard shortcut for debug panel (Ctrl/Cmd + D)
   useEffect(() => {
@@ -92,11 +124,6 @@ function MapWithData() {
   // Only show POIs if explicitly controlled by utility functions
   const allPOIs = showPOIs && currentPOIs.length > 0 ? currentPOIs : [];
 
-  const handleTerrainToggle = (enabled: boolean, exaggeration?: number) => {
-    if (mapRef.current) {
-      mapRef.current.toggleTerrain(enabled, exaggeration);
-    }
-  };
 
   const handleViewChange = (view: string) => {
     setActiveView(view);
@@ -144,8 +171,9 @@ function MapWithData() {
         {/* Main Content Area - Full Width */}
         <div className="flex-1 relative">
           {/* Full-screen Map */}
-          <MapContainer ref={mapRef} pois={allPOIs} />
-
+          <div className="absolute inset-0">
+            <MapContainer ref={mapRef} pois={allPOIs} />
+          </div>
 
           {/* Search Overlay - Positioned on the right side */}
           <div className="absolute top-4 right-4 z-40 flex gap-2">
@@ -167,6 +195,7 @@ function MapWithData() {
           activeView={activeView}
           onViewChange={handleViewChange}
           onAIChatOpen={handleAIChatOpen}
+          onDebugPanelOpen={() => setDebugPanelOpen(!debugPanelOpen)}
         />
 
         {/* AI Chat Overlay */}
@@ -192,12 +221,6 @@ function MapWithData() {
       {/* Overlays */}
       <SettingsOverlay
         isOpen={activeView === "settings"}
-        onClose={handleCloseOverlay}
-        onTerrainToggle={handleTerrainToggle}
-      />
-
-      <AnalyticsOverlay
-        isOpen={activeView === "analytics"}
         onClose={handleCloseOverlay}
       />
     </div>

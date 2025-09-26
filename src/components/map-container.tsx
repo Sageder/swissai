@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, forwardRef, useImperativeHandle, useState } from "react"
 import { POI, getPOICoordinates, getPOIColor, getPOIIcon, blattentPOIs } from "@/data/pois"
+import { useData } from "@/lib/data-context"
+import type { VehicleMovement } from "@/lib/data-context"
+import { VehicleTrackingService } from "@/services/vehicle-tracking.service"
 import "mapbox-gl/dist/mapbox-gl.css"
 
 export interface MapRef {
@@ -22,6 +25,15 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   const [mapboxToken, setMapboxToken] = useState<string | null>(null)
   // Global array to track POI markers - following tutorial pattern
   const [poiMarkers, setPOIMarkers] = useState<any[]>([])
+  // Global map to track vehicle markers by movement ID
+  const [vehicleMarkers, setVehicleMarkers] = useState<Map<string, any>>(new Map())
+  // Track which routes have been added to prevent re-adding
+  const [addedRoutes, setAddedRoutes] = useState<Set<string>>(new Set())
+  // Vehicle tracking service
+  const [vehicleTrackingService, setVehicleTrackingService] = useState<VehicleTrackingService | null>(null)
+  
+  // Get vehicle movements from data context
+  const { vehicleMovements, updateVehicleMovement } = useData()
 
   useImperativeHandle(ref, () => ({
     toggleTerrain: (enabled: boolean, exaggeration = 1.2) => {
@@ -63,6 +75,36 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
     setIsClient(true)
     const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || null
     setMapboxToken(token)
+    
+    // Initialize vehicle tracking service when token is available
+    if (token) {
+      const service = new VehicleTrackingService({
+        mapboxToken: token,
+        onPositionUpdate: (vehicleId, position, progress) => {
+          updateVehicleMovement(vehicleId, {
+            currentPosition: position,
+            progress
+          })
+        },
+        onRouteUpdate: (vehicleId, route) => {
+          updateVehicleMovement(vehicleId, {
+            route: {
+              coordinates: route.coordinates,
+              distance: route.distance,
+              duration: route.duration
+            }
+          })
+        },
+        onVehicleArrived: (vehicleId) => {
+          updateVehicleMovement(vehicleId, {
+            status: 'arrived',
+            progress: 1,
+            currentPosition: vehicleMovements.find(m => m.id === vehicleId)?.to || { lat: 0, lng: 0 }
+          })
+        }
+      })
+      setVehicleTrackingService(service)
+    }
   }, [])
 
   // Function to create POI markers - following tutorial pattern exactly
@@ -112,6 +154,136 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
     })
 
     setPOIMarkers(newMarkers)
+  }
+
+  // Function to create vehicle markers and route lines
+  const createVehicleMarkers = async (mapInstance: any, movements: VehicleMovement[]) => {
+    if (!mapInstance || movements.length === 0) return
+
+    const mapboxgl = await import("mapbox-gl")
+    const newMarkers = new Map<string, any>()
+    const newAddedRoutes = new Set<string>()
+
+    // Only process new movements that don't have markers yet
+    movements.forEach((movement) => {
+      if (movement.status === 'traveling' && !vehicleMarkers.has(movement.id)) {
+        const vehicleIcon = getVehicleIcon(movement.vehicleType)
+        const vehicleColor = getVehicleColor(movement.vehicleType)
+
+        // Create vehicle marker element
+        const el = document.createElement('div')
+        el.className = 'vehicle-marker'
+        el.innerHTML = `
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <circle cx="12" cy="12" r="10" fill="${vehicleColor}" stroke="#ffffff" stroke-width="2"/>
+            <text x="12" y="16" text-anchor="middle"
+                  font-size="10" font-weight="700" fill="#ffffff"
+                  font-family="Arial, sans-serif">${vehicleIcon}</text>
+          </svg>
+        `
+
+        // Add pulsing animation for moving vehicles
+        el.style.animation = 'pulse 2s infinite'
+        el.style.cursor = "pointer"
+
+        // Add click handler
+        el.onclick = () => {
+          const routeInfo = movement.route ? 
+            `\nRoute: ${(movement.route.distance / 1000).toFixed(1)}km, ${Math.round(movement.route.duration / 60)}min` : 
+            '\nRoute: Direct path'
+          alert(`Vehicle: ${movement.vehicleType}\nFrom: ${movement.from.name}\nTo: ${movement.to.name}\nProgress: ${Math.round(movement.progress * 100)}%${routeInfo}`)
+        }
+
+        // Create and add marker to map
+        const marker = new mapboxgl.default.Marker({ element: el })
+          .setLngLat([movement.currentPosition.lng, movement.currentPosition.lat])
+          .addTo(mapInstance)
+
+        newMarkers.set(movement.id, marker)
+
+        // Add route line if available and not already added
+        if (movement.route && movement.route.coordinates.length > 0 && !addedRoutes.has(movement.id)) {
+          addRouteToMap(mapInstance, movement.id, movement.route.coordinates, vehicleColor)
+          newAddedRoutes.add(movement.id)
+        }
+      } else if (vehicleMarkers.has(movement.id)) {
+        // Keep existing marker
+        newMarkers.set(movement.id, vehicleMarkers.get(movement.id))
+        if (addedRoutes.has(movement.id)) {
+          newAddedRoutes.add(movement.id)
+        }
+      }
+    })
+
+    // Remove markers for movements that no longer exist
+    vehicleMarkers.forEach((marker, id) => {
+      if (!movements.find(m => m.id === id)) {
+        marker.remove()
+      }
+    })
+
+    setVehicleMarkers(newMarkers)
+    setAddedRoutes(newAddedRoutes)
+  }
+
+  // Function to add a single route to the map
+  const addRouteToMap = (mapInstance: any, movementId: string, coordinates: [number, number][], color: string) => {
+    const sourceId = `route-${movementId}`
+    const layerId = `route-layer-${movementId}`
+
+    // Add source for this specific route
+    mapInstance.addSource(sourceId, {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: { color },
+        geometry: {
+          type: 'LineString',
+          coordinates
+        }
+      }
+    })
+
+    // Add layer for this specific route
+    mapInstance.addLayer({
+      id: layerId,
+      type: 'line',
+      source: sourceId,
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': '#1890ff', // Blue color
+        'line-width': 2, // Thinner line
+        'line-opacity': 0.8
+        // Removed line-dasharray to make it a solid line
+      }
+    })
+  }
+
+  // Get vehicle icon based on type
+  const getVehicleIcon = (vehicleType: VehicleMovement['vehicleType']): string => {
+    const icons = {
+      ambulance: '🚑',
+      fire_truck: '🚒',
+      police: '🚔',
+      helicopter: '🚁',
+      evacuation_bus: '🚌'
+    }
+    return icons[vehicleType] || '🚗'
+  }
+
+  // Get vehicle color based on type
+  const getVehicleColor = (vehicleType: VehicleMovement['vehicleType']): string => {
+    const colors = {
+      ambulance: '#ff4d4f',
+      fire_truck: '#ff7a00',
+      police: '#1890ff',
+      helicopter: '#722ed1',
+      evacuation_bus: '#52c41a'
+    }
+    return colors[vehicleType] || '#faad14'
   }
 
   useEffect(() => {
@@ -233,7 +405,24 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
     return () => {
       // Cleanup POI markers
       poiMarkers.forEach(marker => marker.remove())
+      // Cleanup vehicle markers
+      vehicleMarkers.forEach(marker => marker.remove())
+      // Cleanup vehicle tracking service
+      if (vehicleTrackingService) {
+        vehicleTrackingService.cleanup()
+      }
+      // Cleanup vehicle routes
       if (map.current) {
+        addedRoutes.forEach(movementId => {
+          const sourceId = `route-${movementId}`
+          const layerId = `route-layer-${movementId}`
+          if (map.current.getLayer(layerId)) {
+            map.current.removeLayer(layerId)
+          }
+          if (map.current.getSource(sourceId)) {
+            map.current.removeSource(sourceId)
+          }
+        })
         map.current.remove()
       }
     }
@@ -245,6 +434,43 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
 
     createPOIMarkers(map.current, pois).catch(() => { })
   }, [pois])
+
+  // Handle vehicle movements with the tracking service
+  useEffect(() => {
+    if (!vehicleTrackingService || !map.current) return
+
+    // Start tracking new vehicles
+    vehicleMovements.forEach(movement => {
+      if (movement.status === 'traveling' && !vehicleMarkers.has(movement.id)) {
+        vehicleTrackingService.startVehicleTracking(movement)
+      }
+    })
+
+    // Create/update markers for all vehicles
+    createVehicleMarkers(map.current, vehicleMovements).catch(() => {})
+  }, [vehicleMovements, vehicleTrackingService])
+
+  // Update vehicle marker positions when movements change
+  useEffect(() => {
+    if (!map.current) return
+    
+    updateVehicleMarkerPositions(map.current, vehicleMovements)
+  }, [vehicleMovements])
+
+  // Function to update vehicle marker positions without recreating them
+  const updateVehicleMarkerPositions = (mapInstance: any, movements: VehicleMovement[]) => {
+    movements.forEach((movement) => {
+      if (movement.status === 'traveling') {
+        const marker = vehicleMarkers.get(movement.id)
+        if (marker) {
+          marker.setLngLat([
+            movement.currentPosition.lng,
+            movement.currentPosition.lat
+          ])
+        }
+      }
+    })
+  }
 
   // Show loading state during hydration
   if (!isClient) {
@@ -278,23 +504,6 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         </div>
       )}
 
-      {/* POI Legend - Moved to right side below search */}
-      {mapboxToken && pois && pois.length > 0 && (
-        <div key="poi-legend" className="absolute top-20 right-4 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg max-w-xs">
-          <h4 className="font-semibold text-sm mb-2">Points of Interest</h4>
-          <div key="poi-list" className="space-y-1 text-xs">
-            {pois.map((poi: POI, index: number) => (
-              <div key={`poi-${index}-${poi.id}`} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full border border-white"
-                  style={{ backgroundColor: getPOIColor(poi.type) }}
-                />
-                <span>{poi.title}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 })

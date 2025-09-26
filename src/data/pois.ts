@@ -5,7 +5,7 @@ export interface POI {
   id: string;
   title: string;
   description: string;
-  type: "research" | "sensor" | "emergency" | "hospital" | "army" | "fire_station" | "helicopter" | "shelter" | "infrastructure" | "other";
+  type: "research" | "sensor" | "emergency" | "hospital" | "army" | "fire_station" | "helicopter" | "shelter" | "infrastructure" | "hazard" | "other";
   severity?: "high" | "medium" | "low";
   metadata: {
     coordinates: {
@@ -82,6 +82,7 @@ export function getPOIColor(type: POI['type']): string {
     helicopter: '#ff1744',   // Bright red for helicopters
     shelter: '#4caf50',      // Green for shelters
     infrastructure: '#9c27b0', // Purple for infrastructure
+    hazard: '#ff0000',      // Bright red for hazard points
     other: '#faad14'        // Orange for other
   };
   
@@ -100,6 +101,7 @@ export function getPOIIcon(type: POI['type']): string {
     helicopter: '🚁',
     shelter: '🏠',
     infrastructure: '⚡',
+    hazard: '⚠️',
     other: '📍'
   };
   
