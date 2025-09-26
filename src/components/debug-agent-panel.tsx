@@ -18,7 +18,9 @@ import {
   shouldShowPOIs,
   getCurrentPOIs,
   onPOIVisibilityChange,
-  onTimelineVisibilityChange
+  onTimelineVisibilityChange,
+  sendVehicle,
+  addBlatten
 } from '@/lib/util';
 import { useData } from '@/lib/data-context';
 import { 
@@ -31,7 +33,9 @@ import {
   Activity,
   Shield,
   Truck,
-  Target
+  Target,
+  Car,
+  Building
 } from 'lucide-react';
 
 interface DebugAgentPanelProps {
@@ -40,7 +44,7 @@ interface DebugAgentPanelProps {
 }
 
 export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
-  const { monitoringStations, authorities, resources } = useData();
+  const { monitoringStations, authorities, resources, vehicleMovements } = useData();
   const [state, setState] = useState(getStateSummary());
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -102,6 +106,35 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
     });
   };
 
+  const handleAddBlatten = () => {
+    addBlatten();
+  };
+
+  const handleSendVehicle = async () => {
+    // First add Blatten if not already added
+    addBlatten();
+    
+    // Get current POIs to find one to send vehicle from
+    const currentPOIs = getCurrentPOIs();
+    if (currentPOIs.length === 0) {
+      alert('No POIs available. Please add some POIs first.');
+      return;
+    }
+
+    // Find Blatten POI
+    const blattenPOI = currentPOIs.find(poi => poi.id === 'blatten-city-center');
+    if (!blattenPOI) {
+      alert('Blatten POI not found. Please add Blatten first.');
+      return;
+    }
+
+    // Find another POI to send vehicle from (prefer research station)
+    const fromPOI = currentPOIs.find(poi => poi.id === 'blatten-research-station') || currentPOIs[0];
+    
+    // Send vehicle from the other POI to Blatten
+    await sendVehicle(fromPOI.id, blattenPOI.id, 'fire_truck', 15000); // 15 second journey
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -145,6 +178,9 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
               </Badge>
               <Badge variant={state.poisVisible ? "default" : "secondary"} className="text-xs">
                 POIs: {state.poiCount}
+              </Badge>
+              <Badge variant={vehicleMovements.length > 0 ? "default" : "secondary"} className="text-xs">
+                Vehicles: {vehicleMovements.length}
               </Badge>
             </div>
           </div>
@@ -216,6 +252,29 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
             </div>
           </div>
 
+          {/* Vehicle Controls */}
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-gray-300">Vehicle Controls:</div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={handleAddBlatten}
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
+                <Building className="w-4 h-4 mr-1" />
+                Add Blatten
+              </Button>
+              <Button
+                onClick={handleSendVehicle}
+                size="sm"
+                className="bg-cyan-600 hover:bg-cyan-700"
+              >
+                <Car className="w-4 h-4 mr-1" />
+                Send Vehicle
+              </Button>
+            </div>
+          </div>
+
           {/* Quick Actions */}
           <div className="space-y-2">
             <div className="text-sm font-medium text-gray-300">Quick Actions:</div>
@@ -248,6 +307,7 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
                 <div>• Monitoring Stations: {monitoringStations.length}</div>
                 <div>• Resources: {resources.length}</div>
                 <div>• Authorities: {authorities.length}</div>
+                <div>• Vehicle Movements: {vehicleMovements.length}</div>
                 <div className="pt-2 text-gray-500">
                   Use these buttons to test the utility functions that AI models can call.
                 </div>
