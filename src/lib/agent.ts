@@ -592,6 +592,321 @@ export const simulationAnalysisTool = tool({
   },
 });
 
+// Emergency vehicle dispatch tool
+export const emergencyVehicleDispatchTool = tool({
+  description:
+    "Dispatch emergency vehicles (ambulances, fire trucks, police, helicopters, evacuation buses) to specific locations",
+  inputSchema: z.object({
+    vehicleType: z
+      .enum(["ambulance", "fire_truck", "police", "helicopter", "evacuation_bus"])
+      .describe("Type of emergency vehicle to dispatch"),
+    fromLocation: z.string().describe("Starting location or station"),
+    toLocation: z.string().describe("Destination location"),
+    coordinates: z
+      .object({
+        lat: z.number().describe("Destination latitude"),
+        lng: z.number().describe("Destination longitude"),
+      })
+      .optional()
+      .describe("Exact coordinates of destination"),
+    priority: z
+      .enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"])
+      .describe("Dispatch priority level"),
+    estimatedDuration: z
+      .number()
+      .optional()
+      .describe("Estimated travel time in minutes"),
+    specialInstructions: z
+      .string()
+      .optional()
+      .describe("Special instructions for the crew"),
+  }),
+  execute: async ({
+    vehicleType,
+    fromLocation,
+    toLocation,
+    coordinates,
+    priority,
+    estimatedDuration,
+    specialInstructions,
+  }) => {
+    // TODO: Integrate with actual vehicle dispatch system
+    const dispatchId = `DISPATCH_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const response = {
+      dispatchId,
+      vehicleType,
+      fromLocation,
+      toLocation,
+      coordinates,
+      priority,
+      status: "DISPATCHED",
+      estimatedArrival: estimatedDuration
+        ? new Date(Date.now() + estimatedDuration * 60000).toISOString()
+        : new Date(Date.now() + 15 * 60000).toISOString(), // Default 15 min
+      specialInstructions,
+      dispatchTime: new Date().toISOString(),
+      vehicleId: `${vehicleType.toUpperCase()}_${Math.floor(Math.random() * 100)}`,
+      crewSize: vehicleType === "helicopter" ? 4 : vehicleType === "evacuation_bus" ? 2 : 3,
+    };
+
+    console.log("🚨 Emergency Vehicle Dispatched:", response);
+    return response;
+  },
+});
+
+// Evacuation management tool
+export const evacuationManagementTool = tool({
+  description:
+    "Initiate and manage evacuation procedures for specific areas or polygon zones",
+  inputSchema: z.object({
+    action: z
+      .enum(["initiate", "status", "complete", "update_route"])
+      .describe("Evacuation action to perform"),
+    area: z
+      .object({
+        name: z.string().describe("Area or polygon name"),
+        coordinates: z
+          .array(
+            z.object({
+              lat: z.number(),
+              lng: z.number(),
+            })
+          )
+          .optional()
+          .describe("Polygon vertices defining evacuation area"),
+        estimatedPopulation: z
+          .number()
+          .optional()
+          .describe("Estimated population in area"),
+      })
+      .describe("Area to evacuate"),
+    evacuationRoutes: z
+      .array(z.string())
+      .optional()
+      .describe("Designated evacuation routes"),
+    shelterLocations: z
+      .array(z.string())
+      .optional()
+      .describe("Available shelter locations"),
+    priority: z
+      .enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"])
+      .describe("Evacuation priority level"),
+    reason: z.string().optional().describe("Reason for evacuation"),
+  }),
+  execute: async ({
+    action,
+    area,
+    evacuationRoutes,
+    shelterLocations,
+    priority,
+    reason,
+  }) => {
+    // TODO: Integrate with actual evacuation management system
+    const evacuationId = `EVAC_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    if (action === "initiate") {
+      const response = {
+        evacuationId,
+        action: "initiate",
+        area,
+        status: "EVACUATION_INITIATED",
+        priority,
+        reason,
+        evacuationRoutes: evacuationRoutes || [
+          "Primary Route: Main Highway North",
+          "Secondary Route: County Road 15",
+          "Emergency Route: Forest Service Road",
+        ],
+        shelterLocations: shelterLocations || [
+          "Community Center (Capacity: 200)",
+          "High School Gymnasium (Capacity: 150)",
+          "Church Hall (Capacity: 100)",
+        ],
+        estimatedDuration: "2-4 hours",
+        transportRequired: Math.ceil((area.estimatedPopulation || 500) / 50), // Buses needed
+        initiatedAt: new Date().toISOString(),
+        expectedCompletion: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+      };
+      
+      console.log("🏃 Evacuation Initiated:", response);
+      return response;
+    }
+    
+    // Handle other evacuation actions
+    return {
+      evacuationId,
+      action,
+      area: area.name,
+      status: "ACTION_COMPLETED",
+      timestamp: new Date().toISOString(),
+    };
+  },
+});
+
+// Communication infrastructure tool
+export const communicationInfrastructureTool = tool({
+  description:
+    "Deploy and manage communication infrastructure like mobile towers, satellite links, and emergency broadcast systems",
+  inputSchema: z.object({
+    action: z
+      .enum(["deploy_tower", "setup_satellite", "emergency_broadcast", "status_check"])
+      .describe("Communication infrastructure action"),
+    location: z
+      .object({
+        name: z.string().describe("Location name"),
+        coordinates: z
+          .object({
+            lat: z.number(),
+            lng: z.number(),
+          })
+          .optional()
+          .describe("Exact coordinates"),
+      })
+      .describe("Deployment location"),
+    coverage: z
+      .object({
+        radius: z.number().describe("Coverage radius in kilometers"),
+        capacity: z.number().describe("Maximum simultaneous connections"),
+      })
+      .optional()
+      .describe("Coverage specifications"),
+    priority: z
+      .enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"])
+      .describe("Deployment priority"),
+  }),
+  execute: async ({ action, location, coverage, priority }) => {
+    // TODO: Integrate with actual communication infrastructure systems
+    const deploymentId = `COMM_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const response = {
+      deploymentId,
+      action,
+      location,
+      status: "DEPLOYMENT_INITIATED",
+      priority,
+      coverage: coverage || {
+        radius: action === "deploy_tower" ? 10 : action === "setup_satellite" ? 50 : 25,
+        capacity: action === "deploy_tower" ? 1000 : action === "setup_satellite" ? 5000 : 2000,
+      },
+      estimatedSetupTime: action === "deploy_tower" ? "2-3 hours" : action === "setup_satellite" ? "30-45 minutes" : "15 minutes",
+      equipment: {
+        deploy_tower: ["Mobile Cell Tower", "Generator", "Satellite Uplink", "Technician Team"],
+        setup_satellite: ["Satellite Dish", "Communication Hub", "Backup Power", "Technical Crew"],
+        emergency_broadcast: ["Emergency Alert System", "Radio Transmitter", "Backup Power"],
+        status_check: ["Diagnostic Equipment", "Technical Team"],
+      }[action],
+      deployedAt: new Date().toISOString(),
+      expectedOnline: new Date(
+        Date.now() + 
+        (action === "deploy_tower" ? 3 * 60 * 60 * 1000 : 
+         action === "setup_satellite" ? 45 * 60 * 1000 : 15 * 60 * 1000)
+      ).toISOString(),
+    };
+    
+    console.log("📡 Communication Infrastructure Deployed:", response);
+    return response;
+  },
+});
+
+// Mass notification tool
+export const massNotificationTool = tool({
+  description:
+    "Send mass notifications to residents, emergency services, and stakeholders via multiple channels",
+  inputSchema: z.object({
+    notificationType: z
+      .enum(["emergency_alert", "evacuation_notice", "shelter_info", "all_clear", "weather_warning"])
+      .describe("Type of notification to send"),
+    targetAudience: z
+      .enum(["residents", "emergency_services", "government", "media", "all"])
+      .describe("Target audience for notification"),
+    area: z
+      .object({
+        name: z.string().describe("Area name"),
+        coordinates: z
+          .array(
+            z.object({
+              lat: z.number(),
+              lng: z.number(),
+            })
+          )
+          .optional()
+          .describe("Polygon coordinates for targeted area"),
+        radius: z.number().optional().describe("Notification radius in kilometers"),
+      })
+      .optional()
+      .describe("Geographic area for notification"),
+    message: z.string().describe("Notification message content"),
+    priority: z
+      .enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"])
+      .describe("Notification priority level"),
+    channels: z
+      .array(
+        z.enum(["sms", "email", "push_notification", "radio", "tv", "social_media", "sirens"])
+      )
+      .optional()
+      .describe("Communication channels to use"),
+    language: z
+      .array(z.string())
+      .optional()
+      .describe("Languages for multilingual notifications"),
+  }),
+  execute: async ({
+    notificationType,
+    targetAudience,
+    area,
+    message,
+    priority,
+    channels,
+    language,
+  }) => {
+    // TODO: Integrate with actual mass notification systems (Emergency Alert System, Wireless Emergency Alerts, etc.)
+    const notificationId = `NOTIFY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const defaultChannels = {
+      CRITICAL: ["sms", "push_notification", "radio", "tv", "sirens"],
+      HIGH: ["sms", "push_notification", "radio", "email"],
+      MEDIUM: ["push_notification", "email", "social_media"],
+      LOW: ["email", "social_media"],
+    };
+    
+    const estimatedReach = {
+      residents: area ? Math.floor(Math.random() * 10000) + 5000 : 25000,
+      emergency_services: 150,
+      government: 50,
+      media: 25,
+      all: area ? Math.floor(Math.random() * 15000) + 10000 : 35000,
+    };
+    
+    const response = {
+      notificationId,
+      notificationType,
+      targetAudience,
+      area,
+      message,
+      priority,
+      channels: channels || defaultChannels[priority],
+      language: language || ["en", "de", "fr", "it"], // Swiss languages
+      status: "NOTIFICATION_SENT",
+      estimatedReach: estimatedReach[targetAudience],
+      deliveryStatus: {
+        sms: "95% delivered",
+        email: "88% delivered",
+        push_notification: "92% delivered",
+        radio: "100% broadcast",
+        tv: "100% broadcast",
+        social_media: "100% posted",
+        sirens: "100% activated",
+      },
+      sentAt: new Date().toISOString(),
+      estimatedDeliveryTime: "2-5 minutes",
+    };
+    
+    console.log("📢 Mass Notification Sent:", response);
+    return response;
+  },
+});
+
 // Web search tool for real-time information
 export const webSearchTool = tool({
   description:
@@ -773,6 +1088,10 @@ export async function generateTextWithFirebaseData(
     emergency_communication: emergencyCommunicationTool,
     simulation_analysis: simulationAnalysisTool,
     web_search: webSearchTool,
+    vehicle_dispatch: emergencyVehicleDispatchTool,
+    evacuation_management: evacuationManagementTool,
+    communication_infrastructure: communicationInfrastructureTool,
+    mass_notification: massNotificationTool,
   };
 
   console.log("🤖 generateTextWithFirebaseData - Request Parameters:", {
@@ -807,6 +1126,18 @@ export async function generateTextWithFirebaseData(
     toolResults: result.toolResults?.length || 0,
     firebaseDataCalls:
       result.toolCalls?.filter((tc) => tc.toolName === "firebase_data")
+        ?.length || 0,
+    vehicleDispatchCalls:
+      result.toolCalls?.filter((tc) => tc.toolName === "vehicle_dispatch")
+        ?.length || 0,
+    evacuationCalls:
+      result.toolCalls?.filter((tc) => tc.toolName === "evacuation_management")
+        ?.length || 0,
+    communicationCalls:
+      result.toolCalls?.filter((tc) => tc.toolName === "communication_infrastructure")
+        ?.length || 0,
+    notificationCalls:
+      result.toolCalls?.filter((tc) => tc.toolName === "mass_notification")
         ?.length || 0,
     timestamp: new Date().toISOString(),
   });

@@ -62,7 +62,7 @@ const getIconSVGPath = (iconName: string): string => {
   return iconPaths[iconName] || iconPaths.MapPin;
 };
 
-export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, pois = blattentPOIs }, ref) => {
+export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, pois = blattentPOIs, onPolygonClick }, ref) => {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<any>(null)
   const terrainEnabled = useRef(true)

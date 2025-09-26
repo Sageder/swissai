@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +15,15 @@ import {
   Truck, 
   MapPin,
   Zap,
-  Loader2
+  Loader2,
+  Network,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Send
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useChat } from '@ai-sdk/react';
 import type { PolygonData } from "./polygon-editor";
 
 interface ActionsSidePanelProps {
@@ -74,12 +80,123 @@ export function ActionsSidePanel({ isOpen, onClose, polygon }: ActionsSidePanelP
   const [response, setResponse] = useState<EmergencyResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [input, setInput] = useState('');
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [showGraphEditor, setShowGraphEditor] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Use the same chat hook as CrisisManagement
+  const { messages, sendMessage } = useChat();
+
+  // Graph editor state
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Graph editor functions
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPan({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoom((prev) => Math.max(0.1, Math.min(3, prev * delta)));
+  };
+
+  const resetView = () => {
+    setPan({ x: 0, y: 0 });
+    setZoom(1);
+  };
 
   useEffect(() => {
-    if (isOpen && polygon) {
-      generateEmergencyResponse(polygon);
+    scrollToBottom();
+  }, [messages]);
+
+  const initializePolygonAnalysis = useCallback(async () => {
+    setIsLoading(true);
+
+    // Send detailed polygon analysis request with full context
+    const polygonPrompt = `EMERGENCY POLYGON ANALYSIS REQUEST
+
+**Polygon Details:**
+- Name: ${polygon?.name || 'Emergency Zone'}
+- Vertices: ${polygon?.vertices.length || 0} coordinate points
+- Coordinates: ${JSON.stringify(polygon?.vertices || [])}
+- Area ID: ${polygon?.id || 'unknown'}
+- Color: ${polygon?.color || 'default'}
+
+**Analysis Required:**
+1. Assess the geographic area defined by these coordinates
+2. Estimate population and vulnerable groups in this area
+3. Identify potential risks and hazards
+4. Recommend immediate emergency actions
+5. Suggest resource deployment and vehicle dispatch
+6. Plan evacuation routes and shelter locations
+7. Set up communication infrastructure if needed
+8. Draft mass notification messages for residents
+
+**Context:** This is a Swiss Alpine region emergency management scenario. Consider terrain, weather, and local infrastructure. Use your tools to gather data, dispatch resources, and coordinate response efforts.
+
+Please provide a comprehensive emergency response plan with specific actionable recommendations.`;
+
+    try {
+      await sendMessage({ text: polygonPrompt });
+    } catch (error) {
+      console.error('Error sending initial polygon analysis:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [isOpen, polygon]);
+  }, [polygon, sendMessage]);
+
+  // Initialize polygon analysis when opened with a polygon
+  useEffect(() => {
+    if (isOpen && polygon && !hasInitialized) {
+      setHasInitialized(true);
+      initializePolygonAnalysis();
+    } else if (!isOpen) {
+      setHasInitialized(false);
+    }
+  }, [isOpen, polygon, hasInitialized, initializePolygonAnalysis]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim() && !isLoading) {
+      setIsLoading(true);
+      try {
+        await sendMessage({ text: input });
+        setInput('');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e as any);
+    }
+  };
 
   const generateEmergencyResponse = async (polygonData: PolygonData) => {
     setIsLoading(true);
@@ -269,124 +386,325 @@ Respond ONLY with valid JSON in this exact structure:
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed right-0 top-0 h-full w-96 bg-background/95 backdrop-blur-sm border-l shadow-2xl z-50"
+        className="fixed right-0 top-0 h-full w-96 bg-black/40 backdrop-blur-xl border-l border-white/20 z-40"
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-orange-600" />
-              <h2 className="text-lg font-semibold">Emergency Actions</h2>
-            </div>
+          <div className="flex items-center justify-between p-4 border-b border-white/20">
+            <Button
+              variant="ghost"
+              onClick={() => setShowGraphEditor(!showGraphEditor)}
+              className="flex-1 justify-start text-white/80 hover:text-white hover:bg-white/10"
+            >
+              <Network className="w-4 h-4 mr-2" />
+              {showGraphEditor ? 'Hide Response Graph' : 'Show Response Graph'}
+            </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-white/40 hover:text-white/60 ml-2"
             >
               <X size={18} />
             </Button>
           </div>
 
-          {/* Content */}
-          <ScrollArea className="flex-1 p-4">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
-                <span className="ml-2 text-sm text-muted-foreground">
-                  Analyzing emergency response...
-                </span>
-              </div>
-            ) : error ? (
-              <div className="text-center py-8">
-                <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                <p className="text-sm text-red-600">{error}</p>
-              </div>
-            ) : response ? (
-              <div className="space-y-4">
-                {/* Situation Assessment */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm">Situation Assessment</CardTitle>
-                      <Badge className={riskLevelColors[response.riskLevel]}>
-                        {response.riskLevel.toUpperCase()}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-sm text-muted-foreground">
-                      {response.situation}
-                    </p>
-                  </CardContent>
-                </Card>
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Chat Messages */}
+            <div className="flex-1 min-h-0">
+              <ScrollArea className="h-full p-4">
+                <div className="prose prose-invert max-w-none">
+                  {messages.length > 0 && (
+                    <div className="space-y-6">
+                      {/* Main Header */}
+                      <header className="border-b border-white/20 pb-4">
+                        <h1 className="text-2xl font-bold text-white mb-2">
+                          Emergency Response Analysis
+                        </h1>
+                        <p className="text-sm text-white/70">
+                          {polygon?.name} • {polygon?.vertices.length} vertices • Active
+                        </p>
+                      </header>
 
-                {/* Emergency Actions */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">Priority Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 space-y-3">
-                    {response.actions.map((action) => {
-                      const IconComponent = categoryIcons[action.category];
-                      return (
-                        <div key={action.id} className="border rounded-lg p-3 space-y-2">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2">
-                              <IconComponent size={16} className="text-gray-600 mt-0.5" />
-                              <h4 className="text-sm font-medium">{action.title}</h4>
+                      {/* AI Analysis Section */}
+                      <section>
+                        <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                          AI Response Analysis
+                        </h2>
+
+                        {messages.filter(m => m.role === 'assistant').map((message, index) => (
+                          <div key={`analysis-${message.id}-${index}`} className="mb-6">
+                            <div className="text-sm text-white/90 leading-relaxed">
+                              {message.parts.map((part, i) => {
+                                if (part.type === 'text') {
+                                  return (
+                                    <div
+                                      key={`analysis-part-${message.id}-${i}`}
+                                      dangerouslySetInnerHTML={{
+                                        __html: part.text
+                                          .replace(/---/g, '') // Remove ---
+                                          .replace(/^#{1,} (.*?)$/gm, '<strong class="text-orange-400 font-semibold">$1</strong>') // Convert any # headers to bold
+                                          .replace(/\*\*(.*?)\*\*/g, '<strong class="text-orange-400">$1</strong>')
+                                          .replace(/\n\n/g, '</p><p class="mt-3">')
+                                          .replace(/\n/g, '<br>')
+                                          .replace(/^/, '<p>')
+                                          .replace(/$/, '</p>')
+                                      }}
+                                    />
+                                  );
+                                }
+                                return null;
+                              })}
                             </div>
-                            <Badge 
-                              className={`text-xs ${priorityColors[action.priority]}`}
-                            >
-                              {action.priority}
-                            </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground pl-6">
-                            {action.description}
-                          </p>
-                          <div className="flex items-center gap-4 pl-6 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Clock size={12} />
-                              {action.timeline}
-                            </div>
+                        ))}
+
+                        {isLoading && (
+                          <div className="flex items-center gap-2 text-white/60 mb-4">
+                            <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                            <span className="text-sm">AI is analyzing...</span>
                           </div>
-                          {action.resources && action.resources.length > 0 && (
-                            <div className="pl-6">
-                              <div className="flex flex-wrap gap-1">
-                                {action.resources.map((resource, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs">
-                                    {resource}
-                                  </Badge>
-                                ))}
+                        )}
+                      </section>
+
+                      {/* User Questions Section - Only show actual user questions, not system prompts */}
+                      {messages.filter(m => m.role === 'user' && !m.parts.some(part =>
+                        part.type === 'text' && part.text.includes('Analyze this emergency polygon area:')
+                      )).length > 0 && (
+                        <section>
+                          <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-white/60 rounded-full"></div>
+                            Questions & Responses
+                          </h2>
+
+                          <div className="space-y-4">
+                            {messages.filter(m => m.role === 'user' && !m.parts.some(part =>
+                              part.type === 'text' && part.text.includes('Analyze this emergency polygon area:')
+                            )).map((message, index) => (
+                              <div key={`question-${message.id}-${index}`} className="border-l-2 border-white/30 pl-4">
+                                <h3 className="text-sm font-medium text-white/90 mb-2">
+                                  Question {index + 1}
+                                </h3>
+                                <p className="text-sm text-white/80 mb-3">
+                                  {message.parts.map((part, i) => {
+                                    if (part.type === 'text') {
+                                      return part.text;
+                                    }
+                                    return null;
+                                  }).join('')}
+                                </p>
+
+                                {/* Find corresponding AI response */}
+                                {(() => {
+                                  const userIndex = messages.findIndex(m => m.id === message.id);
+                                  const aiResponse = messages[userIndex + 1];
+                                  if (aiResponse && aiResponse.role === 'assistant') {
+                                    return (
+                                      <div className="bg-white/5 rounded-lg p-3">
+                                        <p className="text-xs text-white/60 mb-2">AI Response:</p>
+                                        <div className="text-sm text-white/90">
+                                          {aiResponse.parts.map((part, i) => {
+                                            if (part.type === 'text') {
+                                              return (
+                                                <div
+                                                  key={`response-${aiResponse.id}-${i}`}
+                                                  dangerouslySetInnerHTML={{
+                                                    __html: part.text
+                                                      .replace(/---/g, '') // Remove ---
+                                                      .replace(/^#{1,} (.*?)$/gm, '<strong class="text-orange-400 font-semibold">$1</strong>') // Convert any # headers to bold
+                                                      .replace(/\*\*(.*?)\*\*/g, '<strong class="text-orange-400">$1</strong>')
+                                                      .replace(/\n\n/g, '</p><p class="mt-2">')
+                                                      .replace(/\n/g, '<br>')
+                                                      .replace(/^/, '<p>')
+                                                      .replace(/$/, '</p>')
+                                                  }}
+                                                />
+                                              );
+                                            }
+                                            return null;
+                                          })}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
+                            ))}
+                          </div>
+                        </section>
+                      )}
 
-                {/* Nearby Resources */}
-                {response.nearbyResources.length > 0 && (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm">Nearby Resources</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0 space-y-2">
-                      {response.nearbyResources.map((resource, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm">
-                          <MapPin size={14} className="text-gray-500" />
-                          <span>{resource}</span>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
+                    </div>
+                  )}
+
+                  {messages.length === 0 && !isLoading && (
+                    <div className="text-center text-white/60 py-8">
+                      <div className="text-4xl mb-4">⚡</div>
+                      <h2 className="text-lg font-medium mb-2">Emergency Response Ready</h2>
+                      <p className="text-sm">Ask questions about the polygon area below.</p>
+                    </div>
+                  )}
+                </div>
+                <div ref={messagesEndRef} />
+              </ScrollArea>
+            </div>
+
+            {/* Graph Editor (when toggled) */}
+            {showGraphEditor && (
+              <div className="h-64 border-t border-white/20">
+                {/* Graph Editor Toolbar */}
+                <div className="p-2 border-b border-white/20 bg-white/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-medium text-white">Emergency Response Graph</h3>
+                      <motion.span
+                        key={zoom}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-xs text-white/60"
+                      >
+                        Zoom: {Math.round(zoom * 100)}%
+                      </motion.span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setZoom((prev) => Math.min(3, prev * 1.2))}
+                        className="text-white/60 hover:text-white/80 h-6 w-6 p-0"
+                      >
+                        <ZoomIn size={12} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setZoom((prev) => Math.max(0.1, prev * 0.8))}
+                        className="text-white/60 hover:text-white/80 h-6 w-6 p-0"
+                      >
+                        <ZoomOut size={12} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={resetView}
+                        className="text-white/60 hover:text-white/80 h-6 w-6 p-0"
+                      >
+                        <RotateCcw size={12} />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Graph Canvas */}
+                <div
+                  ref={containerRef}
+                  className="h-full relative overflow-hidden cursor-grab active:cursor-grabbing"
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  onWheel={handleWheel}
+                >
+                  <motion.div
+                    animate={{
+                      x: pan.x,
+                      y: pan.y,
+                      scale: zoom,
+                    }}
+                    transition={{
+                      type: "tween",
+                      duration: isDragging ? 0 : 0.3,
+                      ease: "easeOut",
+                    }}
+                    className="absolute inset-0"
+                    style={{
+                      transformOrigin: "0 0",
+                    }}
+                  >
+                    {/* Grid overlay */}
+                    <div className="absolute inset-0 opacity-20">
+                      <svg width="100%" height="100%" className="absolute inset-0">
+                        <defs>
+                          <pattern id="response-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.3" />
+                          </pattern>
+                        </defs>
+                        <rect width="100%" height="100%" fill="url(#response-grid)" />
+                      </svg>
+                    </div>
+
+                    {/* Emergency Response Nodes */}
+                    <div className="absolute top-4 left-4">
+                      <Card className="bg-white/10 border-white/30 p-2 w-32">
+                        <CardContent className="p-0">
+                          <div className="text-xs font-medium text-orange-400 mb-1">{polygon?.name || 'Emergency Zone'}</div>
+                          <div className="text-[10px] text-white/80">{polygon?.vertices.length} vertices</div>
+                          <div className="text-[10px] text-white/60">Active Response</div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    <div className="absolute top-4 right-4">
+                      <Card className="bg-white/10 border-white/30 p-2 w-32">
+                        <CardContent className="p-0">
+                          <div className="text-xs font-medium text-white mb-1">AI Analysis</div>
+                          <div className="text-[10px] text-white/80">Real-time</div>
+                          <div className="text-[10px] text-white/60">Processing</div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    <div className="absolute bottom-4 left-4">
+                      <Card className="bg-white/10 border-white/30 p-2 w-32">
+                        <CardContent className="p-0">
+                          <div className="text-xs font-medium text-white mb-1">Response</div>
+                          <div className="text-[10px] text-white/80">Emergency</div>
+                          <div className="text-[10px] text-white/60">Coordinated</div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    <div className="absolute bottom-4 right-4">
+                      <Card className="bg-white/10 border-white/30 p-2 w-32">
+                        <CardContent className="p-0">
+                          <div className="text-xs font-medium text-white mb-1">Resources</div>
+                          <div className="text-[10px] text-white/80">Available</div>
+                          <div className="text-[10px] text-white/60">Deployed</div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </motion.div>
+                </div>
               </div>
-            ) : null}
-          </ScrollArea>
+            )}
+
+            {/* Input */}
+            <div className="p-4 border-t border-white/20">
+              <form onSubmit={handleSubmit} className="flex gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask about the emergency response..."
+                  className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-orange-400"
+                  disabled={isLoading}
+                />
+                <Button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  size="sm"
+                  className="bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30"
+                >
+                  <Send size={16} />
+                </Button>
+              </form>
+            </div>
+          </div>
         </div>
       </motion.div>
     </AnimatePresence>
