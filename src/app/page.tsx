@@ -1,36 +1,47 @@
-"use client"
+"use client";
 
-import { useState, useRef } from "react"
-import { MapContainer, type MapRef } from "@/components/map-container"
-import { Sidebar } from "@/components/sidebar"
-import { BottomDock } from "@/components/bottom-dock"
-import { SettingsOverlay } from "@/components/overlays/settings-overlay"
-import { AnalyticsOverlay } from "@/components/overlays/analytics-overlay"
-import { Timeline } from "@/components/timeline"
-import { TimeProvider } from "@/lib/time-context"
-import { motion } from "framer-motion"
+import { useState, useRef } from "react";
+import { MapContainer, type MapRef } from "@/components/map-container";
+import { Sidebar } from "@/components/sidebar";
+import { BottomDock } from "@/components/bottom-dock";
+import { SettingsOverlay } from "@/components/overlays/settings-overlay";
+import { AnalyticsOverlay } from "@/components/overlays/analytics-overlay";
+import { Timeline } from "@/components/timeline";
+import { TimeProvider } from "@/lib/time-context";
+import { MapSearch } from "@/components/map-search";
+import { motion } from "framer-motion";
 
 export default function Dashboard() {
-  const [sidebarExpanded, setSidebarExpanded] = useState(false)
-  const [dockHeight, setDockHeight] = useState(33) // percentage
-  const [activeView, setActiveView] = useState("map")
-  const mapRef = useRef<MapRef>(null)
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [dockHeight, setDockHeight] = useState(33); // percentage
+  const [activeView, setActiveView] = useState("map");
+  const mapRef = useRef<MapRef>(null);
 
   const handleTerrainToggle = (enabled: boolean, exaggeration?: number) => {
     if (mapRef.current) {
-      mapRef.current.toggleTerrain(enabled, exaggeration)
+      mapRef.current.toggleTerrain(enabled, exaggeration);
     }
-  }
-
+  };
 
   const handleViewChange = (view: string) => {
-    setActiveView(view)
-    console.log(`[v0] Switched to ${view} view`)
-  }
+    setActiveView(view);
+    console.log(`[v0] Switched to ${view} view`);
+  };
+
+  const handleLocationSelect = (
+    coordinates: [number, number],
+    name: string,
+    boundingBox?: [number, number, number, number]
+  ) => {
+    console.log(`Flying to ${name} at coordinates:`, coordinates);
+    if (mapRef.current) {
+      mapRef.current.flyToLocation(coordinates, 14, boundingBox);
+    }
+  };
 
   const handleCloseOverlay = () => {
-    setActiveView("map")
-  }
+    setActiveView("map");
+  };
 
   return (
     <TimeProvider>
@@ -55,6 +66,17 @@ export default function Dashboard() {
               <MapContainer ref={mapRef} />
             </motion.div>
 
+            {/* Search Overlay */}
+            <motion.div
+              animate={{
+                left: sidebarExpanded ? "340px" : "80px",
+              }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              className="absolute top-4 z-40"
+            >
+              <MapSearch onLocationSelect={handleLocationSelect} />
+            </motion.div>
+
             {/* Bottom Dock - Positioned to not overlap with sidebar */}
             <motion.div
               animate={{
@@ -64,7 +86,11 @@ export default function Dashboard() {
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
               className="absolute bottom-0 right-0"
             >
-              <BottomDock height={dockHeight} onHeightChange={setDockHeight} onTerrainToggle={handleTerrainToggle} />
+              <BottomDock
+                height={dockHeight}
+                onHeightChange={setDockHeight}
+                onTerrainToggle={handleTerrainToggle}
+              />
             </motion.div>
           </div>
 
@@ -82,12 +108,12 @@ export default function Dashboard() {
           onClose={handleCloseOverlay}
           onTerrainToggle={handleTerrainToggle}
         />
-        
+
         <AnalyticsOverlay
           isOpen={activeView === "analytics"}
           onClose={handleCloseOverlay}
         />
       </div>
     </TimeProvider>
-  )
+  );
 }

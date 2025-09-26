@@ -106,9 +106,6 @@ export function Timeline({ className = "" }: TimelineProps) {
         <div className="text-base font-mono text-white">
           {formatTime(getDisplayTime())}
         </div>
-        <div className="text-xs text-gray-500">
-          Debug: {formatTime(getTimeAtOffset(timeOffset))} | Offset: {timeOffset.toFixed(2)}h
-        </div>
       </div>
 
       {/* Timeline Track */}
