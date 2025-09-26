@@ -9,12 +9,14 @@ import { AnalyticsOverlay } from "@/components/overlays/analytics-overlay";
 import { Timeline } from "@/components/timeline";
 import { TimeProvider } from "@/lib/time-context";
 import { MapSearch } from "@/components/map-search";
+import { AIChat } from "@/components/ai-chat";
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [dockHeight, setDockHeight] = useState(33); // percentage
   const [activeView, setActiveView] = useState("map");
+  const [aiChatOpen, setAiChatOpen] = useState(false);
   const mapRef = useRef<MapRef>(null);
 
   const handleTerrainToggle = (enabled: boolean, exaggeration?: number) => {
@@ -41,6 +43,14 @@ export default function Dashboard() {
 
   const handleCloseOverlay = () => {
     setActiveView("map");
+  };
+
+  const handleAIChatOpen = () => {
+    setAiChatOpen(true);
+  };
+
+  const handleAIChatClose = () => {
+    setAiChatOpen(false);
   };
 
   return (
@@ -93,6 +103,7 @@ export default function Dashboard() {
             onToggle={() => setSidebarExpanded(!sidebarExpanded)}
             activeView={activeView}
             onViewChange={handleViewChange}
+            onAIChatOpen={handleAIChatOpen}
           />
         </div>
 
@@ -106,6 +117,12 @@ export default function Dashboard() {
         <AnalyticsOverlay
           isOpen={activeView === "analytics"}
           onClose={handleCloseOverlay}
+        />
+
+        {/* AI Chat Overlay */}
+        <AIChat
+          isOpen={aiChatOpen}
+          onClose={handleAIChatClose}
         />
       </div>
     </TimeProvider>
