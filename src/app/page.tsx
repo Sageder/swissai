@@ -12,13 +12,14 @@ import { DataProvider, useData } from "@/lib/data-context";
 import { MapSearch } from "@/components/map-search";
 import { AIChat } from "@/components/ai-chat";
 import { AlertContainer } from "@/components/alerts/alert-container";
+import { CrisisManagement } from "@/components/crisis-management";
 import { DebugAgentPanel } from "@/components/debug-agent-panel";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { convertResourcesToPOIs, convertMonitoringStationsToPOIs, combinePOIs } from "@/utils/resource-to-poi";
 import { blattentPOIs } from "@/data/pois";
 import { useAlert } from "@/lib/alert-context";
-import { setAlertContext, createLandslideAlert } from "@/lib/alert-service";
+import { setAlertContext, createLandslideAlert, setCrisisManagementCallback } from "@/lib/alert-service";
 import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange } from "@/lib/util";
 
 // Component that uses data context
@@ -29,6 +30,8 @@ function MapWithData() {
   const [dockHeight, setDockHeight] = useState(33); // percentage
   const [activeView, setActiveView] = useState("map");
   const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [crisisManagementOpen, setCrisisManagementOpen] = useState(false);
+  const [crisisEvent, setCrisisEvent] = useState<any>(null);
   const [showPOIs, setShowPOIs] = useState(false);
   const [currentPOIs, setCurrentPOIs] = useState<any[]>([]);
   const [debugPanelOpen, setDebugPanelOpen] = useState(false);
@@ -37,6 +40,12 @@ function MapWithData() {
   // Initialize alert context for programmatic use
   useEffect(() => {
     setAlertContext(alertContext);
+
+    // Set up crisis management callback
+    setCrisisManagementCallback((event) => {
+      setCrisisEvent(event);
+      setCrisisManagementOpen(true);
+    });
   }, [alertContext]);
 
   // Demo alert for Blatten landslide
@@ -67,11 +76,11 @@ function MapWithData() {
       setShowPOIs(shouldShowPOIs());
       setCurrentPOIs(getCurrentPOIs());
     });
-    
+
     // Set initial state
     setShowPOIs(shouldShowPOIs());
     setCurrentPOIs(getCurrentPOIs());
-    
+
     return unsubscribe;
   }, []);
 
@@ -79,7 +88,7 @@ function MapWithData() {
   const resourcePOIs = convertResourcesToPOIs(resources);
   const monitoringPOIs = convertMonitoringStationsToPOIs(monitoringStations);
   const staticPOIs = combinePOIs(blattentPOIs, resourcePOIs, monitoringPOIs);
-  
+
   // Only show POIs if explicitly controlled by utility functions
   const allPOIs = showPOIs && currentPOIs.length > 0 ? currentPOIs : [];
 
@@ -113,6 +122,11 @@ function MapWithData() {
 
   const handleAIChatClose = () => {
     setAiChatOpen(false);
+  };
+
+  const handleCrisisManagementClose = () => {
+    setCrisisManagementOpen(false);
+    setCrisisEvent(null);
   };
 
   return (
@@ -184,10 +198,11 @@ function MapWithData() {
           onClose={handleAIChatClose}
         />
 
-        {/* Debug Agent Panel */}
-        <DebugAgentPanel
-          isOpen={debugPanelOpen}
-          onClose={() => setDebugPanelOpen(false)}
+        {/* Crisis Management Overlay */}
+        <CrisisManagement
+          isOpen={crisisManagementOpen}
+          onClose={handleCrisisManagementClose}
+          event={crisisEvent}
         />
       </div>
 

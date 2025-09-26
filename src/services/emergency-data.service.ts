@@ -1,17 +1,17 @@
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  setDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  setDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
   onSnapshot,
-  Timestamp 
+  Timestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type {
@@ -29,13 +29,13 @@ export class EmergencyDataService {
   async getEvents(): Promise<EmergencyEvent[]> {
     const eventsRef = collection(db, 'events');
     const snapshot = await getDocs(eventsRef);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EmergencyEvent));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as EmergencyEvent));
   }
 
   async getEvent(eventId: string): Promise<EmergencyEvent | null> {
     const eventRef = doc(db, 'events', eventId);
     const snapshot = await getDoc(eventRef);
-    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } as EmergencyEvent : null;
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } as unknown as EmergencyEvent : null;
   }
 
   async createEvent(event: Omit<EmergencyEvent, 'id'>): Promise<string> {
@@ -53,14 +53,14 @@ export class EmergencyDataService {
   async getMonitoringStations(): Promise<MonitoringStation[]> {
     const stationsRef = collection(db, 'monitoring_data');
     const snapshot = await getDocs(stationsRef);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MonitoringStation));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as MonitoringStation));
   }
 
-  async getMonitoringStation(sensorId: string): Promise<MonitoringStation | null> {
+  async getMonitoringStation(sensorId: string): Promise<(MonitoringStation & { id: string }) | null> {
     const stationsRef = collection(db, 'monitoring_data');
     const q = query(stationsRef, where('sensorId', '==', sensorId));
     const snapshot = await getDocs(q);
-    return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as MonitoringStation;
+    return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as unknown as (MonitoringStation & { id: string });
   }
 
   async updateMonitoringStation(sensorId: string, updates: Partial<MonitoringStation>): Promise<void> {
@@ -83,14 +83,14 @@ export class EmergencyDataService {
   async getAuthorities(): Promise<Authority[]> {
     const authoritiesRef = collection(db, 'authorities');
     const snapshot = await getDocs(authoritiesRef);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Authority));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Authority));
   }
 
-  async getAuthority(authorityId: string): Promise<Authority | null> {
+  async getAuthority(authorityId: string): Promise<(Authority & { id: string }) | null> {
     const authoritiesRef = collection(db, 'authorities');
     const q = query(authoritiesRef, where('authorityId', '==', authorityId));
     const snapshot = await getDocs(q);
-    return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Authority;
+    return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as unknown as (Authority & { id: string });
   }
 
   async updateAuthorityStatus(authorityId: string, status: string): Promise<void> {
@@ -105,14 +105,14 @@ export class EmergencyDataService {
   async getResources(): Promise<Resource[]> {
     const resourcesRef = collection(db, 'resources');
     const snapshot = await getDocs(resourcesRef);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Resource));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Resource));
   }
 
-  async getResource(resourceId: string): Promise<Resource | null> {
+  async getResource(resourceId: string): Promise<(Resource & { id: string }) | null> {
     const resourcesRef = collection(db, 'resources');
     const q = query(resourcesRef, where('resourceId', '==', resourceId));
     const snapshot = await getDocs(q);
-    return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Resource;
+    return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as unknown as (Resource & { id: string });
   }
 
   async updateResourceStatus(resourceId: string, status: string, assignment?: string): Promise<void> {
@@ -131,7 +131,7 @@ export class EmergencyDataService {
   async getEvacuees(eventId: string): Promise<Evacuee[]> {
     const evacueesRef = collection(db, 'events', eventId, 'evacuees');
     const snapshot = await getDocs(evacueesRef);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Evacuee));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Evacuee));
   }
 
   async addEvacuee(eventId: string, evacuee: Omit<Evacuee, 'id'>): Promise<string> {
@@ -150,14 +150,14 @@ export class EmergencyDataService {
     const decisionsRef = collection(db, 'decision_log');
     const q = query(decisionsRef, orderBy('timestamp', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Decision));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Decision));
   }
 
   async getDecisionsForEvent(eventId: string): Promise<Decision[]> {
     const decisionsRef = collection(db, 'decision_log');
     const q = query(decisionsRef, where('eventId', '==', eventId), orderBy('timestamp', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Decision));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Decision));
   }
 
   async addDecision(decision: Omit<Decision, 'id'>): Promise<string> {
@@ -176,7 +176,7 @@ export class EmergencyDataService {
     const timelineRef = collection(db, 'events', eventId, 'timeline');
     const q = query(timelineRef, orderBy('timestamp', 'asc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TimelineEvent));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as TimelineEvent));
   }
 
   async addTimelineEvent(eventId: string, event: Omit<TimelineEvent, 'id'>): Promise<string> {
@@ -189,14 +189,14 @@ export class EmergencyDataService {
   subscribeToEvent(eventId: string, callback: (event: EmergencyEvent | null) => void): () => void {
     const eventRef = doc(db, 'events', eventId);
     return onSnapshot(eventRef, (doc) => {
-      callback(doc.exists() ? { id: doc.id, ...doc.data() } as EmergencyEvent : null);
+      callback(doc.exists() ? { id: doc.id, ...doc.data() } as unknown as EmergencyEvent : null);
     });
   }
 
   subscribeToMonitoringStations(callback: (stations: MonitoringStation[]) => void): () => void {
     const stationsRef = collection(db, 'monitoring_data');
     return onSnapshot(stationsRef, (snapshot) => {
-      const stations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MonitoringStation));
+      const stations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as MonitoringStation));
       callback(stations);
     });
   }
@@ -205,7 +205,7 @@ export class EmergencyDataService {
     const timelineRef = collection(db, 'events', eventId, 'timeline');
     const q = query(timelineRef, orderBy('timestamp', 'asc'));
     return onSnapshot(q, (snapshot) => {
-      const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TimelineEvent));
+      const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as TimelineEvent));
       callback(events);
     });
   }
@@ -221,7 +221,7 @@ export class EmergencyDataService {
     timelineEvents: TimelineEvent[];
   }): Promise<void> {
     const batch = [];
-    
+
     // Upload events
     for (const event of data.events) {
       const eventRef = doc(db, 'events', event.eventId);
