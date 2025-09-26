@@ -227,6 +227,10 @@ export function Timeline({ className = "" }: TimelineProps) {
         <div className="text-base font-mono text-white">
           {formatTime(getDisplayTime())}
         </div>
+        <div className="text-xs text-green-400 mt-1 flex items-center justify-center gap-1">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          Auto-progression active (1h/min)
+        </div>
         {isLoading && (
           <div className="text-xs text-blue-400 mt-1">
             Loading simulation data...
@@ -341,7 +345,7 @@ export function Timeline({ className = "" }: TimelineProps) {
         {/* Time Slider */}
         <div
           ref={sliderRef}
-          className={`absolute w-5 h-5 bg-blue-500 rounded-full shadow-lg cursor-grab select-none transition-transform duration-150 z-10 ${
+          className={`absolute w-5 h-5 bg-green-500 rounded-full shadow-lg cursor-grab select-none transition-transform duration-150 z-10 ${
             isDragging ? "cursor-grabbing scale-110" : "hover:scale-105"
           }`}
           style={{
@@ -355,7 +359,7 @@ export function Timeline({ className = "" }: TimelineProps) {
           <div className="absolute inset-1 bg-white rounded-full" />
 
           {/* Glow Effect */}
-          <div className="absolute inset-0 bg-blue-400 rounded-full blur-sm opacity-50" />
+          <div className="absolute inset-0 bg-green-400 rounded-full blur-sm opacity-50" />
         </div>
       </div>
     </div>

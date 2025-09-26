@@ -20,6 +20,7 @@ export function TimeProvider({ children }: { children: React.ReactNode }) {
   const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date('2025-05-17T06:23:00Z'))
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const autoProgressionRef = useRef<NodeJS.Timeout | null>(null)
 
   // Update current time when real-time is enabled
   useEffect(() => {
@@ -37,6 +38,25 @@ export function TimeProvider({ children }: { children: React.ReactNode }) {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
+      }
+    }
+  }, [isRealTimeEnabled])
+
+  // Auto-progression: 1 hour per minute (1 hour = 60 seconds) - always enabled
+  useEffect(() => {
+    autoProgressionRef.current = setInterval(() => {
+      // Only auto-progress when real-time is disabled
+      if (!isRealTimeEnabled) {
+        setTimeOffset(prev => {
+          const newOffset = prev + (1/60) // Add 1/60 hour (1 minute) per second = 1 hour per minute
+          return newOffset > 12 ? 12 : newOffset // Cap at 12 hours
+        })
+      }
+    }, 1000) // Update every second for smooth movement
+
+    return () => {
+      if (autoProgressionRef.current) {
+        clearInterval(autoProgressionRef.current)
       }
     }
   }, [isRealTimeEnabled])
