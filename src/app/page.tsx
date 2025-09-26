@@ -11,14 +11,18 @@ import { TimeProvider } from "@/lib/time-context";
 import { DataProvider, useData } from "@/lib/data-context";
 import { MapSearch } from "@/components/map-search";
 import { AIChat } from "@/components/ai-chat";
+import { AlertContainer } from "@/components/alerts/alert-container";
 import { motion } from "framer-motion";
 import { convertResourcesToPOIs, convertMonitoringStationsToPOIs, combinePOIs } from "@/utils/resource-to-poi";
 import { blattentPOIs } from "@/data/pois";
+import { useAlert } from "@/lib/alert-context";
+import { setAlertContext, createLandslideAlert } from "@/lib/alert-service";
 import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange } from "@/lib/util";
 
 // Component that uses data context
 function MapWithData() {
   const { resources, monitoringStations, isLoading } = useData();
+  const alertContext = useAlert();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [dockHeight, setDockHeight] = useState(33); // percentage
   const [activeView, setActiveView] = useState("map");
@@ -26,6 +30,20 @@ function MapWithData() {
   const [showPOIs, setShowPOIs] = useState(false);
   const [currentPOIs, setCurrentPOIs] = useState<any[]>([]);
   const mapRef = useRef<MapRef>(null);
+
+  // Initialize alert context for programmatic use
+  useEffect(() => {
+    setAlertContext(alertContext);
+  }, [alertContext]);
+
+  // Demo alert for Blatten landslide
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      createLandslideAlert('Blatten, Valais', { lat: 46.4, lng: 7.5 });
+    }, 2000); // Show alert 2 seconds after component mounts
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Listen for POI visibility changes
   useEffect(() => {
@@ -83,6 +101,9 @@ function MapWithData() {
 
   return (
     <div className="h-screen w-full bg-background text-foreground overflow-hidden dark">
+      {/* Alert Container */}
+      <AlertContainer />
+
       {/* Timeline - Fixed at top */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-96">
         <Timeline />

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { GeistMono } from "geist/font";
 import { Instrument_Serif } from "next/font/google";
 import "./globals.css";
+import { AlertProvider } from "@/lib/alert-context";
 
 const geistMono = GeistMono;
 
@@ -30,7 +31,9 @@ export default function RootLayout({
         className={`${geistMono.variable} ${instrumentSerif.variable} antialiased`}
         style={{ fontFamily: "'Switzer', sans-serif" }}
       >
-        {children}
+        <AlertProvider>
+          {children}
+        </AlertProvider>
       </body>
     </html>
   );
