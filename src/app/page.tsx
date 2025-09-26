@@ -144,15 +144,8 @@ function MapWithData() {
         {/* Main Content Area - Full Width */}
         <div className="flex-1 relative">
           {/* Full-screen Map */}
-          <motion.div
-            animate={{
-              bottom: `${dockHeight}%`,
-            }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="absolute inset-0"
-          >
-            <MapContainer ref={mapRef} pois={allPOIs} />
-          </motion.div>
+          <MapContainer ref={mapRef} pois={allPOIs} />
+
 
           {/* Search Overlay - Positioned on the right side */}
           <div className="absolute top-4 right-4 z-40 flex gap-2">
@@ -166,22 +159,6 @@ function MapWithData() {
               Debug
             </Button>
           </div>
-
-          {/* Bottom Dock - Positioned to not overlap with sidebar */}
-          <motion.div
-            animate={{
-              height: `${dockHeight}%`,
-              left: sidebarExpanded ? "320px" : "60px",
-            }}
-            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-            className="absolute bottom-0 right-0"
-          >
-            <BottomDock
-              height={dockHeight}
-              onHeightChange={setDockHeight}
-              onTerrainToggle={handleTerrainToggle}
-            />
-          </motion.div>
         </div>
 
         <Sidebar
