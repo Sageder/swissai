@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react'
 import { EmergencyDataService } from '@/services/emergency-data.service'
 import type {
   EmergencyEvent,
@@ -57,80 +57,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const emergencyDataService = new EmergencyDataService()
-
-  const loadAllData = async () => {
+  const loadStaticData = useCallback(async () => {
     try {
-      console.log('🚀 Starting data loading...')
-      setIsLoading(true)
-      setError(null)
-
-      // Try Firebase first, but fallback to static data if empty
-      try {
-        console.log('📡 Attempting to load from Firebase...')
-        const [
-          eventsData,
-          monitoringData,
-          authoritiesData,
-          resourcesData,
-          decisionsData
-        ] = await Promise.all([
-          emergencyDataService.getEvents(),
-          emergencyDataService.getMonitoringStations(),
-          emergencyDataService.getAuthorities(),
-          emergencyDataService.getResources(),
-          emergencyDataService.getDecisions()
-        ])
-
-        console.log('📊 Firebase data loaded:', {
-          events: eventsData.length,
-          monitoring: monitoringData.length,
-          authorities: authoritiesData.length,
-          resources: resourcesData.length,
-          decisions: decisionsData.length
-        })
-
-        // Only use Firebase data if we actually got some
-        if (eventsData.length > 0) {
-          setEvents(eventsData)
-          setMonitoringStations(monitoringData)
-          setAuthorities(authoritiesData)
-          setResources(resourcesData)
-          setDecisions(decisionsData)
-
-          // Load timeline events for the main event
-          const mainEvent = eventsData.find(e => e.eventId === 'blatten-glacier-2025-05-28')
-          if (mainEvent) {
-            try {
-              const timelineData = await emergencyDataService.getTimelineEvents(mainEvent.eventId)
-              setTimelineEvents(timelineData)
-              console.log('✅ Timeline events loaded from Firebase:', timelineData.length)
-            } catch (err) {
-              console.warn('Could not load timeline events from Firebase:', err)
-            }
-          }
-        } else {
-          console.log('⚠️ Firebase is empty, falling back to static data')
-          await loadStaticData()
-        }
-      } catch (firebaseErr) {
-        console.warn('❌ Firebase failed, using static data:', firebaseErr)
-        await loadStaticData()
-      }
-
-    } catch (err) {
-      console.error('❌ Error loading data:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load data')
-    } finally {
-      setIsLoading(false)
-      console.log('✅ Data loading completed')
-    }
-  }
-
-  const loadStaticData = async () => {
-    try {
-      console.log('📁 Loading static data files...')
-      
       // Load static data files
       const [
         platformEventsResponse,
@@ -156,7 +84,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         fetch('/data/blatten_simulation_decision_log.json')
       ])
 
-      console.log('📄 Parsing static data...')
       const [
         platformEventsData,
         resourceMovementsData,
@@ -181,19 +108,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         decisionsResponse.json()
       ])
 
-      console.log('📊 Static data loaded:', {
-        platformEvents: platformEventsData.length,
-        resourceMovements: resourceMovementsData.length,
-        activityLogs: activityLogsData.length,
-        evacuees: evacueesData.length,
-        timelineEvents: timelineEventsData.length,
-        mainEvent: mainEventData.eventId,
-        authorities: authoritiesData.length,
-        resources: resourcesData.length,
-        monitoring: monitoringData.length,
-        decisions: decisionsData.length
-      })
-
       // Set all the data
       setEvents([mainEventData])
       setPlatformEvents(platformEventsData)
@@ -206,49 +120,100 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setMonitoringStations(monitoringData)
       setDecisions(decisionsData)
 
-      console.log('✅ All static data loaded successfully!')
-
     } catch (err) {
-      console.error('❌ Error loading static data:', err)
       // Don't set error for static data as it's not critical
     }
-  }
+  }, [])
 
-  const refreshData = async () => {
+  const loadAllData = useCallback(async () => {
+    const emergencyDataService = new EmergencyDataService()
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      // Try Firebase first, but fallback to static data if empty
+      try {
+        const [
+          eventsData,
+          monitoringData,
+          authoritiesData,
+          resourcesData,
+          decisionsData
+        ] = await Promise.all([
+          emergencyDataService.getEvents(),
+          emergencyDataService.getMonitoringStations(),
+          emergencyDataService.getAuthorities(),
+          emergencyDataService.getResources(),
+          emergencyDataService.getDecisions()
+        ])
+
+        // Only use Firebase data if we actually got some
+        if (eventsData.length > 0) {
+          setEvents(eventsData)
+          setMonitoringStations(monitoringData)
+          setAuthorities(authoritiesData)
+          setResources(resourcesData)
+          setDecisions(decisionsData)
+
+          // Load timeline events for the main event
+          const mainEvent = eventsData.find(e => e.eventId === 'blatten-glacier-2025-05-28')
+          if (mainEvent) {
+            try {
+              const timelineData = await emergencyDataService.getTimelineEvents(mainEvent.eventId)
+              setTimelineEvents(timelineData)
+            } catch (err) {
+              // Silently fallback to static data
+            }
+          }
+        } else {
+          await loadStaticData()
+        }
+      } catch (firebaseErr) {
+        await loadStaticData()
+      }
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load data')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  const refreshData = useCallback(async () => {
     await loadAllData()
-  }
+  }, [loadAllData])
 
-  const getEventById = (eventId: string) => {
+  const getEventById = useCallback((eventId: string) => {
     return events.find(event => event.eventId === eventId)
-  }
+  }, [events])
 
-  const getTimelineEventsForTime = (currentTime: Date) => {
+  const getTimelineEventsForTime = useCallback((currentTime: Date) => {
     return timelineEvents.filter(event => {
       const eventTime = new Date(event.timestamp)
       return eventTime <= currentTime
     })
-  }
+  }, [timelineEvents])
 
-  const getPlatformEventsForTime = (currentTime: Date) => {
+  const getPlatformEventsForTime = useCallback((currentTime: Date) => {
     return platformEvents.filter(event => {
       const eventTime = new Date(event.timestamp)
       return eventTime <= currentTime
     })
-  }
+  }, [platformEvents])
 
-  const getActivityLogsForTime = (currentTime: Date) => {
+  const getActivityLogsForTime = useCallback((currentTime: Date) => {
     return activityLogs.filter(log => {
       const logTime = new Date(log.timestamp)
       return logTime <= currentTime
     })
-  }
+  }, [activityLogs])
 
-  // Load data on mount
+  // Load data on mount only once
   useEffect(() => {
     loadAllData()
-  }, [])
+  }, [loadAllData]) // Only runs when loadAllData changes
 
-  const value: DataContextType = {
+  const value: DataContextType = useMemo(() => ({
     events,
     monitoringStations,
     authorities,
@@ -266,7 +231,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
     getTimelineEventsForTime,
     getPlatformEventsForTime,
     getActivityLogsForTime
-  }
+  }), [
+    events,
+    monitoringStations,
+    authorities,
+    resources,
+    evacuees,
+    decisions,
+    timelineEvents,
+    platformEvents,
+    resourceMovements,
+    activityLogs,
+    isLoading,
+    error,
+    refreshData,
+    getEventById,
+    getTimelineEventsForTime,
+    getPlatformEventsForTime,
+    getActivityLogsForTime
+  ])
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>
 }

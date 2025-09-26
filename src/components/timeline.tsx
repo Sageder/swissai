@@ -24,12 +24,7 @@ export function Timeline({ className = "" }: TimelineProps) {
 
   // Debug logging
   useEffect(() => {
-    console.log('📊 Timeline data state:', {
-      isLoading,
-      timelineEvents: timelineEvents.length,
-      platformEvents: platformEvents.length,
-      activityLogs: activityLogs.length
-    })
+    // Timeline data state tracking
   }, [isLoading, timelineEvents.length, platformEvents.length, activityLogs.length])
 
   // Convert time offset (0-12 hours) to position percentage (0-100%)
@@ -124,12 +119,7 @@ export function Timeline({ className = "" }: TimelineProps) {
       [key: string]: any
     }> = []
 
-    console.log('🔍 Getting events for timeline:', {
-      currentDisplayTime: currentDisplayTime.toISOString(),
-      timelineEvents: timelineEvents.length,
-      platformEvents: platformEvents.length,
-      activityLogs: activityLogs.length
-    })
+    // Get events for timeline
 
     // Add timeline events
     timelineEvents.forEach(event => {
@@ -166,8 +156,6 @@ export function Timeline({ className = "" }: TimelineProps) {
         })
       }
     })
-
-    console.log('📊 Events after filtering:', allEvents.length)
 
     // Sort by timestamp
     return allEvents.sort((a, b) => a.time.getTime() - b.time.getTime())

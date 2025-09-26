@@ -17,7 +17,6 @@ class GeocodingService {
         const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
 
         if (!token) {
-            console.error('Mapbox token not found for geocoding')
             return []
         }
 
@@ -26,7 +25,6 @@ class GeocodingService {
             const encodedQuery = encodeURIComponent(query)
             const url = `${this.baseUrl}/${encodedQuery}.json?access_token=${token}&country=CH&limit=${limit}&types=place,locality,neighborhood,address,poi`
 
-            console.log('Searching for:', query, 'URL:', url)
 
             const response = await fetch(url)
 
@@ -35,7 +33,6 @@ class GeocodingService {
             }
 
             const data = await response.json()
-            console.log('Geocoding response:', data)
 
             return data.features.map((feature: any) => ({
                 id: feature.id,
@@ -46,7 +43,6 @@ class GeocodingService {
                 relevance: feature.relevance
             }))
         } catch (error) {
-            console.error('Geocoding search error:', error)
             return []
         }
     }
@@ -82,7 +78,6 @@ class GeocodingService {
         const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
 
         if (!token) {
-            console.error('Mapbox token not found for POI search')
             return []
         }
 
@@ -110,7 +105,6 @@ class GeocodingService {
                 relevance: feature.relevance
             }))
         } catch (error) {
-            console.error('POI search error:', error)
             return []
         }
     }

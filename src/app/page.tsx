@@ -29,14 +29,6 @@ function MapWithData() {
   const monitoringPOIs = convertMonitoringStationsToPOIs(monitoringStations);
   const allPOIs = combinePOIs(blattentPOIs, resourcePOIs, monitoringPOIs);
 
-  console.log('🗺️ Map POIs:', {
-    static: blattentPOIs.length,
-    resources: resourcePOIs.length,
-    monitoring: monitoringPOIs.length,
-    total: allPOIs.length,
-    isLoading
-  });
-
   const handleTerrainToggle = (enabled: boolean, exaggeration?: number) => {
     if (mapRef.current) {
       mapRef.current.toggleTerrain(enabled, exaggeration);
@@ -45,7 +37,6 @@ function MapWithData() {
 
   const handleViewChange = (view: string) => {
     setActiveView(view);
-    console.log(`[v0] Switched to ${view} view`);
   };
 
   const handleLocationSelect = (
@@ -53,7 +44,6 @@ function MapWithData() {
     name: string,
     boundingBox?: [number, number, number, number]
   ) => {
-    console.log(`Flying to ${name} at coordinates:`, coordinates);
     if (mapRef.current) {
       mapRef.current.flyToLocation(coordinates, 14, boundingBox);
     }

@@ -39,7 +39,6 @@ export function MapSearch({ onLocationSelect, className }: MapSearchProps) {
                 setShowResults(true)
                 setSelectedIndex(-1)
             } catch (error) {
-                console.error("Search error:", error)
                 setResults([])
             } finally {
                 setIsLoading(false)
