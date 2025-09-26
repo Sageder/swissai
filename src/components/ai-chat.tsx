@@ -26,27 +26,6 @@ export function AIChat({ isOpen, onClose }: AIChatProps) {
         }
     };
 
-    const getToolDisplay = (part: any) => {
-        const toolName = part.type.replace('tool-', '');
-        const toolData = part.toolCall || part.toolResult;
-
-        return (
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="secondary" className="text-xs">
-                        {toolName.replace(/([A-Z])/g, ' $1').trim()}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                        {part.toolCall ? 'Calling...' : 'Result'}
-                    </span>
-                </div>
-                <pre className="text-xs overflow-x-auto">
-                    {JSON.stringify(toolData, null, 2)}
-                </pre>
-            </div>
-        );
-    };
-
     if (!isOpen) return null;
 
     return (
@@ -105,8 +84,8 @@ export function AIChat({ isOpen, onClose }: AIChatProps) {
                                     className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                 >
                                     <Card className={`max-w-[80%] p-3 ${message.role === 'user'
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'bg-muted'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted'
                                         }`}>
                                         <div className="space-y-2">
                                             {message.parts.map((part, i) => {
@@ -118,13 +97,24 @@ export function AIChat({ isOpen, onClose }: AIChatProps) {
                                                             </div>
                                                         );
                                                     case 'tool-weather':
+                                                    case 'tool-convertFahrenheitToCelsius':
                                                     case 'tool-emergencyResources':
                                                     case 'tool-geospatialAnalysis':
                                                     case 'tool-emergencyCommunication':
                                                     case 'tool-simulationAnalysis':
                                                         return (
-                                                            <div key={`${message.id}-${i}`}>
-                                                                {getToolDisplay(part)}
+                                                            <div key={`${message.id}-${i}`} className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <Badge variant="secondary" className="text-xs">
+                                                                        {part.type.replace('tool-', '').replace(/([A-Z])/g, ' $1').trim()}
+                                                                    </Badge>
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        {part.toolCall ? 'Calling...' : 'Result'}
+                                                                    </span>
+                                                                </div>
+                                                                <pre className="text-xs overflow-x-auto">
+                                                                    {JSON.stringify(part.toolCall || part.toolResult, null, 2)}
+                                                                </pre>
                                                             </div>
                                                         );
                                                     default:
