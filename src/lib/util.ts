@@ -1,185 +1,109 @@
-/**
- * Utility functions for controlling the application state
- * These functions can be called by AI models or other parts of the application
- */
+// POI visibility management utility functions
+// These are placeholder implementations for the POI visibility system
 
-import { MonitoringStation, Authority, Resource } from '@/types/emergency';
+let showPOIsState = false;
+let currentPOIsState: any[] = [];
+let listeners: (() => void)[] = [];
 
-// Global state for controlling UI elements
-let showTimelineFlag = false;
-let showPOIFlag = false;
-let currentPOIs: any[] = [];
+export const shouldShowPOIs = (): boolean => {
+  return showPOIsState;
+};
 
-// Callbacks for notifying components of state changes
-const timelineCallbacks: (() => void)[] = [];
-const poiCallbacks: (() => void)[] = [];
+export const getCurrentPOIs = (): any[] => {
+  return currentPOIsState;
+};
 
-/**
- * Show the timeline component
- */
-export function showTimeline(): void {
-  showTimelineFlag = true;
-  timelineCallbacks.forEach(callback => callback());
-  console.log('Timeline is now visible');
-}
+export const onPOIVisibilityChange = (callback: () => void): (() => void) => {
+  listeners.push(callback);
 
-/**
- * Hide the timeline component
- */
-export function hideTimeline(): void {
-  showTimelineFlag = false;
-  timelineCallbacks.forEach(callback => callback());
-  console.log('Timeline is now hidden');
-}
-
-/**
- * Check if timeline should be shown
- */
-export function isTimelineVisible(): boolean {
-  return showTimelineFlag;
-}
-
-/**
- * Add all monitoring sources to POI display
- */
-export function addMonitoringSources(monitoringStations: MonitoringStation[]): void {
-  const monitoringPOIs = monitoringStations.map(station => ({
-    id: `monitoring-${station.sensorId}`,
-    type: 'monitoring',
-    name: station.name,
-    location: station.location,
-    data: station,
-    icon: '📡',
-    color: '#3b82f6'
-  }));
-  
-  currentPOIs = [...currentPOIs, ...monitoringPOIs];
-  showPOIFlag = true;
-  poiCallbacks.forEach(callback => callback());
-  console.log(`Added ${monitoringPOIs.length} monitoring sources to POI display`);
-}
-
-/**
- * Add all resources to POI display
- */
-export function addResources(resources: Resource[]): void {
-  const resourcePOIs = resources.map(resource => ({
-    id: `resource-${resource.resourceId}`,
-    type: 'resource',
-    name: resource.location.name,
-    location: resource.location,
-    data: resource,
-    icon: '🚁',
-    color: resource.status === 'active' ? '#10b981' : '#6b7280'
-  }));
-  
-  currentPOIs = [...currentPOIs, ...resourcePOIs];
-  showPOIFlag = true;
-  poiCallbacks.forEach(callback => callback());
-  console.log(`Added ${resourcePOIs.length} resources to POI display`);
-}
-
-/**
- * Add all authorities to POI display
- */
-export function addAuthorities(authorities: Authority[]): void {
-  const authorityPOIs = authorities.map(authority => ({
-    id: `authority-${authority.authorityId}`,
-    type: 'authority',
-    name: authority.name,
-    location: authority.location,
-    data: authority,
-    icon: '🏛️',
-    color: authority.currentStatus === 'active' ? '#f59e0b' : '#6b7280'
-  }));
-  
-  currentPOIs = [...currentPOIs, ...authorityPOIs];
-  showPOIFlag = true;
-  poiCallbacks.forEach(callback => callback());
-  console.log(`Added ${authorityPOIs.length} authorities to POI display`);
-}
-
-/**
- * Only show selected resources, remove all other POIs
- */
-export function onlyShowSelectedResources(resources: Resource[]): void {
-  const resourcePOIs = resources.map(resource => ({
-    id: `resource-${resource.resourceId}`,
-    type: 'resource',
-    name: resource.location.name,
-    location: resource.location,
-    data: resource,
-    icon: '🚁',
-    color: resource.status === 'active' ? '#10b981' : '#6b7280'
-  }));
-  
-  currentPOIs = resourcePOIs;
-  showPOIFlag = true;
-  poiCallbacks.forEach(callback => callback());
-  console.log(`Showing only ${resourcePOIs.length} selected resources`);
-}
-
-/**
- * Clear all POIs
- */
-export function clearAllPOIs(): void {
-  currentPOIs = [];
-  showPOIFlag = false;
-  poiCallbacks.forEach(callback => callback());
-  console.log('All POIs cleared');
-}
-
-/**
- * Check if POIs should be shown
- */
-export function shouldShowPOIs(): boolean {
-  return showPOIFlag && currentPOIs.length > 0;
-}
-
-/**
- * Get current POIs
- */
-export function getCurrentPOIs(): any[] {
-  return currentPOIs;
-}
-
-/**
- * Subscribe to timeline visibility changes
- */
-export function onTimelineVisibilityChange(callback: () => void): () => void {
-  timelineCallbacks.push(callback);
+  // Return unsubscribe function
   return () => {
-    const index = timelineCallbacks.indexOf(callback);
-    if (index > -1) {
-      timelineCallbacks.splice(index, 1);
-    }
+    listeners = listeners.filter(listener => listener !== callback);
   };
-}
+};
 
-/**
- * Subscribe to POI visibility changes
- */
-export function onPOIVisibilityChange(callback: () => void): () => void {
-  poiCallbacks.push(callback);
+export const setPOIVisibility = (visible: boolean, pois: any[] = []): void => {
+  showPOIsState = visible;
+  currentPOIsState = pois;
+
+  // Notify all listeners
+  listeners.forEach(callback => callback());
+};
+
+export const togglePOIVisibility = (): void => {
+  showPOIsState = !showPOIsState;
+  if (!showPOIsState) {
+    currentPOIsState = [];
+  }
+
+  // Notify all listeners
+  listeners.forEach(callback => callback());
+};
+
+// Timeline visibility management
+let timelineVisibleState = true;
+let timelineListeners: (() => void)[] = [];
+
+export const isTimelineVisible = (): boolean => {
+  return timelineVisibleState;
+};
+
+export const onTimelineVisibilityChange = (callback: () => void): (() => void) => {
+  timelineListeners.push(callback);
+
+  // Return unsubscribe function
   return () => {
-    const index = poiCallbacks.indexOf(callback);
-    if (index > -1) {
-      poiCallbacks.splice(index, 1);
-    }
+    timelineListeners = timelineListeners.filter(listener => listener !== callback);
   };
-}
+};
 
-/**
- * Get current state summary
- */
-export function getStateSummary(): {
-  timelineVisible: boolean;
-  poisVisible: boolean;
-  poiCount: number;
-} {
+export const setTimelineVisibility = (visible: boolean): void => {
+  timelineVisibleState = visible;
+
+  // Notify all listeners
+  timelineListeners.forEach(callback => callback());
+};
+
+export const toggleTimelineVisibility = (): void => {
+  timelineVisibleState = !timelineVisibleState;
+
+  // Notify all listeners
+  timelineListeners.forEach(callback => callback());
+};
+
+// Additional utility functions for examples
+export const showTimeline = (): void => {
+  setTimelineVisibility(true);
+};
+
+export const hideTimeline = (): void => {
+  setTimelineVisibility(false);
+};
+
+export const addMonitoringSources = (sources: any[]): void => {
+  setPOIVisibility(true, sources);
+};
+
+export const addResources = (resources: any[]): void => {
+  setPOIVisibility(true, resources);
+};
+
+export const addAuthorities = (authorities: any[]): void => {
+  setPOIVisibility(true, authorities);
+};
+
+export const onlyShowSelectedResources = (resources: any[]): void => {
+  setPOIVisibility(true, resources);
+};
+
+export const clearAllPOIs = (): void => {
+  setPOIVisibility(false, []);
+};
+
+export const getStateSummary = (): any => {
   return {
-    timelineVisible: showTimelineFlag,
-    poisVisible: showPOIFlag,
-    poiCount: currentPOIs.length
+    poisVisible: showPOIsState,
+    currentPOIs: currentPOIsState.length,
+    timelineVisible: timelineVisibleState
   };
-}
+};
