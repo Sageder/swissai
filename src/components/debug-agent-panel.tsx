@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  showTimeline, 
-  hideTimeline, 
-  addMonitoringSources, 
-  addResources, 
+import {
+  showTimeline,
+  hideTimeline,
+  addMonitoringSources,
+  addResources,
   addAuthorities,
   addAllPOIs,
   onlyShowSelectedResources,
@@ -21,13 +21,13 @@ import {
   onTimelineVisibilityChange
 } from '@/lib/util';
 import { useData } from '@/lib/data-context';
-import { 
-  Play, 
-  Square, 
-  Eye, 
-  EyeOff, 
-  MapPin, 
-  Trash2, 
+import {
+  Play,
+  Square,
+  Eye,
+  EyeOff,
+  MapPin,
+  Trash2,
   Activity,
   Shield,
   Truck,
@@ -53,10 +53,10 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
     // Listen for POI changes using the callback system
     const unsubscribePOI = onPOIVisibilityChange(updateState);
     const unsubscribeTimeline = onTimelineVisibilityChange(updateState);
-    
+
     // Set initial state
     updateState();
-    
+
     return () => {
       unsubscribePOI();
       unsubscribeTimeline();
@@ -95,11 +95,7 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
 
   const handleEmergencySetup = () => {
     showTimeline();
-    addAllPOIs({
-      monitoringStations,
-      resources,
-      authorities
-    });
+    addAllPOIs([...monitoringStations, ...resources, ...authorities]);
   };
 
   if (!isOpen) return null;

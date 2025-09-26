@@ -198,18 +198,11 @@ function MapWithData() {
           onClose={handleAIChatClose}
         />
 
-<<<<<<< HEAD
         {/* Crisis Management Overlay */}
         <CrisisManagement
           isOpen={crisisManagementOpen}
           onClose={handleCrisisManagementClose}
           event={crisisEvent}
-=======
-        {/* Debug Agent Panel */}
-        <DebugAgentPanel
-          isOpen={debugPanelOpen}
-          onClose={() => setDebugPanelOpen(false)}
->>>>>>> origin/main
         />
       </div>
 

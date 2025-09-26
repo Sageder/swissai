@@ -94,6 +94,10 @@ export const addAuthorities = (authorities: any[]): void => {
   setPOIVisibility(true, authorities);
 };
 
+export const addAllPOIs = (pois: any[]): void => {
+  setPOIVisibility(true, pois);
+};
+
 export const onlyShowSelectedResources = (resources: any[]): void => {
   setPOIVisibility(true, resources);
 };
