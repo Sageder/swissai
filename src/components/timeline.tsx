@@ -67,19 +67,15 @@ export function Timeline({ className = "" }: TimelineProps) {
     }
   }, [isDragging]);
 
-  // Generate hour markers - each marker shows what time would be displayed if slider was at that position
+  // Generate hour markers - each marker shows relative time offset
   const hourMarkers = Array.from({ length: 13 }, (_, i) => {
     const hour = i;
     const position = (hour / 12) * 100;
-    // Calculate what getDisplayTime() would return if timeOffset was set to this hour value
-    const baseTimeToUse = isRealTimeEnabled ? currentTime : baseTime;
-    const markerTime = new Date(baseTimeToUse.getTime() + hour * 60 * 60 * 1000);
-    const displayHour = markerTime.getHours();
 
     return {
       hour,
       position,
-      displayHour,
+      relativeLabel: hour === 0 ? "Now" : `+${hour}h`,
       isCurrentHour: Math.abs(timeOffset - hour) < 0.1,
     };
   });
@@ -151,7 +147,7 @@ export function Timeline({ className = "" }: TimelineProps) {
                     textAlign: "center",
                   }}
                 >
-                  {marker.displayHour.toString().padStart(2, "0")}:00
+                  {marker.relativeLabel}
                 </div>
               )}
             </div>

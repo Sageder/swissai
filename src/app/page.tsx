@@ -9,12 +9,17 @@ import { AnalyticsOverlay } from "@/components/overlays/analytics-overlay";
 import { Timeline } from "@/components/timeline";
 import { TimeProvider } from "@/lib/time-context";
 import { MapSearch } from "@/components/map-search";
+import { PolygonEditor, type PolygonData } from "@/components/polygon-editor";
+import { PolygonPopup } from "@/components/polygon-popup";
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [dockHeight, setDockHeight] = useState(33); // percentage
   const [activeView, setActiveView] = useState("map");
+  const [selectedPolygon, setSelectedPolygon] = useState<PolygonData | null>(null);
+  const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
+  const [editingPolygon, setEditingPolygon] = useState<PolygonData | null>(null);
   const mapRef = useRef<MapRef>(null);
 
   const handleTerrainToggle = (enabled: boolean, exaggeration?: number) => {
@@ -43,6 +48,77 @@ export default function Dashboard() {
     setActiveView("map");
   };
 
+  const handlePolygonComplete = (polygon: PolygonData) => {
+    console.log("[Dashboard] Polygon completed:", polygon);
+    if (mapRef.current) {
+      mapRef.current.addPolygon(polygon);
+    }
+  };
+
+  const handlePolygonClick = (polygon: PolygonData, clickPosition: { x: number; y: number }) => {
+    console.log("[Dashboard] Polygon clicked:", polygon);
+    setSelectedPolygon(polygon);
+    setPopupPosition(clickPosition);
+  };
+
+  const handleClosePopup = () => {
+    setSelectedPolygon(null);
+    setPopupPosition(null);
+  };
+
+  const handleUpdatePolygonName = (polygonId: string, newName: string) => {
+    console.log("[Dashboard] Updating polygon name:", polygonId, newName);
+    if (mapRef.current) {
+      mapRef.current.updatePolygon(polygonId, { name: newName });
+    }
+    // Update the selected polygon state
+    if (selectedPolygon && selectedPolygon.id === polygonId) {
+      setSelectedPolygon({ ...selectedPolygon, name: newName });
+    }
+  };
+
+  const handleEditPolygon = (polygonId: string) => {
+    console.log("[Dashboard] Edit polygon:", polygonId);
+    
+    // Find the polygon data
+    const polygonToEdit = selectedPolygon;
+    if (!polygonToEdit) {
+      console.warn("[Dashboard] No polygon data found for editing");
+      return;
+    }
+    
+    // Remove the polygon from the map
+    if (mapRef.current) {
+      mapRef.current.removePolygon(polygonId);
+    }
+    
+    // Set the polygon for editing
+    setEditingPolygon(polygonToEdit);
+    handleClosePopup();
+    
+    console.log("[Dashboard] Started editing polygon:", polygonToEdit);
+  };
+
+  const handlePolygonUpdate = (polygonId: string, updatedPolygon: PolygonData) => {
+    console.log("[Dashboard] Polygon updated:", polygonId, updatedPolygon);
+    
+    // Add the updated polygon back to the map
+    if (mapRef.current) {
+      mapRef.current.addPolygon(updatedPolygon);
+    }
+    
+    // Clear editing state
+    setEditingPolygon(null);
+  };
+
+  const handleDeletePolygon = (polygonId: string) => {
+    console.log("[Dashboard] Delete polygon:", polygonId);
+    if (mapRef.current) {
+      mapRef.current.removePolygon(polygonId);
+    }
+    handleClosePopup();
+  };
+
   return (
     <TimeProvider>
       <div className="h-screen w-full bg-background text-foreground overflow-hidden dark">
@@ -63,13 +139,34 @@ export default function Dashboard() {
               transition={{ duration: 0.3, ease: "easeInOut" }}
               className="absolute inset-0"
             >
-              <MapContainer ref={mapRef} />
+              <MapContainer 
+                ref={mapRef} 
+                onPolygonClick={handlePolygonClick}
+              />
             </motion.div>
 
             {/* Search Overlay - Positioned on the right side */}
             <div className="absolute top-4 right-4 z-40">
               <MapSearch onLocationSelect={handleLocationSelect} />
             </div>
+
+            {/* Polygon Editor */}
+            <PolygonEditor 
+              onPolygonComplete={handlePolygonComplete}
+              onPolygonUpdate={handlePolygonUpdate}
+              editingPolygon={editingPolygon}
+              mapRef={mapRef}
+            />
+
+            {/* Polygon Popup */}
+            <PolygonPopup
+              polygon={selectedPolygon}
+              position={popupPosition}
+              onClose={handleClosePopup}
+              onUpdateName={handleUpdatePolygonName}
+              onEdit={handleEditPolygon}
+              onDelete={handleDeletePolygon}
+            />
 
             {/* Bottom Dock - Positioned to not overlap with sidebar */}
             <motion.div
