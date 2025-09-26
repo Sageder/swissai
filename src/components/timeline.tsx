@@ -12,9 +12,9 @@ interface TimelineProps {
 export function Timeline({ className = "" }: TimelineProps) {
   const { timeOffset, setTimeOffset, getDisplayTime, isRealTimeEnabled, currentTime } = useTime();
   const { 
-    timelineEvents, 
-    platformEvents, 
-    activityLogs, 
+    monitoringStations,
+    authorities,
+    resources,
     isLoading 
   } = useData();
   const [isDragging, setIsDragging] = useState(false);
@@ -25,7 +25,7 @@ export function Timeline({ className = "" }: TimelineProps) {
   // Debug logging
   useEffect(() => {
     // Timeline data state tracking
-  }, [isLoading, timelineEvents.length, platformEvents.length, activityLogs.length])
+  }, [isLoading, monitoringStations.length, authorities.length, resources.length])
 
   // Convert time offset (0-12 hours) to position percentage (0-100%)
   const getSliderPosition = () => {
@@ -110,57 +110,6 @@ export function Timeline({ className = "" }: TimelineProps) {
     return new Date(baseTimeToUse.getTime() + offsetHours * 60 * 60 * 1000);
   };
 
-  // Get all events that should be visible on the timeline
-  const getAllEventsForTimeline = () => {
-    const currentDisplayTime = getDisplayTime()
-    const allEvents: Array<{
-      type: 'timeline' | 'platform' | 'activity'
-      time: Date
-      [key: string]: any
-    }> = []
-
-    // Get events for timeline
-
-    // Add timeline events
-    timelineEvents.forEach(event => {
-      const eventTime = new Date(event.timestamp)
-      if (eventTime <= currentDisplayTime) {
-        allEvents.push({
-          ...event,
-          type: 'timeline',
-          time: eventTime
-        })
-      }
-    })
-
-    // Add platform events
-    platformEvents.forEach(event => {
-      const eventTime = new Date(event.timestamp)
-      if (eventTime <= currentDisplayTime) {
-        allEvents.push({
-          ...event,
-          type: 'platform',
-          time: eventTime
-        })
-      }
-    })
-
-    // Add activity logs
-    activityLogs.forEach(log => {
-      const logTime = new Date(log.timestamp)
-      if (logTime <= currentDisplayTime) {
-        allEvents.push({
-          ...log,
-          type: 'activity',
-          time: logTime
-        })
-      }
-    })
-
-    // Sort by timestamp
-    return allEvents.sort((a, b) => a.time.getTime() - b.time.getTime())
-  }
-
   // Get event position on timeline (0-100%)
   const getEventPosition = (eventTime: Date) => {
     const startTime = baseTime.getTime()
@@ -236,56 +185,6 @@ export function Timeline({ className = "" }: TimelineProps) {
               )}
             </div>
           ))}
-
-          {/* Event Markers */}
-          {!isLoading && getAllEventsForTimeline().map((event, index) => {
-            const position = getEventPosition(event.time)
-            const getEventColor = () => {
-              switch (event.type) {
-                case 'timeline':
-                  return event.severity === 'critical' ? '#ef4444' : 
-                         event.severity === 'alert' ? '#f59e0b' : '#3b82f6'
-                case 'platform':
-                  return '#8b5cf6'
-                case 'activity':
-                  return event.severity === 'critical' ? '#dc2626' :
-                         event.severity === 'warning' ? '#d97706' : '#059669'
-                default:
-                  return '#6b7280'
-              }
-            }
-
-            return (
-              <div
-                key={`${event.type}-${index}`}
-                className="absolute top-0 bottom-0 flex flex-col justify-center"
-                style={{ left: `${position}%` }}
-              >
-                {/* Event Marker */}
-                <div
-                  className="w-2 h-2 rounded-full shadow-lg border border-white/20"
-                  style={{ 
-                    backgroundColor: getEventColor(),
-                    marginLeft: "-4px"
-                  }}
-                />
-                
-                {/* Event Tooltip on hover */}
-                <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                  <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap max-w-xs">
-                    <div className="font-semibold">
-                      {event.type === 'timeline' ? event.description :
-                       event.type === 'platform' ? event.title :
-                       event.title}
-                    </div>
-                    <div className="text-gray-300">
-                      {formatTime(event.time)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
         </div>
 
         {/* Progress Fill */}

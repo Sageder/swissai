@@ -1,25 +1,22 @@
-import { EmergencyDataService } from './emergency-data.service';
 import type {
-  EmergencyEvent,
   MonitoringStation,
   Authority,
   Resource,
-  Decision,
-  TimelineEvent,
   SimulationState,
   SimulationConfig,
   SensorReading
 } from '@/types/emergency';
 
 export class SimulationService {
-  private dataService: EmergencyDataService;
+  private monitoringStations: MonitoringStation[] = [];
+  private authorities: Authority[] = [];
+  private resources: Resource[] = [];
   private state: SimulationState;
   private config: SimulationConfig;
   private intervalId: NodeJS.Timeout | null = null;
   private eventListeners: Map<string, (data: any) => void> = new Map();
 
-  constructor(dataService: EmergencyDataService) {
-    this.dataService = dataService;
+  constructor() {
     this.state = {
       currentTime: '2025-05-17T06:00:00Z',
       isRunning: false,
@@ -42,6 +39,17 @@ export class SimulationService {
         }
       }
     };
+  }
+
+  // Set data from the data context
+  setData(data: {
+    monitoringStations: MonitoringStation[];
+    authorities: Authority[];
+    resources: Resource[];
+  }): void {
+    this.monitoringStations = data.monitoringStations;
+    this.authorities = data.authorities;
+    this.resources = data.resources;
   }
 
   // Event system for UI updates
@@ -165,9 +173,7 @@ export class SimulationService {
   }
 
   private async processSensorReadings(currentTime: Date): Promise<void> {
-    const stations = await this.dataService.getMonitoringStations();
-    
-    for (const station of stations) {
+    for (const station of this.monitoringStations) {
       // Find readings that should be active at current time
       const activeReadings = station.readings.filter(reading => {
         const readingTime = new Date(reading.timestamp);
@@ -206,9 +212,7 @@ export class SimulationService {
 
   private async processAuthorityUpdates(currentTime: Date): Promise<void> {
     // Update authority statuses based on timeline events
-    const authorities = await this.dataService.getAuthorities();
-    
-    for (const authority of authorities) {
+    for (const authority of this.authorities) {
       let newStatus = authority.currentStatus;
       
       // Example logic for status changes based on time
@@ -223,7 +227,8 @@ export class SimulationService {
       }
       
       if (newStatus !== authority.currentStatus) {
-        await this.dataService.updateAuthorityStatus(authority.authorityId, newStatus);
+        // Update local authority status
+        authority.currentStatus = newStatus;
         this.emit('authority_status_changed', {
           authorityId: authority.authorityId,
           name: authority.name,
@@ -235,9 +240,7 @@ export class SimulationService {
   }
 
   private async processResourceDeployments(currentTime: Date): Promise<void> {
-    const resources = await this.dataService.getResources();
-    
-    for (const resource of resources) {
+    for (const resource of this.resources) {
       let newStatus = resource.status;
       let newAssignment = resource.currentAssignment;
       
@@ -255,7 +258,9 @@ export class SimulationService {
       }
       
       if (newStatus !== resource.status || newAssignment !== resource.currentAssignment) {
-        await this.dataService.updateResourceStatus(resource.resourceId, newStatus, newAssignment);
+        // Update local resource status
+        resource.status = newStatus;
+        resource.currentAssignment = newAssignment;
         this.emit('resource_deployed', {
           resourceId: resource.resourceId,
           name: resource.location.name,
@@ -268,48 +273,45 @@ export class SimulationService {
 
   private async processEvacuationEvents(currentTime: Date): Promise<void> {
     // Process evacuation events based on timeline
-    const events = await this.dataService.getEvents();
+    // Using hardcoded event data since we're not loading from Firebase
+    const eventId = 'blatten-glacier-2025-05-28';
     
-    for (const event of events) {
-      if (event.eventId === 'blatten-glacier-2025-05-28') {
-        // Partial evacuation
-        if (currentTime >= new Date('2025-05-19T09:45:00Z') && currentTime < new Date('2025-05-19T11:45:00Z')) {
-          this.emit('evacuation_started', {
-            type: 'partial',
-            affectedPopulation: 92,
-            areas: ['blatten_zone_a']
-          });
-        }
-        
-        // Full evacuation
-        if (currentTime >= new Date('2025-05-19T11:45:00Z') && currentTime < new Date('2025-05-20T08:00:00Z')) {
-          this.emit('evacuation_started', {
-            type: 'full',
-            affectedPopulation: 320,
-            areas: ['blatten_complete', 'surrounding_farmsteads']
-          });
-        }
-        
-        // Livestock evacuation
-        if (currentTime >= new Date('2025-05-20T08:00:00Z')) {
-          this.emit('livestock_evacuation_started', {
-            cattle: 180,
-            sheep: 340,
-            goats: 75,
-            horses: 12
-          });
-        }
-        
-        // Glacier collapse
-        if (currentTime >= new Date('2025-05-28T14:32:17Z')) {
-          this.emit('disaster_event', {
-            type: 'glacier_collapse',
-            magnitude: 3.1,
-            volume: '9 million tons',
-            impact: 'total_destruction_blatten'
-          });
-        }
-      }
+    // Partial evacuation
+    if (currentTime >= new Date('2025-05-19T09:45:00Z') && currentTime < new Date('2025-05-19T11:45:00Z')) {
+      this.emit('evacuation_started', {
+        type: 'partial',
+        affectedPopulation: 92,
+        areas: ['blatten_zone_a']
+      });
+    }
+    
+    // Full evacuation
+    if (currentTime >= new Date('2025-05-19T11:45:00Z') && currentTime < new Date('2025-05-20T08:00:00Z')) {
+      this.emit('evacuation_started', {
+        type: 'full',
+        affectedPopulation: 320,
+        areas: ['blatten_complete', 'surrounding_farmsteads']
+      });
+    }
+    
+    // Livestock evacuation
+    if (currentTime >= new Date('2025-05-20T08:00:00Z')) {
+      this.emit('livestock_evacuation_started', {
+        cattle: 180,
+        sheep: 340,
+        goats: 75,
+        horses: 12
+      });
+    }
+    
+    // Glacier collapse
+    if (currentTime >= new Date('2025-05-28T14:32:17Z')) {
+      this.emit('disaster_event', {
+        type: 'glacier_collapse',
+        magnitude: 3.1,
+        volume: '9 million tons',
+        impact: 'total_destruction_blatten'
+      });
     }
   }
 
@@ -322,45 +324,7 @@ export class SimulationService {
     return { ...this.config };
   }
 
-  // Simulation data loading
-  async loadSimulationData(): Promise<void> {
-    try {
-      // Load the JSON data files
-      const [
-        mainEvent,
-        monitoringStations,
-        authorities,
-        resources,
-        evacuees,
-        decisions,
-        timelineEvents
-      ] = await Promise.all([
-        import('@/data/blatten_simulation_main_event.json'),
-        import('@/data/blatten_simulation_monitoring_stations.json'),
-        import('@/data/blatten_simulation_authorities.json'),
-        import('@/data/blatten_simulation_resources.json'),
-        import('@/data/blatten_simulation_evacuees.json'),
-        import('@/data/blatten_simulation_decision_log.json'),
-        import('@/data/blatten_simulation_timeline_events.json')
-      ]);
-
-      const simulationData = {
-        events: [mainEvent.default],
-        monitoringStations: monitoringStations.default,
-        authorities: authorities.default,
-        resources: resources.default,
-        evacuees: evacuees.default,
-        decisions: decisions.default,
-        timelineEvents: timelineEvents.default
-      };
-
-      await this.dataService.uploadSimulationData(simulationData);
-      this.emit('data_loaded', { success: true });
-    } catch (error) {
-      console.error('Failed to load simulation data:', error);
-      this.emit('data_loaded', { success: false, error });
-    }
-  }
+  // Data is now loaded via setData method from the data context
 
   // Utility methods
   formatTime(time: string): string {
