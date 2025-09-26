@@ -330,3 +330,30 @@ export function getStateSummary(): {
     poiCount: currentPOIs.length
   };
 }
+
+/**
+ * Create a test alert for debugging purposes
+ */
+export const createTestAlert = (): void => {
+  // Import alert service dynamically to avoid circular dependencies
+  import('@/lib/alert-service').then(({ createAlert }) => {
+    createAlert({
+      title: 'Debug Test Alert',
+      message: 'This is a test alert created from the debug panel',
+      type: 'info',
+      severity: 'medium',
+      category: 'system',
+      source: 'Debug Panel',
+      actions: [
+        {
+          id: 'dismiss',
+          label: 'Dismiss',
+          type: 'secondary',
+          action: () => console.log('Alert dismissed')
+        }
+      ]
+    });
+  }).catch((error) => {
+    console.error('Failed to create test alert:', error);
+  });
+};

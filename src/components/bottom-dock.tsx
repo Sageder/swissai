@@ -5,11 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ChevronUp, ChevronDown, GripHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { NodeEditorTab } from "@/components/tabs/node-editor-tab"
 import { DataTab } from "@/components/tabs/data-tab"
 import { POIDataTab } from "@/components/tabs/poi-data-tab"
 import { LogsTab } from "@/components/tabs/logs-tab"
-import { ChatTab } from "@/components/tabs/chat-tab"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface BottomDockProps {
@@ -19,17 +17,15 @@ interface BottomDockProps {
 }
 
 export function BottomDock({ height, onHeightChange, onTerrainToggle }: BottomDockProps) {
-  const [activeTab, setActiveTab] = useState("node-editor")
+  const [activeTab, setActiveTab] = useState("data")
   const [isExpanded, setIsExpanded] = useState(true)
   const [isDragging, setIsDragging] = useState(false)
   const dragStartY = useRef<number>(0)
   const dragStartHeight = useRef<number>(0)
 
   const tabs = [
-    { id: "node-editor", label: "Graph Editor", component: NodeEditorTab },
     { id: "data", label: "Data Sources", component: DataTab },
     { id: "poi-data", label: "POI Data", component: POIDataTab },
-    { id: "chat", label: "AI Assistant", component: ChatTab },
     { id: "logs", label: "System Logs", component: LogsTab },
   ]
 
@@ -38,19 +34,19 @@ export function BottomDock({ height, onHeightChange, onTerrainToggle }: BottomDo
     setIsDragging(true)
     dragStartY.current = e.clientY
     dragStartHeight.current = height
-    
+
     document.body.style.cursor = 'ns-resize'
     document.body.style.userSelect = 'none'
   }, [height])
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return
-    
+
     const deltaY = dragStartY.current - e.clientY
     const viewportHeight = window.innerHeight
     const deltaPercentage = (deltaY / viewportHeight) * 100
     const newHeight = Math.max(8, Math.min(90, dragStartHeight.current + deltaPercentage))
-    
+
     // Auto-collapse if dragged very small
     if (newHeight <= 12) {
       setIsExpanded(false)
@@ -63,7 +59,7 @@ export function BottomDock({ height, onHeightChange, onTerrainToggle }: BottomDo
 
   const handleMouseUp = useCallback(() => {
     if (!isDragging) return
-    
+
     setIsDragging(false)
     document.body.style.cursor = ''
     document.body.style.userSelect = ''
@@ -74,7 +70,7 @@ export function BottomDock({ height, onHeightChange, onTerrainToggle }: BottomDo
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
-      
+
       return () => {
         document.removeEventListener('mousemove', handleMouseMove)
         document.removeEventListener('mouseup', handleMouseUp)
@@ -102,12 +98,12 @@ export function BottomDock({ height, onHeightChange, onTerrainToggle }: BottomDo
           onMouseDown={handleMouseDown}
         >
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-            <GripHorizontal 
-              size={16} 
+            <GripHorizontal
+              size={16}
               className={cn(
                 "text-muted-foreground group-hover:text-blue-400 transition-colors",
                 isDragging && "text-blue-400"
-              )} 
+              )}
             />
           </div>
         </div>
