@@ -498,6 +498,87 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 /**
+ * Send a helicopter from one POI to another POI
+ * Helicopters move in a straight line (no road routing)
+ * @param fromPOIId - ID of the source POI
+ * @param toPOIId - ID of the destination POI
+ * @param duration - Duration of the journey in milliseconds (default: 20000 = 20 seconds)
+ */
+export async function sendHelicopter(
+  fromPOIId: string, 
+  toPOIId: string, 
+  duration: number = 20000
+): Promise<void> {
+  if (!dataContextRef) {
+    console.error('Data context not available for helicopter movement. Please wait for the app to fully load.');
+    return;
+  }
+
+  // Find the source and destination POIs
+  const fromPOI = currentPOIs.find(poi => poi.id === fromPOIId);
+  const toPOI = currentPOIs.find(poi => poi.id === toPOIId);
+
+  if (!fromPOI || !toPOI) {
+    console.error(`POI not found: from=${fromPOIId}, to=${toPOIId}`);
+    return;
+  }
+
+  // Calculate direct distance for helicopter
+  const distance = calculateDistance(
+    fromPOI.metadata.coordinates.lat,
+    fromPOI.metadata.coordinates.long,
+    toPOI.metadata.coordinates.lat,
+    toPOI.metadata.coordinates.long
+  );
+
+  // Helicopters are faster - adjust duration based on distance
+  // Base speed: 100 km/h = 27.78 m/s
+  const helicopterSpeed = 27.78; // meters per second
+  const calculatedDuration = Math.max(10000, (distance * 1000) / helicopterSpeed * 1000); // Convert to milliseconds
+  const finalDuration = Math.min(calculatedDuration, duration);
+
+  // Create direct route coordinates for helicopter (straight line in the air)
+  const numPoints = Math.max(3, Math.ceil(distance * 2)); // More points for longer distances
+  const coordinates: [number, number, number][] = [];
+  
+  for (let i = 0; i <= numPoints; i++) {
+    const progress = i / numPoints;
+    const lat = fromPOI.metadata.coordinates.lat + (toPOI.metadata.coordinates.lat - fromPOI.metadata.coordinates.lat) * progress;
+    const lng = fromPOI.metadata.coordinates.long + (toPOI.metadata.coordinates.long - fromPOI.metadata.coordinates.long) * progress;
+    
+    // Add altitude to coordinates (Mapbox expects [lng, lat, altitude])
+    coordinates.push([lng, lat, 500]); // 500 meters altitude
+  }
+
+  const directRoute = {
+    coordinates,
+    distance: distance * 1000, // Convert to meters
+    duration: finalDuration / 1000 // Convert to seconds
+  };
+
+  // Create helicopter movement
+  const movement: Omit<VehicleMovement, 'id' | 'currentPosition' | 'progress' | 'status'> = {
+    from: {
+      lat: fromPOI.metadata.coordinates.lat,
+      lng: fromPOI.metadata.coordinates.long,
+      name: fromPOI.title
+    },
+    to: {
+      lat: toPOI.metadata.coordinates.lat,
+      lng: toPOI.metadata.coordinates.long,
+      name: toPOI.title
+    },
+    startTime: Date.now(),
+    duration: finalDuration,
+    vehicleType: 'helicopter',
+    route: directRoute
+  };
+
+  dataContextRef.addVehicleMovement(movement);
+  console.log(`Helicopter sent from ${fromPOI.title} to ${toPOI.title} via direct route (${distance.toFixed(1)}km)`);
+}
+
+/**
  * Create a test alert for debugging purposes
  */
 export const createTestAlert = (): void => {

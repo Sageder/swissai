@@ -20,6 +20,7 @@ import {
   onPOIVisibilityChange,
   onTimelineVisibilityChange,
   sendVehicle,
+  sendHelicopter,
   addBlatten,
   createTestAlert
 } from '@/lib/util';
@@ -46,7 +47,7 @@ interface DebugAgentPanelProps {
 }
 
 export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
-  const { monitoringStations, authorities, resources, vehicleMovements } = useData();
+  const { monitoringStations, authorities, resources, vehicleMovements, isLoading } = useData();
   const [state, setState] = useState(getStateSummary());
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -135,6 +136,42 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
     
     // Send vehicle from the other POI to Blatten
     await sendVehicle(fromPOI.id, blattenPOI.id, 'fire_truck', 15000); // 15 second journey
+  };
+
+  const handleSendHelicopter = async () => {
+    // Check if data is loaded
+    if (isLoading) {
+      alert('Please wait for data to load before sending helicopter.');
+      return;
+    }
+
+    // First add Blatten if not already added
+    addBlatten();
+    
+    // Get current POIs to find one to send helicopter from
+    const currentPOIs = getCurrentPOIs();
+    if (currentPOIs.length === 0) {
+      alert('No POIs available. Please add some POIs first.');
+      return;
+    }
+
+    // Find Blatten POI
+    const blattenPOI = currentPOIs.find(poi => poi.id === 'blatten-city-center');
+    if (!blattenPOI) {
+      alert('Blatten POI not found. Please add Blatten first.');
+      return;
+    }
+
+    // Find another POI to send helicopter from (prefer research station)
+    const fromPOI = currentPOIs.find(poi => poi.id === 'blatten-research-station') || currentPOIs[0];
+    
+    try {
+      // Send helicopter from the other POI to Blatten
+      await sendHelicopter(fromPOI.id, blattenPOI.id, 10000); // 10 second journey
+    } catch (error) {
+      console.error('Failed to send helicopter:', error);
+      alert('Failed to send helicopter. Please try again.');
+    }
   };
 
   if (!isOpen) return null;
@@ -273,6 +310,14 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
               >
                 <Car className="w-4 h-4 mr-1" />
                 Send Vehicle
+              </Button>
+              <Button
+                onClick={handleSendHelicopter}
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700 col-span-2"
+                disabled={isLoading}
+              >
+                🚁 Send Helicopter
               </Button>
             </div>
           </div>
