@@ -176,16 +176,8 @@ function MapWithData() {
           </div>
 
           {/* Search Overlay - Positioned on the right side */}
-          <div className="absolute top-4 right-4 z-40 flex gap-2">
+          <div className="absolute top-4 right-4 z-40">
             <MapSearch onLocationSelect={handleLocationSelect} />
-            <Button
-              onClick={() => setDebugPanelOpen(!debugPanelOpen)}
-              variant="outline"
-              size="sm"
-              className="bg-gray-900/80 border-gray-600 text-gray-300 hover:bg-gray-800"
-            >
-              Debug
-            </Button>
           </div>
 
         </div>
@@ -196,6 +188,7 @@ function MapWithData() {
           activeView={activeView}
           onViewChange={handleViewChange}
           onAIChatOpen={handleAIChatOpen}
+          onDebugPanelOpen={() => setDebugPanelOpen(!debugPanelOpen)}
         />
 
         {/* AI Chat Overlay */}

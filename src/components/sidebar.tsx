@@ -8,6 +8,7 @@ import {
   BarChart3,
   Map,
   Bot,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,6 +20,7 @@ interface SidebarProps {
   activeView?: string;
   onViewChange?: (view: string) => void;
   onAIChatOpen?: () => void;
+  onDebugPanelOpen?: () => void;
 }
 
 const places = [
@@ -42,6 +44,7 @@ export function Sidebar({
   activeView = "map",
   onViewChange,
   onAIChatOpen,
+  onDebugPanelOpen,
 }: SidebarProps) {
   const menuItems = [
     { id: "map", icon: Map, label: "Map View" },
@@ -52,6 +55,12 @@ export function Sidebar({
   const handleAIChatClick = () => {
     if (onAIChatOpen) {
       onAIChatOpen();
+    }
+  };
+
+  const handleDebugPanelClick = () => {
+    if (onDebugPanelOpen) {
+      onDebugPanelOpen();
     }
   };
 
@@ -235,6 +244,32 @@ export function Sidebar({
                   transition={{ duration: 0.2 }}
                 >
                   AI Assistant
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Button>
+        </div>
+
+        {/* Debug Panel Button */}
+        <div className="mt-2">
+          <Button
+            variant="ghost"
+            className={cn(
+              "w-full justify-start gap-3 border-0 text-white/80 hover:text-white hover:bg-white/10",
+              !expanded && "px-2"
+            )}
+            onClick={handleDebugPanelClick}
+          >
+            <Activity size={18} />
+            <AnimatePresence mode="wait">
+              {expanded && (
+                <motion.span
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  Debug Panel
                 </motion.span>
               )}
             </AnimatePresence>

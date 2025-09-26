@@ -140,7 +140,7 @@ export function DebugAgentPanel({ isOpen, onClose }: DebugAgentPanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 w-80">
+    <div className="fixed bottom-4 left-4 z-50 w-80">
       <Card className="bg-gray-900/95 backdrop-blur-sm border-gray-700 text-white">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
