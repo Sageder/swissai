@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { MapContainer, type MapRef } from "@/components/map-container";
 import { Sidebar } from "@/components/sidebar";
 import { BottomDock } from "@/components/bottom-dock";
@@ -14,6 +14,7 @@ import { AIChat } from "@/components/ai-chat";
 import { motion } from "framer-motion";
 import { convertResourcesToPOIs, convertMonitoringStationsToPOIs, combinePOIs } from "@/utils/resource-to-poi";
 import { blattentPOIs } from "@/data/pois";
+import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange } from "@/lib/util";
 
 // Component that uses data context
 function MapWithData() {
@@ -22,12 +23,31 @@ function MapWithData() {
   const [dockHeight, setDockHeight] = useState(33); // percentage
   const [activeView, setActiveView] = useState("map");
   const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [showPOIs, setShowPOIs] = useState(false);
+  const [currentPOIs, setCurrentPOIs] = useState<any[]>([]);
   const mapRef = useRef<MapRef>(null);
+
+  // Listen for POI visibility changes
+  useEffect(() => {
+    const unsubscribe = onPOIVisibilityChange(() => {
+      setShowPOIs(shouldShowPOIs());
+      setCurrentPOIs(getCurrentPOIs());
+    });
+    
+    // Set initial state
+    setShowPOIs(shouldShowPOIs());
+    setCurrentPOIs(getCurrentPOIs());
+    
+    return unsubscribe;
+  }, []);
 
   // Convert resources and monitoring stations to POIs and combine with static POIs
   const resourcePOIs = convertResourcesToPOIs(resources);
   const monitoringPOIs = convertMonitoringStationsToPOIs(monitoringStations);
-  const allPOIs = combinePOIs(blattentPOIs, resourcePOIs, monitoringPOIs);
+  const staticPOIs = combinePOIs(blattentPOIs, resourcePOIs, monitoringPOIs);
+  
+  // Only show POIs if explicitly controlled by utility functions
+  const allPOIs = showPOIs && currentPOIs.length > 0 ? currentPOIs : [];
 
   const handleTerrainToggle = (enabled: boolean, exaggeration?: number) => {
     if (mapRef.current) {
