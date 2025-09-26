@@ -72,7 +72,7 @@ export function addMonitoringSources(monitoringStations: MonitoringStation[]): v
     contact: station.location.address || undefined,
     status: station.connectivity === 'online' ? 'active' as const : 'inactive' as const
   }));
-  
+
   // Remove existing monitoring POIs and add new ones
   currentPOIs = currentPOIs.filter(poi => poi.type !== 'sensor');
   currentPOIs = [...currentPOIs, ...monitoringPOIs];
@@ -139,11 +139,11 @@ export function addResources(resources: Resource[]): void {
         }
       },
       contact: resource.location.address || undefined,
-      status: resource.status === 'available' || resource.status === 'operational' ? 'active' as const : 
-              resource.status === 'deployed' || resource.status === 'emergency_mode' ? 'active' as const : 'inactive' as const
+      status: resource.status === 'available' || resource.status === 'operational' ? 'active' as const :
+        resource.status === 'deployed' || resource.status === 'emergency_mode' ? 'active' as const : 'inactive' as const
     }
   });
-  
+
   // Remove existing resource POIs and add new ones
   currentPOIs = currentPOIs.filter(poi => !['hospital', 'helicopter', 'fire_station', 'shelter', 'infrastructure', 'other'].includes(poi.type));
   currentPOIs = [...currentPOIs, ...resourcePOIs];
@@ -161,8 +161,8 @@ export function addAuthorities(authorities: Authority[]): void {
     title: authority.name,
     description: `${authority.type} - Level: ${authority.level} - Status: ${authority.currentStatus} - Jurisdiction: ${authority.jurisdiction}`,
     type: 'emergency' as const,
-    severity: authority.currentStatus === 'activated' || authority.currentStatus === 'deployed' ? 'high' as const : 
-              authority.currentStatus === 'coordinating' ? 'medium' as const : 'low' as const,
+    severity: authority.currentStatus === 'activated' || authority.currentStatus === 'deployed' ? 'high' as const :
+      authority.currentStatus === 'coordinating' ? 'medium' as const : 'low' as const,
     metadata: {
       coordinates: {
         lat: authority.headquarters?.lat || 46.5197,
@@ -172,7 +172,7 @@ export function addAuthorities(authorities: Authority[]): void {
     contact: authority.contact?.phone || undefined,
     status: authority.currentStatus === 'activated' || authority.currentStatus === 'deployed' ? 'active' as const : 'inactive' as const
   }));
-  
+
   // Remove existing authority POIs and add new ones
   currentPOIs = currentPOIs.filter(poi => poi.type !== 'emergency');
   currentPOIs = [...currentPOIs, ...authorityPOIs];
@@ -240,11 +240,11 @@ export function onlyShowSelectedResources(resources: Resource[]): void {
         }
       },
       contact: resource.location.address || undefined,
-      status: resource.status === 'available' || resource.status === 'operational' ? 'active' as const : 
-              resource.status === 'deployed' || resource.status === 'emergency_mode' ? 'active' as const : 'inactive' as const
+      status: resource.status === 'available' || resource.status === 'operational' ? 'active' as const :
+        resource.status === 'deployed' || resource.status === 'emergency_mode' ? 'active' as const : 'inactive' as const
     }
   });
-  
+
   currentPOIs = resourcePOIs;
   showPOIFlag = true;
   poiCallbacks.forEach(callback => callback());
@@ -311,23 +311,23 @@ export function addAllPOIs(data: {
 }): void {
   // Clear all existing POIs first
   currentPOIs = [];
-  
+
   // Add monitoring sources
-  if (data.monitoringStations.length > 0) {
+  if (data.monitoringStations && data.monitoringStations.length > 0) {
     addMonitoringSources(data.monitoringStations);
   }
-  
+
   // Add resources
-  if (data.resources.length > 0) {
+  if (data.resources && data.resources.length > 0) {
     addResources(data.resources);
   }
-  
+
   // Add authorities
-  if (data.authorities.length > 0) {
+  if (data.authorities && data.authorities.length > 0) {
     addAuthorities(data.authorities);
   }
-  
-  console.log(`Added all POI types: ${data.monitoringStations.length} monitoring, ${data.resources.length} resources, ${data.authorities.length} authorities`);
+
+  console.log(`Added all POI types: ${data.monitoringStations?.length || 0} monitoring, ${data.resources?.length || 0} resources, ${data.authorities?.length || 0} authorities`);
 }
 
 /**

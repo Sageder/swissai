@@ -39,9 +39,26 @@ export const clearAllAlerts = (): void => {
     alertContext.clearAll();
 };
 
+// Global crisis management callback
+let onOpenCrisisManagement: ((event: any) => void) | null = null;
+
+export const setCrisisManagementCallback = (callback: (event: any) => void) => {
+    onOpenCrisisManagement = callback;
+};
+
 // Predefined alert templates
 export const createLandslideAlert = (location: string, coordinates?: { lat: number; lng: number }) => {
-    return createAlert({
+    const crisisEvent = {
+        id: `landslide_${Date.now()}`,
+        type: 'Landslide',
+        location,
+        coordinates,
+        severity: 'critical',
+        timestamp: new Date().toISOString(),
+        description: `Immediate landslide risk detected in ${location}. Evacuation recommended for affected areas.`
+    };
+
+    const alertId = createAlert({
         type: 'critical',
         title: 'Landslide Alert',
         message: `Immediate landslide risk detected in ${location}. Evacuation recommended for affected areas. Monitor for further developments.`,
@@ -55,29 +72,31 @@ export const createLandslideAlert = (location: string, coordinates?: { lat: numb
             evacuationZone: 'Zone A - High Risk',
             estimatedImpact: 'Moderate to High',
             responseTime: '15 minutes',
-            authoritiesNotified: ['Cantonal Emergency Services', 'Geological Survey', 'Local Authorities']
+            authoritiesNotified: ['Cantonal Emergency Services', 'Geological Survey', 'Local Authorities'],
+            eventId: crisisEvent.id
         },
         actions: [
             {
-                id: 'evacuate',
-                label: 'View Evacuation Plan',
-                type: 'primary',
+                id: 'crisis_management',
+                label: 'Open Crisis Management',
+                type: 'danger',
                 action: () => {
-                    console.log('Opening evacuation plan for', location);
-                    // This would typically open a modal or navigate to evacuation details
-                }
-            },
-            {
-                id: 'monitor',
-                label: 'Monitor Updates',
-                type: 'secondary',
-                action: () => {
-                    console.log('Starting monitoring for', location);
-                    // This would typically start real-time monitoring
+                    console.log('Opening crisis management for', location);
+                    if (onOpenCrisisManagement) {
+                        onOpenCrisisManagement(crisisEvent);
+                    }
+                    // Auto-close this specific alert after opening crisis management
+                    if (alertContext && alertId) {
+                        setTimeout(() => {
+                            alertContext.removeAlert(alertId);
+                        }, 500); // Small delay to let the crisis management open first
+                    }
                 }
             }
         ]
     });
+
+    return alertId;
 };
 
 export const createWeatherAlert = (location: string, condition: string, severity: 'low' | 'medium' | 'high' | 'critical' | 'emergency') => {
