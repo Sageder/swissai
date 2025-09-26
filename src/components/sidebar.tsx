@@ -7,6 +7,7 @@ import {
   Settings,
   BarChart3,
   Map,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +18,7 @@ interface SidebarProps {
   onToggle: () => void;
   activeView?: string;
   onViewChange?: (view: string) => void;
+  onAIChatOpen?: () => void;
 }
 
 const places = [
@@ -39,12 +41,19 @@ export function Sidebar({
   onToggle,
   activeView = "map",
   onViewChange,
+  onAIChatOpen,
 }: SidebarProps) {
   const menuItems = [
     { id: "map", icon: Map, label: "Map View" },
     { id: "analytics", icon: BarChart3, label: "Analytics" },
     { id: "settings", icon: Settings, label: "Settings" },
   ];
+
+  const handleAIChatClick = () => {
+    if (onAIChatOpen) {
+      onAIChatOpen();
+    }
+  };
 
   const handleMenuClick = (itemId: string) => {
     if (onViewChange) {
@@ -182,8 +191,8 @@ export function Sidebar({
                 className={cn(
                   "w-full justify-start gap-3 border-0",
                   !expanded && "px-2",
-                  activeView === item.id 
-                    ? "bg-blue-500/20 text-blue-300 hover:bg-blue-500/20 hover:text-blue-300" 
+                  activeView === item.id
+                    ? "bg-blue-500/20 text-blue-300 hover:bg-blue-500/20 hover:text-blue-300"
                     : "text-white/80 hover:text-white hover:bg-white/10"
                 )}
                 onClick={() => handleMenuClick(item.id)}
@@ -204,6 +213,32 @@ export function Sidebar({
               </Button>
             </motion.div>
           ))}
+        </div>
+
+        {/* AI Chat Button */}
+        <div className="mt-4">
+          <Button
+            variant="ghost"
+            className={cn(
+              "w-full justify-start gap-3 border-0 text-white/80 hover:text-white hover:bg-white/10",
+              !expanded && "px-2"
+            )}
+            onClick={handleAIChatClick}
+          >
+            <Bot size={18} />
+            <AnimatePresence mode="wait">
+              {expanded && (
+                <motion.span
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  AI Assistant
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Button>
         </div>
       </nav>
 

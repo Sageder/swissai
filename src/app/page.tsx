@@ -10,6 +10,7 @@ import { Timeline } from "@/components/timeline";
 import { TimeProvider } from "@/lib/time-context";
 import { DataProvider, useData } from "@/lib/data-context";
 import { MapSearch } from "@/components/map-search";
+import { AIChat } from "@/components/ai-chat";
 import { motion } from "framer-motion";
 import { convertResourcesToPOIs, convertMonitoringStationsToPOIs, combinePOIs } from "@/utils/resource-to-poi";
 import { blattentPOIs } from "@/data/pois";
@@ -20,6 +21,7 @@ function MapWithData() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [dockHeight, setDockHeight] = useState(33); // percentage
   const [activeView, setActiveView] = useState("map");
+  const [aiChatOpen, setAiChatOpen] = useState(false);
   const mapRef = useRef<MapRef>(null);
 
   // Convert resources and monitoring stations to POIs and combine with static POIs
@@ -59,6 +61,14 @@ function MapWithData() {
 
   const handleCloseOverlay = () => {
     setActiveView("map");
+  };
+
+  const handleAIChatOpen = () => {
+    setAiChatOpen(true);
+  };
+
+  const handleAIChatClose = () => {
+    setAiChatOpen(false);
   };
 
   return (
@@ -110,6 +120,13 @@ function MapWithData() {
           onToggle={() => setSidebarExpanded(!sidebarExpanded)}
           activeView={activeView}
           onViewChange={handleViewChange}
+          onAIChatOpen={handleAIChatOpen}
+        />
+
+        {/* AI Chat Overlay */}
+        <AIChat
+          isOpen={aiChatOpen}
+          onClose={handleAIChatClose}
         />
       </div>
 
