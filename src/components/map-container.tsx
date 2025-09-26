@@ -504,23 +504,6 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         </div>
       )}
 
-      {/* POI Legend - Moved to right side below search */}
-      {mapboxToken && pois && pois.length > 0 && (
-        <div key="poi-legend" className="absolute top-20 right-4 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg max-w-xs">
-          <h4 className="font-semibold text-sm mb-2">Points of Interest</h4>
-          <div key="poi-list" className="space-y-1 text-xs">
-            {pois.map((poi: POI, index: number) => (
-              <div key={`poi-${index}-${poi.id}`} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full border border-white"
-                  style={{ backgroundColor: getPOIColor(poi.type) }}
-                />
-                <span>{poi.title}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 })
