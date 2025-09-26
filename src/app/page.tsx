@@ -12,6 +12,8 @@ import { DataProvider, useData } from "@/lib/data-context";
 import { MapSearch } from "@/components/map-search";
 import { AIChat } from "@/components/ai-chat";
 import { AlertContainer } from "@/components/alerts/alert-container";
+import { DebugAgentPanel } from "@/components/debug-agent-panel";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { convertResourcesToPOIs, convertMonitoringStationsToPOIs, combinePOIs } from "@/utils/resource-to-poi";
 import { blattentPOIs } from "@/data/pois";
@@ -29,6 +31,7 @@ function MapWithData() {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [showPOIs, setShowPOIs] = useState(false);
   const [currentPOIs, setCurrentPOIs] = useState<any[]>([]);
+  const [debugPanelOpen, setDebugPanelOpen] = useState(false);
   const mapRef = useRef<MapRef>(null);
 
   // Initialize alert context for programmatic use
@@ -44,6 +47,19 @@ function MapWithData() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Keyboard shortcut for debug panel (Ctrl/Cmd + D)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
+        event.preventDefault();
+        setDebugPanelOpen(!debugPanelOpen);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [debugPanelOpen]);
 
   // Listen for POI visibility changes
   useEffect(() => {
@@ -125,8 +141,16 @@ function MapWithData() {
           </motion.div>
 
           {/* Search Overlay - Positioned on the right side */}
-          <div className="absolute top-4 right-4 z-40">
+          <div className="absolute top-4 right-4 z-40 flex gap-2">
             <MapSearch onLocationSelect={handleLocationSelect} />
+            <Button
+              onClick={() => setDebugPanelOpen(!debugPanelOpen)}
+              variant="outline"
+              size="sm"
+              className="bg-gray-900/80 border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              Debug
+            </Button>
           </div>
 
           {/* Bottom Dock - Positioned to not overlap with sidebar */}
@@ -158,6 +182,12 @@ function MapWithData() {
         <AIChat
           isOpen={aiChatOpen}
           onClose={handleAIChatClose}
+        />
+
+        {/* Debug Agent Panel */}
+        <DebugAgentPanel
+          isOpen={debugPanelOpen}
+          onClose={() => setDebugPanelOpen(false)}
         />
       </div>
 

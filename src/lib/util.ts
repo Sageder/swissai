@@ -44,15 +44,23 @@ export function isTimelineVisible(): boolean {
  */
 export function addMonitoringSources(monitoringStations: MonitoringStation[]): void {
   const monitoringPOIs = monitoringStations.map(station => ({
-    id: `monitoring-${station.sensorId}`,
-    type: 'monitoring',
-    name: station.name,
-    location: station.location,
-    data: station,
-    icon: '📡',
-    color: '#3b82f6'
+    id: station.sensorId,
+    title: station.location.name || `${station.sensorType} Sensor - ${station.sensorId}`,
+    description: `${station.sensorType.replace('_', ' ')} sensor - Battery: ${station.batteryStatus}% - ${station.responsibleOrganization}`,
+    type: 'sensor' as const,
+    severity: station.connectivity === 'online' ? 'low' as const : 'high' as const,
+    metadata: {
+      coordinates: {
+        lat: station.location.lat,
+        long: station.location.lng
+      }
+    },
+    contact: station.location.address || undefined,
+    status: station.connectivity === 'online' ? 'active' as const : 'inactive' as const
   }));
   
+  // Remove existing monitoring POIs and add new ones
+  currentPOIs = currentPOIs.filter(poi => poi.type !== 'sensor');
   currentPOIs = [...currentPOIs, ...monitoringPOIs];
   showPOIFlag = true;
   poiCallbacks.forEach(callback => callback());
@@ -63,16 +71,67 @@ export function addMonitoringSources(monitoringStations: MonitoringStation[]): v
  * Add all resources to POI display
  */
 export function addResources(resources: Resource[]): void {
-  const resourcePOIs = resources.map(resource => ({
-    id: `resource-${resource.resourceId}`,
-    type: 'resource',
-    name: resource.location.name,
-    location: resource.location,
-    data: resource,
-    icon: '🚁',
-    color: resource.status === 'active' ? '#10b981' : '#6b7280'
-  }));
+  const resourcePOIs = resources.map(resource => {
+    // Map resource type to POI type
+    const getPOIType = (resourceType: Resource['type']): 'hospital' | 'helicopter' | 'fire_station' | 'shelter' | 'infrastructure' | 'other' => {
+      switch (resourceType) {
+        case 'hospital':
+        case 'medical_center':
+          return 'hospital'
+        case 'helicopter':
+          return 'helicopter'
+        case 'fire_station':
+          return 'fire_station'
+        case 'emergency_shelter':
+          return 'shelter'
+        case 'power_grid':
+        case 'water_system':
+        case 'communication':
+          return 'infrastructure'
+        default:
+          return 'other'
+      }
+    }
+
+    // Map resource status to severity
+    const getSeverity = (status: Resource['status']): 'high' | 'medium' | 'low' => {
+      switch (status) {
+        case 'deployed':
+        case 'emergency_mode':
+          return 'high'
+        case 'activated':
+        case 'en_route':
+          return 'medium'
+        case 'available':
+        case 'standby':
+        case 'normal_operations':
+        case 'operational':
+          return 'low'
+        default:
+          return 'low'
+      }
+    }
+
+    return {
+      id: resource.resourceId,
+      title: resource.location.name || `${resource.type} - ${resource.resourceId}`,
+      description: `${resource.type} resource - Status: ${resource.status}${resource.personnel ? ` - Personnel: ${resource.personnel}` : ''}${resource.currentAssignment ? ` - Assignment: ${resource.currentAssignment}` : ''}`,
+      type: getPOIType(resource.type),
+      severity: getSeverity(resource.status),
+      metadata: {
+        coordinates: {
+          lat: resource.location.lat,
+          long: resource.location.lng
+        }
+      },
+      contact: resource.location.address || undefined,
+      status: resource.status === 'available' || resource.status === 'operational' ? 'active' as const : 
+              resource.status === 'deployed' || resource.status === 'emergency_mode' ? 'active' as const : 'inactive' as const
+    }
+  });
   
+  // Remove existing resource POIs and add new ones
+  currentPOIs = currentPOIs.filter(poi => !['hospital', 'helicopter', 'fire_station', 'shelter', 'infrastructure', 'other'].includes(poi.type));
   currentPOIs = [...currentPOIs, ...resourcePOIs];
   showPOIFlag = true;
   poiCallbacks.forEach(callback => callback());
@@ -84,15 +143,24 @@ export function addResources(resources: Resource[]): void {
  */
 export function addAuthorities(authorities: Authority[]): void {
   const authorityPOIs = authorities.map(authority => ({
-    id: `authority-${authority.authorityId}`,
-    type: 'authority',
-    name: authority.name,
-    location: authority.location,
-    data: authority,
-    icon: '🏛️',
-    color: authority.currentStatus === 'active' ? '#f59e0b' : '#6b7280'
+    id: authority.authorityId,
+    title: authority.name,
+    description: `${authority.type} - Level: ${authority.level} - Status: ${authority.currentStatus} - Jurisdiction: ${authority.jurisdiction}`,
+    type: 'emergency' as const,
+    severity: authority.currentStatus === 'activated' || authority.currentStatus === 'deployed' ? 'high' as const : 
+              authority.currentStatus === 'coordinating' ? 'medium' as const : 'low' as const,
+    metadata: {
+      coordinates: {
+        lat: authority.headquarters?.lat || 46.5197,
+        long: authority.headquarters?.lng || 7.8725
+      }
+    },
+    contact: authority.contact?.phone || undefined,
+    status: authority.currentStatus === 'activated' || authority.currentStatus === 'deployed' ? 'active' as const : 'inactive' as const
   }));
   
+  // Remove existing authority POIs and add new ones
+  currentPOIs = currentPOIs.filter(poi => poi.type !== 'emergency');
   currentPOIs = [...currentPOIs, ...authorityPOIs];
   showPOIFlag = true;
   poiCallbacks.forEach(callback => callback());
@@ -103,15 +171,65 @@ export function addAuthorities(authorities: Authority[]): void {
  * Only show selected resources, remove all other POIs
  */
 export function onlyShowSelectedResources(resources: Resource[]): void {
-  const resourcePOIs = resources.map(resource => ({
-    id: `resource-${resource.resourceId}`,
-    type: 'resource',
-    name: resource.location.name,
-    location: resource.location,
-    data: resource,
-    icon: '🚁',
-    color: resource.status === 'active' ? '#10b981' : '#6b7280'
-  }));
+  // Use the same logic as addResources but replace all POIs
+  const resourcePOIs = resources.map(resource => {
+    // Map resource type to POI type
+    const getPOIType = (resourceType: Resource['type']): 'hospital' | 'helicopter' | 'fire_station' | 'shelter' | 'infrastructure' | 'other' => {
+      switch (resourceType) {
+        case 'hospital':
+        case 'medical_center':
+          return 'hospital'
+        case 'helicopter':
+          return 'helicopter'
+        case 'fire_station':
+          return 'fire_station'
+        case 'emergency_shelter':
+          return 'shelter'
+        case 'power_grid':
+        case 'water_system':
+        case 'communication':
+          return 'infrastructure'
+        default:
+          return 'other'
+      }
+    }
+
+    // Map resource status to severity
+    const getSeverity = (status: Resource['status']): 'high' | 'medium' | 'low' => {
+      switch (status) {
+        case 'deployed':
+        case 'emergency_mode':
+          return 'high'
+        case 'activated':
+        case 'en_route':
+          return 'medium'
+        case 'available':
+        case 'standby':
+        case 'normal_operations':
+        case 'operational':
+          return 'low'
+        default:
+          return 'low'
+      }
+    }
+
+    return {
+      id: resource.resourceId,
+      title: resource.location.name || `${resource.type} - ${resource.resourceId}`,
+      description: `${resource.type} resource - Status: ${resource.status}${resource.personnel ? ` - Personnel: ${resource.personnel}` : ''}${resource.currentAssignment ? ` - Assignment: ${resource.currentAssignment}` : ''}`,
+      type: getPOIType(resource.type),
+      severity: getSeverity(resource.status),
+      metadata: {
+        coordinates: {
+          lat: resource.location.lat,
+          long: resource.location.lng
+        }
+      },
+      contact: resource.location.address || undefined,
+      status: resource.status === 'available' || resource.status === 'operational' ? 'active' as const : 
+              resource.status === 'deployed' || resource.status === 'emergency_mode' ? 'active' as const : 'inactive' as const
+    }
+  });
   
   currentPOIs = resourcePOIs;
   showPOIFlag = true;
@@ -167,6 +285,35 @@ export function onPOIVisibilityChange(callback: () => void): () => void {
       poiCallbacks.splice(index, 1);
     }
   };
+}
+
+/**
+ * Add all types of POIs at once (monitoring, resources, authorities)
+ */
+export function addAllPOIs(data: {
+  monitoringStations: MonitoringStation[];
+  resources: Resource[];
+  authorities: Authority[];
+}): void {
+  // Clear all existing POIs first
+  currentPOIs = [];
+  
+  // Add monitoring sources
+  if (data.monitoringStations.length > 0) {
+    addMonitoringSources(data.monitoringStations);
+  }
+  
+  // Add resources
+  if (data.resources.length > 0) {
+    addResources(data.resources);
+  }
+  
+  // Add authorities
+  if (data.authorities.length > 0) {
+    addAuthorities(data.authorities);
+  }
+  
+  console.log(`Added all POI types: ${data.monitoringStations.length} monitoring, ${data.resources.length} resources, ${data.authorities.length} authorities`);
 }
 
 /**
