@@ -279,15 +279,25 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
 
 
 
-                {/* Toggle Button */}
-                <div className="px-4 py-2 border-b border-white/20">
+                {/* Header with Close Button */}
+                <div className="flex items-center justify-between p-4 border-b border-white/20">
                     <Button
                         variant="ghost"
                         onClick={() => setShowGraphEditor(!showGraphEditor)}
-                        className="w-full justify-start text-white/80 hover:text-white hover:bg-white/10"
+                        className="flex-1 justify-start text-white/80 hover:text-white hover:bg-white/10"
                     >
                         <Network className="w-4 h-4 mr-2" />
                         {showGraphEditor ? 'Hide Graph Editor' : 'Show Graph Editor'}
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onClose}
+                        className="text-white/40 hover:text-white/60 ml-2"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </Button>
                 </div>
                 {/* Main Content */}
