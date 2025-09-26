@@ -190,7 +190,55 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
               },
             })
 
+            // Add building layers with lower zoom thresholds for earlier visibility
+            // First add the building source
+            map.current.addSource("mapbox-buildings", {
+              type: "vector",
+              url: "mapbox://mapbox.mapbox-streets-v8"
+            })
+
+            map.current.addLayer({
+              id: "buildings-3d",
+              type: "fill-extrusion",
+              source: "mapbox-buildings",
+              "source-layer": "building",
+              minzoom: 10, // Show buildings starting at zoom level 10 (much earlier)
+              paint: {
+                "fill-extrusion-color": "#aaa",
+                "fill-extrusion-height": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  10, 0,
+                  15, ["get", "height"]
+                ],
+                "fill-extrusion-base": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  10, 0,
+                  15, ["get", "min_height"]
+                ],
+                "fill-extrusion-opacity": 0.6
+              }
+            })
+
+            // Add building outlines for better definition
+            map.current.addLayer({
+              id: "building-outline",
+              type: "line",
+              source: "mapbox-buildings",
+              "source-layer": "building",
+              minzoom: 10, // Show outlines starting at zoom level 10
+              paint: {
+                "line-color": "#666",
+                "line-width": 0.5,
+                "line-opacity": 0.8
+              }
+            })
+
             console.log("[v0] Terrain layer added with 1.2x realistic exaggeration")
+            console.log("[v0] Building layers added with early visibility (zoom 10+)")
 
             // Create POI markers after map loads
             if (pois && pois.length > 0) {
