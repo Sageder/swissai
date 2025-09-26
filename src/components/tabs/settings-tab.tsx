@@ -7,7 +7,8 @@ import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Mountain, Map, Palette, Globe, Settings2 } from "lucide-react"
+import { Mountain, Map, Palette, Globe, Settings2, Clock } from "lucide-react"
+import { useTime } from "@/lib/time-context"
 
 interface SettingsTabProps {
   onTerrainToggle?: (enabled: boolean, exaggeration?: number) => void
@@ -17,6 +18,7 @@ export function SettingsTab({ onTerrainToggle }: SettingsTabProps) {
   const [terrainEnabled, setTerrainEnabled] = useState(true)
   const [terrainExaggeration, setTerrainExaggeration] = useState([1.2])
   const [showSky, setShowSky] = useState(true)
+  const { isRealTimeEnabled, toggleRealTime, timeOffset, setTimeOffset } = useTime()
 
   const handleTerrainToggle = (enabled: boolean) => {
     setTerrainEnabled(enabled)
@@ -91,6 +93,66 @@ export function SettingsTab({ onTerrainToggle }: SettingsTabProps) {
             <Switch id="sky-toggle" checked={showSky} onCheckedChange={setShowSky} />
           </div>
 
+        </CardContent>
+      </Card>
+
+      {/* Timeline Settings */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Clock size={16} />
+            Timeline Settings
+          </CardTitle>
+          <CardDescription>Configure time progression and display</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Real-time Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock size={16} className="text-muted-foreground" />
+              <Label htmlFor="realtime-toggle" className="text-sm font-medium">
+                Real-time Progression
+              </Label>
+            </div>
+            <Switch 
+              id="realtime-toggle" 
+              checked={isRealTimeEnabled} 
+              onCheckedChange={toggleRealTime} 
+            />
+          </div>
+
+          <Separator />
+
+          {/* Quick Time Controls */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Quick Time Jump</Label>
+            <div className="grid grid-cols-3 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setTimeOffset(0)}
+                className={timeOffset === 0 ? "bg-blue-500/20" : ""}
+              >
+                Now
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setTimeOffset(6)}
+                className={Math.abs(timeOffset - 6) < 0.1 ? "bg-blue-500/20" : ""}
+              >
+                +6h
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setTimeOffset(12)}
+                className={Math.abs(timeOffset - 12) < 0.1 ? "bg-blue-500/20" : ""}
+              >
+                +12h
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

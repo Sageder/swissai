@@ -4,13 +4,9 @@ import { Button } from "@/components/ui/button";
 import {
   PanelLeftOpen,
   PanelLeftClose,
-  Map,
-  Layers,
   Settings,
-  Database,
   BarChart3,
-  Users,
-  MapPin,
+  Map,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -46,10 +42,7 @@ export function Sidebar({
 }: SidebarProps) {
   const menuItems = [
     { id: "map", icon: Map, label: "Map View" },
-    { id: "layers", icon: Layers, label: "Layers" },
-    { id: "data", icon: Database, label: "Data Sources" },
     { id: "analytics", icon: BarChart3, label: "Analytics" },
-    { id: "collaboration", icon: Users, label: "Collaboration" },
     { id: "settings", icon: Settings, label: "Settings" },
   ];
 
@@ -83,10 +76,11 @@ export function Sidebar({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
-                className="flex items-center gap-2"
+                className="flex items-center gap-3"
               >
-                <MapPin className="w-5 h-5 text-blue-400" />
-                <h2 className="font-semibold text-white">Affected Areas</h2>
+                <h1 className="text-xl font-bold text-white tracking-tight">
+                  SwissAI
+                </h1>
               </motion.div>
             )}
           </AnimatePresence>
@@ -96,10 +90,7 @@ export function Sidebar({
             onClick={onToggle}
             className="text-white/80 hover:text-white hover:bg-white/10 border-0"
           >
-            <motion.div
-              animate={{ rotate: expanded ? 0 : 180 }}
-              transition={{ duration: 0.3 }}
-            >
+            <motion.div transition={{ duration: 0.3 }}>
               {expanded ? (
                 <PanelLeftClose size={18} />
               ) : (
@@ -120,9 +111,6 @@ export function Sidebar({
             transition={{ duration: 0.4, delay: 0.1 }}
             className="p-4 border-b border-white/10"
           >
-            <h3 className="text-sm font-medium text-white/90 mb-3">
-              Town Previews
-            </h3>
             <div className="grid grid-cols-1 gap-4">
               {places.map((value, index) => (
                 <motion.div
@@ -142,11 +130,11 @@ export function Sidebar({
                     />
                     {/* Blur gradient overlay for text legibility */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                    <div 
+                    <div
                       className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"
                       style={{
-                        backdropFilter: 'blur(1px)',
-                        WebkitBackdropFilter: 'blur(1px)',
+                        backdropFilter: "blur(1px)",
+                        WebkitBackdropFilter: "blur(1px)",
                       }}
                     />
                     {/* Text overlay */}
@@ -192,11 +180,11 @@ export function Sidebar({
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start gap-3 text-white/80 border-0",
+                  "w-full justify-start gap-3 border-0",
                   !expanded && "px-2",
-                  activeView === item.id
-                    ? "bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200"
-                    : "hover:text-white hover:bg-white/10"
+                  activeView === item.id 
+                    ? "bg-blue-500/20 text-blue-300 hover:bg-blue-500/20 hover:text-blue-300" 
+                    : "text-white/80 hover:text-white hover:bg-white/10"
                 )}
                 onClick={() => handleMenuClick(item.id)}
               >
@@ -222,7 +210,7 @@ export function Sidebar({
       {/* Footer */}
       <div className="p-4 border-t border-white/10">
         <AnimatePresence mode="wait">
-          {expanded ? (
+          {expanded && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -232,14 +220,6 @@ export function Sidebar({
             >
               Dashboard v1.0
             </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.2 }}
-              className="w-2 h-2 bg-blue-400 rounded-full mx-auto"
-            />
           )}
         </AnimatePresence>
       </div>

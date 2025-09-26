@@ -5,11 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ChevronUp, ChevronDown, Maximize2, Minimize2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { AnalyticsTab } from "@/components/tabs/analytics-tab"
 import { NodeEditorTab } from "@/components/tabs/node-editor-tab"
 import { DataTab } from "@/components/tabs/data-tab"
 import { LogsTab } from "@/components/tabs/logs-tab"
-import { SettingsTab } from "@/components/tabs/settings-tab"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface BottomDockProps {
@@ -19,15 +17,13 @@ interface BottomDockProps {
 }
 
 export function BottomDock({ height, onHeightChange, onTerrainToggle }: BottomDockProps) {
-  const [activeTab, setActiveTab] = useState("analytics")
+  const [activeTab, setActiveTab] = useState("node-editor")
   const [isExpanded, setIsExpanded] = useState(true)
 
   const tabs = [
-    { id: "analytics", label: "Analytics", component: AnalyticsTab },
-    { id: "node-editor", label: "Node Editor", component: NodeEditorTab },
+    { id: "node-editor", label: "Graph Editor", component: NodeEditorTab },
     { id: "data", label: "Data Sources", component: DataTab },
     { id: "logs", label: "System Logs", component: LogsTab },
-    { id: "settings", label: "Settings", component: SettingsTab },
   ]
 
   const toggleSize = () => {
@@ -37,16 +33,20 @@ export function BottomDock({ height, onHeightChange, onTerrainToggle }: BottomDo
 
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded)
-    onHeightChange(isExpanded ? 5 : 33)
+    // When collapsed, keep enough height for the header (about 60px = ~8% on 1080p screen)
+    onHeightChange(isExpanded ? 8 : 33)
   }
 
-  const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component || AnalyticsTab
+  const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component || NodeEditorTab
 
   return (
     <motion.div layout transition={{ duration: 0.3, ease: "easeInOut" }} className="h-full">
       <Card className="h-full bg-card border-t border-border rounded-none">
-        {/* Dock Header */}
-        <motion.div layout className="flex items-center justify-between p-3 border-b border-border bg-card/50">
+        {/* Dock Header - Always Visible */}
+        <div className={cn(
+          "flex items-center justify-between p-3 bg-card/50 min-h-[60px]",
+          isExpanded ? "border-b border-border" : "border-b-2 border-blue-500/30"
+        )}>
           <div className="flex items-center gap-4">
             {/* Tab Navigation */}
             <div className="flex gap-1">
@@ -93,7 +93,7 @@ export function BottomDock({ height, onHeightChange, onTerrainToggle }: BottomDo
               </motion.div>
             </Button>
           </div>
-        </motion.div>
+        </div>
 
         {/* Tab Content */}
         <AnimatePresence mode="wait">
@@ -113,7 +113,7 @@ export function BottomDock({ height, onHeightChange, onTerrainToggle }: BottomDo
                 transition={{ duration: 0.2 }}
                 className="h-full"
               >
-                {activeTab === "settings" ? <SettingsTab onTerrainToggle={onTerrainToggle} /> : <ActiveComponent />}
+                <ActiveComponent />
               </motion.div>
             </motion.div>
           )}
