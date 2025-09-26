@@ -30,7 +30,7 @@ export interface VehicleMovement {
   status: 'traveling' | 'arrived' | 'cancelled';
   vehicleType: 'ambulance' | 'fire_truck' | 'police' | 'helicopter' | 'evacuation_bus';
   route?: {
-    coordinates: [number, number][]; // Route coordinates from Mapbox Directions API
+    coordinates: [number, number][] | [number, number, number][]; // Route coordinates from Mapbox Directions API (2D or 3D)
     distance: number; // Total distance in meters
     duration: number; // Total duration in seconds
   };

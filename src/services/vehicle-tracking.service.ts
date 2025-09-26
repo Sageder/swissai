@@ -8,7 +8,7 @@ import type { VehicleMovement } from '@/lib/data-context';
 export interface VehicleTrackingOptions {
   mapboxToken: string;
   onPositionUpdate: (vehicleId: string, position: { lat: number; lng: number }, progress: number) => void;
-  onRouteUpdate: (vehicleId: string, route: { coordinates: [number, number][]; distance: number; duration: number }) => void;
+  onRouteUpdate: (vehicleId: string, route: { coordinates: [number, number][] | [number, number, number][]; distance: number; duration: number }) => void;
   onVehicleArrived: (vehicleId: string) => void;
 }
 
@@ -30,8 +30,21 @@ export class VehicleTrackingService {
     }
 
     try {
-      // Get route from Mapbox Directions API
-      const route = await this.getRoute(movement.from, movement.to);
+      let route: { coordinates: [number, number][]; distance: number; duration: number } | null = null;
+      
+      // For helicopters, use the direct route if provided, otherwise create one
+      if (movement.vehicleType === 'helicopter') {
+        if (movement.route) {
+          // Use the direct route provided by sendHelicopter
+          route = movement.route;
+        } else {
+          // Create a direct route for helicopters
+          route = this.createDirectRoute(movement.from, movement.to);
+        }
+      } else {
+        // For ground vehicles, get route from Mapbox Directions API
+        route = await this.getRoute(movement.from, movement.to);
+      }
       
       const trackingInstance = new VehicleTrackingInstance(
         movement,
@@ -101,6 +114,52 @@ export class VehicleTrackingService {
   }
 
   /**
+   * Create a direct route for helicopters (straight line in the air)
+   */
+  private createDirectRoute(
+    from: { lat: number; lng: number },
+    to: { lat: number; lng: number }
+  ): { coordinates: [number, number][]; distance: number; duration: number } {
+    // Calculate direct distance using Haversine formula
+    const distance = this.calculateDistance(from.lat, from.lng, to.lat, to.lng);
+    
+    // Create direct route with altitude for helicopter flight
+    // Add multiple points along the route to create a smooth 3D path
+    const numPoints = Math.max(3, Math.ceil(distance * 2)); // More points for longer distances
+    const coordinates: [number, number][] = [];
+    
+    for (let i = 0; i <= numPoints; i++) {
+      const progress = i / numPoints;
+      const lat = from.lat + (to.lat - from.lat) * progress;
+      const lng = from.lng + (to.lng - from.lng) * progress;
+      
+      // Add altitude to coordinates (Mapbox expects [lng, lat, altitude])
+      coordinates.push([lng, lat, 500]); // 500 meters altitude
+    }
+
+    return {
+      coordinates,
+      distance: distance * 1000, // Convert to meters
+      duration: distance / 27.78 // Helicopter speed: 100 km/h = 27.78 m/s
+    };
+  }
+
+  /**
+   * Calculate distance between two coordinates using Haversine formula
+   */
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in kilometers
+  }
+
+  /**
    * Get all active vehicle IDs
    */
   getActiveVehicleIds(): string[] {
@@ -121,7 +180,7 @@ export class VehicleTrackingService {
  */
 class VehicleTrackingInstance {
   private movement: VehicleMovement;
-  private route: { coordinates: [number, number][]; distance: number; duration: number } | null;
+  private route: { coordinates: [number, number][] | [number, number, number][]; distance: number; duration: number } | null;
   private options: VehicleTrackingOptions;
   private animationFrameId: number | null = null;
   private startTime: number;
@@ -129,7 +188,7 @@ class VehicleTrackingInstance {
 
   constructor(
     movement: VehicleMovement,
-    route: { coordinates: [number, number][]; distance: number; duration: number } | null,
+    route: { coordinates: [number, number][] | [number, number, number][]; distance: number; duration: number } | null,
     options: VehicleTrackingOptions
   ) {
     this.movement = movement;
@@ -217,10 +276,16 @@ class VehicleTrackingInstance {
       const currentCoord = this.route.coordinates[i];
       const nextCoord = this.route.coordinates[i + 1];
       
+      // Handle both 2D and 3D coordinates
+      const currentLat = currentCoord[1];
+      const currentLng = currentCoord[0];
+      const nextLat = nextCoord[1];
+      const nextLng = nextCoord[0];
+      
       // Calculate distance between current and next coordinate
       const segmentDistance = this.calculateDistance(
-        currentCoord[1], currentCoord[0], // lat, lng
-        nextCoord[1], nextCoord[0]        // lat, lng
+        currentLat, currentLng,
+        nextLat, nextLng
       );
       
       if (accumulatedDistance + segmentDistance >= targetDistance) {
@@ -228,8 +293,8 @@ class VehicleTrackingInstance {
         const segmentProgress = (targetDistance - accumulatedDistance) / segmentDistance;
         
         // Interpolate position within this segment
-        const lng = currentCoord[0] + (nextCoord[0] - currentCoord[0]) * segmentProgress;
-        const lat = currentCoord[1] + (nextCoord[1] - currentCoord[1]) * segmentProgress;
+        const lng = currentLng + (nextLng - currentLng) * segmentProgress;
+        const lat = currentLat + (nextLat - currentLat) * segmentProgress;
         
         return { lat, lng };
       }

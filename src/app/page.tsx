@@ -17,7 +17,7 @@ import { convertResourcesToPOIs, convertMonitoringStationsToPOIs, combinePOIs } 
 import { blattentPOIs } from "@/data/pois";
 import { useAlert } from "@/lib/alert-context";
 import { setAlertContext, createLandslideAlert, setCrisisManagementCallback } from "@/lib/alert-service";
-import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, addBlatten, sendVehicle, addAllPOIs } from "@/lib/util";
+import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs } from "@/lib/util";
 
 // Component that uses data context
 function MapWithData() {

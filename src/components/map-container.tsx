@@ -205,7 +205,13 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         `
 
         // Add pulsing animation for moving vehicles
-        el.style.animation = 'pulse 2s infinite'
+        if (movement.vehicleType === 'helicopter') {
+          // More pronounced pulsing for helicopters to simulate hovering
+          el.style.animation = 'pulse 1.5s infinite, float 3s ease-in-out infinite'
+          el.style.filter = 'drop-shadow(0 0 10px rgba(114, 46, 209, 0.5))'
+        } else {
+          el.style.animation = 'pulse 2s infinite'
+        }
         el.style.cursor = "pointer"
 
         // Add hover handlers for vehicles
@@ -232,15 +238,28 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         }
 
         // Create and add marker to map
-        const marker = new mapboxgl.default.Marker({ element: el })
-          .setLngLat([movement.currentPosition.lng, movement.currentPosition.lat])
-          .addTo(mapInstance)
+        let marker;
+        if (movement.vehicleType === 'helicopter') {
+          // For helicopters, create a 3D marker that appears to float
+          marker = new mapboxgl.default.Marker({ 
+            element: el,
+            // Add some elevation offset to make it appear to float
+            offset: [0, -20] // Offset upward to simulate altitude
+          })
+            .setLngLat([movement.currentPosition.lng, movement.currentPosition.lat])
+            .addTo(mapInstance)
+        } else {
+          // Regular ground vehicle marker
+          marker = new mapboxgl.default.Marker({ element: el })
+            .setLngLat([movement.currentPosition.lng, movement.currentPosition.lat])
+            .addTo(mapInstance)
+        }
 
         newMarkers.set(movement.id, marker)
 
         // Add route line if available and not already added
         if (movement.route && movement.route.coordinates.length > 0 && !addedRoutes.has(movement.id)) {
-          addRouteToMap(mapInstance, movement.id, movement.route.coordinates, vehicleColor)
+          addRouteToMap(mapInstance, movement.id, movement.route.coordinates, vehicleColor, movement.vehicleType)
           newAddedRoutes.add(movement.id)
         }
       } else if (vehicleMarkers.has(movement.id)) {
@@ -264,39 +283,86 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   }
 
   // Function to add a single route to the map
-  const addRouteToMap = (mapInstance: any, movementId: string, coordinates: [number, number][], color: string) => {
+  const addRouteToMap = (mapInstance: any, movementId: string, coordinates: [number, number][] | [number, number, number][], color: string, vehicleType?: string) => {
     const sourceId = `route-${movementId}`
     const layerId = `route-layer-${movementId}`
 
-    // Add source for this specific route
-    mapInstance.addSource(sourceId, {
-      type: 'geojson',
-      data: {
-        type: 'Feature',
-        properties: { color },
-        geometry: {
-          type: 'LineString',
-          coordinates
+    // For helicopters, create a 3D flight path using fill-extrusion
+    if (vehicleType === 'helicopter' && coordinates.length > 0 && coordinates[0].length === 3) {
+      // Create a 3D flight corridor
+      const flightPath = coordinates.map((coord: any) => [coord[0], coord[1]]);
+      
+      // Add source for helicopter flight path
+      mapInstance.addSource(sourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: { color },
+          geometry: {
+            type: 'LineString',
+            coordinates: flightPath
+          }
         }
-      }
-    })
+      })
 
-    // Add layer for this specific route
-    mapInstance.addLayer({
-      id: layerId,
-      type: 'line',
-      source: sourceId,
-      layout: {
-        'line-join': 'round',
-        'line-cap': 'round'
-      },
-      paint: {
-        'line-color': '#FA5053', // Neon blue color
-        'line-width': 3, // Slightly thicker for better visibility
-        'line-opacity': 1
-        // Removed line-dasharray to make it a solid line
-      }
-    })
+      // Add 3D flight corridor using fill-extrusion
+      mapInstance.addLayer({
+        id: layerId,
+        type: 'fill-extrusion',
+        source: sourceId,
+        paint: {
+          'fill-extrusion-color': '#722ed1',
+          'fill-extrusion-height': 500, // 500 meters altitude
+          'fill-extrusion-base': 0,
+          'fill-extrusion-opacity': 0.3
+        }
+      })
+
+      // Add a line on top of the 3D corridor
+      mapInstance.addLayer({
+        id: `${layerId}-line`,
+        type: 'line',
+        source: sourceId,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#722ed1',
+          'line-width': 4,
+          'line-opacity': 0.8
+        }
+      })
+    } else {
+      // Regular 2D route for ground vehicles
+      mapInstance.addSource(sourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: { color },
+          geometry: {
+            type: 'LineString',
+            coordinates: coordinates as [number, number][]
+          }
+        }
+      })
+
+      // Add layer for this specific route
+      mapInstance.addLayer({
+        id: layerId,
+        type: 'line',
+        source: sourceId,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#FA5053', // Red for ground vehicles
+          'line-width': 3,
+          'line-opacity': 0.8
+        }
+      })
+    }
   }
 
   // Get vehicle icon based on type
