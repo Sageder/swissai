@@ -202,8 +202,8 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
             }
           })
 
-          // Add navigation controls
-          map.current.addControl(new mapboxgl.default.NavigationControl(), "top-right")
+          // Add navigation controls at bottom-right
+          map.current.addControl(new mapboxgl.default.NavigationControl(), "bottom-right")
         } catch (error) {
           console.error("Error initializing Mapbox:", error)
           console.error("Error details:", {
@@ -264,9 +264,9 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         </div>
       )}
 
-      {/* POI Legend */}
+      {/* POI Legend - Moved to right side below search */}
       {mapboxToken && pois && pois.length > 0 && (
-        <div className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
+        <div className="absolute top-20 right-4 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg max-w-xs">
           <h4 className="font-semibold text-sm mb-2">Points of Interest</h4>
           <div className="space-y-1 text-xs">
             {pois.map((poi: POI) => (

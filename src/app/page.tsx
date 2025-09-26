@@ -66,16 +66,10 @@ export default function Dashboard() {
               <MapContainer ref={mapRef} />
             </motion.div>
 
-            {/* Search Overlay */}
-            <motion.div
-              animate={{
-                left: sidebarExpanded ? "340px" : "80px",
-              }}
-              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-              className="absolute top-4 z-40"
-            >
+            {/* Search Overlay - Positioned on the right side */}
+            <div className="absolute top-4 right-4 z-40">
               <MapSearch onLocationSelect={handleLocationSelect} />
-            </motion.div>
+            </div>
 
             {/* Bottom Dock - Positioned to not overlap with sidebar */}
             <motion.div
