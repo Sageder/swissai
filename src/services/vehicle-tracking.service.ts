@@ -30,8 +30,8 @@ export class VehicleTrackingService {
     }
 
     try {
-      let route: { coordinates: [number, number][]; distance: number; duration: number } | null = null;
-      
+      let route: { coordinates: [number, number][] | [number, number, number][]; distance: number; duration: number } | null = null;
+
       // For helicopters, use the direct route if provided, otherwise create one
       if (movement.vehicleType === 'helicopter') {
         if (movement.route) {
@@ -45,7 +45,7 @@ export class VehicleTrackingService {
         // For ground vehicles, get route from Mapbox Directions API
         route = await this.getRoute(movement.from, movement.to);
       }
-      
+
       const trackingInstance = new VehicleTrackingInstance(
         movement,
         route,
@@ -94,10 +94,10 @@ export class VehicleTrackingService {
   ): Promise<{ coordinates: [number, number][]; distance: number; duration: number } | null> {
     try {
       const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${from.lng},${from.lat};${to.lng},${to.lat}?geometries=geojson&access_token=${this.options.mapboxToken}`;
-      
+
       const response = await fetch(url);
       const data = await response.json();
-      
+
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];
         return {
@@ -109,7 +109,7 @@ export class VehicleTrackingService {
     } catch (error) {
       console.error('Error getting route from Mapbox:', error);
     }
-    
+
     return null;
   }
 
@@ -119,20 +119,20 @@ export class VehicleTrackingService {
   private createDirectRoute(
     from: { lat: number; lng: number },
     to: { lat: number; lng: number }
-  ): { coordinates: [number, number][]; distance: number; duration: number } {
+  ): { coordinates: [number, number, number][]; distance: number; duration: number } {
     // Calculate direct distance using Haversine formula
     const distance = this.calculateDistance(from.lat, from.lng, to.lat, to.lng);
-    
+
     // Create direct route with altitude for helicopter flight
     // Add multiple points along the route to create a smooth 3D path
     const numPoints = Math.max(3, Math.ceil(distance * 2)); // More points for longer distances
-    const coordinates: [number, number][] = [];
-    
+    const coordinates: [number, number, number][] = [];
+
     for (let i = 0; i <= numPoints; i++) {
       const progress = i / numPoints;
       const lat = from.lat + (to.lat - from.lat) * progress;
       const lng = from.lng + (to.lng - from.lng) * progress;
-      
+
       // Add altitude to coordinates (Mapbox expects [lng, lat, altitude])
       coordinates.push([lng, lat, 500]); // 500 meters altitude
     }
@@ -151,11 +151,11 @@ export class VehicleTrackingService {
     const R = 6371; // Radius of the Earth in kilometers
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c; // Distance in kilometers
   }
 
@@ -199,7 +199,7 @@ class VehicleTrackingInstance {
 
   start(): void {
     if (this.isRunning) return;
-    
+
     this.isRunning = true;
     this.animate();
   }
@@ -221,19 +221,19 @@ class VehicleTrackingInstance {
 
     const now = Date.now();
     const elapsed = now - this.startTime;
-    
+
     // Calculate normalized speed based on route distance
     // Base speed: 20 km/h = 5.56 m/s (slower for better visibility)
     const baseSpeed = 5.56; // meters per second
     let normalizedDuration = this.movement.duration;
-    
+
     if (this.route) {
       // Calculate expected duration based on distance and base speed
       const expectedDuration = (this.route.distance / baseSpeed) * 1000; // convert to milliseconds
       // Use the shorter of the two durations, but cap at reasonable limits
       normalizedDuration = Math.min(Math.max(expectedDuration, 5000), 120000); // 5s to 2min
     }
-    
+
     const progress = Math.min(elapsed / normalizedDuration, 1);
 
     let currentPosition: { lat: number; lng: number };
@@ -267,42 +267,42 @@ class VehicleTrackingInstance {
     // Calculate distance-based progress for consistent speed
     const totalDistance = this.route.distance;
     const targetDistance = progress * totalDistance;
-    
+
     let accumulatedDistance = 0;
     let currentIndex = 0;
-    
+
     // Find the segment where the target distance falls
     for (let i = 0; i < this.route.coordinates.length - 1; i++) {
       const currentCoord = this.route.coordinates[i];
       const nextCoord = this.route.coordinates[i + 1];
-      
+
       // Handle both 2D and 3D coordinates
       const currentLat = currentCoord[1];
       const currentLng = currentCoord[0];
       const nextLat = nextCoord[1];
       const nextLng = nextCoord[0];
-      
+
       // Calculate distance between current and next coordinate
       const segmentDistance = this.calculateDistance(
         currentLat, currentLng,
         nextLat, nextLng
       );
-      
+
       if (accumulatedDistance + segmentDistance >= targetDistance) {
         // Target distance is within this segment
         const segmentProgress = (targetDistance - accumulatedDistance) / segmentDistance;
-        
+
         // Interpolate position within this segment
         const lng = currentLng + (nextLng - currentLng) * segmentProgress;
         const lat = currentLat + (nextLat - currentLat) * segmentProgress;
-        
+
         return { lat, lng };
       }
-      
+
       accumulatedDistance += segmentDistance;
       currentIndex = i;
     }
-    
+
     // If we've reached the end, return the last coordinate
     const lastCoord = this.route.coordinates[this.route.coordinates.length - 1];
     return { lat: lastCoord[1], lng: lastCoord[0] };
@@ -316,10 +316,10 @@ class VehicleTrackingInstance {
     const Δφ = (lat2 - lat1) * Math.PI / 180;
     const Δλ = (lon2 - lon1) * Math.PI / 180;
 
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) *
+      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return R * c; // Distance in meters
   }

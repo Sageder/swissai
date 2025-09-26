@@ -85,16 +85,16 @@ function DashboardContent() {
         resources,
         authorities
       });
-      
+
       // Add Blatten city center
       addBlatten();
-      
+
       // Wait a bit then send a vehicle from research station to Blatten
       setTimeout(async () => {
         const currentPOIs = getCurrentPOIs();
         const blattenPOI = currentPOIs.find(poi => poi.id === 'blatten-city-center');
         const researchPOI = currentPOIs.find(poi => poi.id === 'blatten-research-station');
-        
+
         if (blattenPOI && researchPOI) {
           await sendVehicle(researchPOI.id, blattenPOI.id, 'fire_truck', 20000); // 20 second journey
         }
@@ -269,7 +269,7 @@ function DashboardContent() {
     setActionsPanelPolygon(null);
   };
 
-  
+
 
   return (
     <TimeProvider>
@@ -285,12 +285,12 @@ function DashboardContent() {
           <div className="flex-1 relative">
             {/* Full-screen Map */}
             <div className="absolute inset-0">
-              <MapContainer 
-                ref={mapRef} 
-                pois={allPOIs} 
+              <MapContainer
+                ref={mapRef}
+                pois={allPOIs}
                 onPolygonClick={handlePolygonClick}
               />
-              
+
               {/* MapSearch Overlay - Centered */}
               {searchOpen && (
                 <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">

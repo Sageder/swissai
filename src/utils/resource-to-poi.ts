@@ -6,9 +6,9 @@ import type { POI } from '@/data/pois'
  */
 export function convertResourcesToPOIs(resources: Resource[]): POI[] {
   return resources
-    .filter(resource => 
-      resource.location && 
-      typeof resource.location.lat === 'number' && 
+    .filter(resource =>
+      resource.location &&
+      typeof resource.location.lat === 'number' &&
       typeof resource.location.lng === 'number'
     )
     .map(resource => {
@@ -52,10 +52,37 @@ export function convertResourcesToPOIs(resources: Resource[]): POI[] {
         }
       }
 
+      // Create super clean, essential-only description
+      const getCleanDescription = (resource: Resource): string => {
+        const parts = []
+
+        // Just the essential info
+        if (resource.location.name) {
+          parts.push(resource.location.name)
+        }
+
+        // Status (simplified)
+        const status = resource.status === 'available' ? 'Operational' :
+          resource.status === 'deployed' ? 'Deployed' :
+            resource.status === 'emergency_mode' ? 'Emergency' :
+              resource.status === 'standby' ? 'Standby' :
+                resource.status.replace('_', ' ')
+        parts.push(status)
+
+        // Personnel count if available
+        if (resource.personnel) {
+          parts.push(`${resource.personnel} personnel`)
+        }
+
+        return parts.join(' • ')
+      }
+
+      const cleanDescription = getCleanDescription(resource);
+
       return {
         id: resource.resourceId,
-        title: resource.location.name || `${resource.type} - ${resource.resourceId}`,
-        description: `${resource.type} resource - Status: ${resource.status}${resource.personnel ? ` - Personnel: ${resource.personnel}` : ''}${resource.currentAssignment ? ` - Assignment: ${resource.currentAssignment}` : ''}`,
+        title: resource.location.name || `${resource.type.replace('_', ' ')} - ${resource.resourceId}`,
+        description: cleanDescription,
         type: getPOIType(resource.type),
         severity: getSeverity(resource.status),
         metadata: {
@@ -65,8 +92,8 @@ export function convertResourcesToPOIs(resources: Resource[]): POI[] {
           }
         },
         contact: resource.location.address || undefined,
-        status: resource.status === 'available' || resource.status === 'operational' ? 'active' : 
-                resource.status === 'deployed' || resource.status === 'emergency_mode' ? 'active' : 'inactive'
+        status: resource.status === 'available' || resource.status === 'operational' ? 'active' :
+          resource.status === 'deployed' || resource.status === 'emergency_mode' ? 'active' : 'inactive'
       }
     })
 }
@@ -76,9 +103,9 @@ export function convertResourcesToPOIs(resources: Resource[]): POI[] {
  */
 export function convertMonitoringStationsToPOIs(monitoringStations: MonitoringStation[]): POI[] {
   return monitoringStations
-    .filter(station => 
-      station.location && 
-      typeof station.location.lat === 'number' && 
+    .filter(station =>
+      station.location &&
+      typeof station.location.lat === 'number' &&
       typeof station.location.lng === 'number'
     )
     .map(station => {
@@ -99,7 +126,7 @@ export function convertMonitoringStationsToPOIs(monitoringStations: MonitoringSt
       // Map connectivity and readings to severity
       const getSeverity = (station: MonitoringStation): POI['severity'] => {
         if (station.connectivity === 'offline') return 'high'
-        
+
         // Check latest reading status
         const latestReading = station.readings[station.readings.length - 1]
         if (latestReading) {
@@ -119,20 +146,44 @@ export function convertMonitoringStationsToPOIs(monitoringStations: MonitoringSt
               return 'low'
           }
         }
-        
+
         return station.connectivity === 'degraded' ? 'medium' : 'low'
       }
 
-      // Get latest reading for description
-      const latestReading = station.readings[station.readings.length - 1]
-      const readingInfo = latestReading ? 
-        `Latest: ${latestReading.value} ${latestReading.unit} (${latestReading.status})` : 
-        'No recent readings'
+      // Create super clean, essential-only description for monitoring stations
+      const getCleanSensorDescription = (station: MonitoringStation): string => {
+        const parts = []
+
+        // Station name or type
+        if (station.location.name) {
+          parts.push(station.location.name)
+        } else {
+          parts.push(station.sensorType.replace('_', ' '))
+        }
+
+        // Battery status
+        parts.push(`${station.batteryStatus}% battery`)
+
+        // Reading status (simplified)
+        const latestReading = station.readings[station.readings.length - 1]
+        if (latestReading) {
+          const status = latestReading.status === 'normal' ? 'Normal' :
+            latestReading.status === 'alert' ? 'Alert' :
+              latestReading.status === 'warning' ? 'Warning' :
+                latestReading.status === 'critical' ? 'Critical' :
+                  latestReading.status
+          parts.push(status)
+        }
+
+        return parts.join(' • ')
+      }
+
+      const cleanDescription = getCleanSensorDescription(station);
 
       return {
         id: station.sensorId,
-        title: station.location.name || `${station.sensorType} Sensor - ${station.sensorId}`,
-        description: `${station.sensorType.replace('_', ' ')} sensor - ${readingInfo} - Battery: ${station.batteryStatus}% - ${station.responsibleOrganization}`,
+        title: station.location.name || `${station.sensorType.replace('_', ' ')} Sensor - ${station.sensorId}`,
+        description: cleanDescription,
         type: getPOIType(station.sensorType),
         severity: getSeverity(station),
         metadata: {
@@ -142,8 +193,8 @@ export function convertMonitoringStationsToPOIs(monitoringStations: MonitoringSt
           }
         },
         contact: station.location.address || undefined,
-        status: station.connectivity === 'online' ? 'active' : 
-                station.connectivity === 'degraded' ? 'inactive' : 'inactive'
+        status: station.connectivity === 'online' ? 'active' :
+          station.connectivity === 'degraded' ? 'inactive' : 'inactive'
       }
     })
 }

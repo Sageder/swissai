@@ -964,8 +964,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
                   color: getPOIColor(hoveredPOI.type) === '#ef4444' ? '#ef4444' : '#94a3b8'
                 }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  {getIconSVGPath(getPOIIconName(hoveredPOI.type))}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: getIconSVGPath(getPOIIconName(hoveredPOI.type)) }}>
                 </svg>
               </div>
               <div className="flex-1">
