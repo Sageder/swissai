@@ -24,20 +24,8 @@ import {
 } from "@/utils/resource-to-poi";
 import { blattentPOIs } from "@/data/pois";
 import { useAlert } from "@/lib/alert-context";
-import {
-  setAlertContext,
-  createLandslideAlert,
-  setCrisisManagementCallback,
-} from "@/lib/alert-service";
-import {
-  shouldShowPOIs,
-  getCurrentPOIs,
-  onPOIVisibilityChange,
-  setDataContextRef,
-  addBlatten,
-  sendVehicle,
-  addAllPOIs,
-} from "@/lib/util";
+import { setAlertContext, createLandslideAlert, setCrisisManagementCallback } from "@/lib/alert-service";
+import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs } from "@/lib/util";
 
 function DashboardContent() {
   const { resources, monitoringStations, authorities, isLoading, addVehicleMovement } = useData();

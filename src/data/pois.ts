@@ -56,10 +56,10 @@ export const blattentPOIs: POI[] = [
 
 // Helper function to extract coordinates from POIs array
 // Following the tutorial pattern exactly
-export function getPOICoordinates(pois: POI[]): Array<{lat: number, long: number}> {
+export function getPOICoordinates(pois: POI[]): Array<{ lat: number, long: number }> {
   return pois
-    .filter(poi => 
-      poi.metadata && 
+    .filter(poi =>
+      poi.metadata &&
       poi.metadata.coordinates &&
       typeof poi.metadata.coordinates.lat === 'number' &&
       typeof poi.metadata.coordinates.long === 'number'
@@ -70,33 +70,52 @@ export function getPOICoordinates(pois: POI[]): Array<{lat: number, long: number
     }));
 }
 
-// Get POI marker color based on type
+// Get POI marker color based on type - dark liquid glass theme
 export function getPOIColor(type: POI['type']): string {
   const colors = {
-    research: '#1890ff',    // Blue for research
-    sensor: '#52c41a',      // Green for sensors
-    emergency: '#ff4d4f',   // Red for emergency
-    hospital: '#f5222d',    // Dark red for hospitals
-    army: '#722ed1',        // Purple for army
-    fire_station: '#ff7a00', // Orange for fire stations
-    helicopter: '#ff1744',   // Bright red for helicopters
-    shelter: '#4caf50',      // Green for shelters
-    infrastructure: '#9c27b0', // Purple for infrastructure
-    hazard: '#ff0000',      // Bright red for hazard points
-    other: '#faad14'        // Orange for other
+    research: '#64748b',      // Slate gray
+    sensor: '#64748b',        // Slate gray
+    emergency: '#ef4444',     // Red for emergencies only
+    hospital: '#64748b',       // Slate gray
+    army: '#64748b',          // Slate gray
+    fire_station: '#64748b',   // Slate gray
+    helicopter: '#64748b',     // Slate gray
+    shelter: '#64748b',       // Slate gray
+    infrastructure: '#64748b', // Slate gray
+    hazard: '#ef4444',        // Red for hazards
+    other: '#64748b'          // Slate gray
   };
-  
+
   return colors[type] || colors.other;
 }
 
-// Get POI icon symbol based on type
+// Get POI icon name for Lucide React
+export function getPOIIconName(type: POI['type']): string {
+  const icons = {
+    research: 'Microscope',
+    sensor: 'Radio',
+    emergency: 'AlertTriangle',
+    hospital: 'Cross',
+    army: 'Shield',
+    fire_station: 'Flame',
+    helicopter: 'Plane',
+    shelter: 'Home',
+    infrastructure: 'Zap',
+    hazard: 'AlertCircle',
+    other: 'MapPin'
+  };
+
+  return icons[type] || icons.other;
+}
+
+// Get POI icon symbol based on type (fallback for text display)
 export function getPOIIcon(type: POI['type']): string {
   const icons = {
     research: '🔬',
     sensor: '📡',
-    emergency: '🚁',
+    emergency: '🚨',
     hospital: '🏥',
-    army: '⚔️',
+    army: '🛡️',
     fire_station: '🚒',
     helicopter: '🚁',
     shelter: '🏠',
@@ -104,6 +123,6 @@ export function getPOIIcon(type: POI['type']): string {
     hazard: '⚠️',
     other: '📍'
   };
-  
+
   return icons[type] || icons.other;
 }

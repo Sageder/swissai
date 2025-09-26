@@ -7,13 +7,30 @@
     transform: scale(1);
     opacity: 1;
   }
+
   50% {
     transform: scale(1.1);
     opacity: 0.8;
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+/* Helicopter floating animation */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
   }
 }
 
@@ -139,16 +156,67 @@
   }
 }
 
-/* POI Marker Styling - Following Tutorial Pattern */
-.poi-marker {
+/* Dark Liquid Glass POI Marker Styling */
+.poi-marker-dark-glass {
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.poi-marker:hover {
+.poi-marker-dark-glass:hover .poi-marker-container {
+  transform: scale(1.2);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.poi-marker-dark-glass .poi-marker-container {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.poi-marker-dark-glass svg {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.poi-marker-dark-glass:hover svg {
   transform: scale(1.1);
+  filter: drop-shadow(0 0 8px rgba(148, 163, 184, 0.3));
 }
 
-.poi-marker svg {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+.poi-marker-dark-glass:hover .liquid-glass-overlay {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent);
+}
+
+/* Liquid glass shimmer effect */
+@keyframes liquid-shimmer {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(30deg);
+  }
+
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(30deg);
+  }
+}
+
+.poi-marker-dark-glass:hover .liquid-glass-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  animation: liquid-shimmer 1.5s ease-in-out;
+  border-radius: 50%;
+}
+
+/* Dark glass hover info styling */
+.poi-hover-dark-glass {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.poi-hover-dark-glass:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }

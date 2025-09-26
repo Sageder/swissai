@@ -34,8 +34,8 @@ export async function POST(req: Request) {
     console.log("About to call streamText...");
 
     const result = streamText({
-      model: openai("gpt-4.1"), // Use gpt-4o-mini which is more reliable
-      messages: convertToModelMessages(messages),
+        model: openai('gpt-4.1'),
+        messages: convertToModelMessages(messages),
     });
 
     return result.toUIMessageStreamResponse();
