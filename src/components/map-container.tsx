@@ -31,6 +31,12 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   const [addedRoutes, setAddedRoutes] = useState<Set<string>>(new Set())
   // Vehicle tracking service
   const [vehicleTrackingService, setVehicleTrackingService] = useState<VehicleTrackingService | null>(null)
+  // State for POI hover info
+  const [hoveredPOI, setHoveredPOI] = useState<POI | null>(null)
+  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null)
+  // State for vehicle hover info
+  const [hoveredVehicleId, setHoveredVehicleId] = useState<string | null>(null)
+  const [vehicleHoverPosition, setVehicleHoverPosition] = useState<{ x: number; y: number } | null>(null)
   
   // Get vehicle movements from data context
   const { vehicleMovements, updateVehicleMovement } = useData()
@@ -137,8 +143,24 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
           </svg>
         `
 
-        // Add click handler - following tutorial pattern
+        // Add hover and click handlers - following tutorial pattern
         el.style.cursor = "pointer"
+        
+        // Add hover handlers
+        el.onmouseenter = (e) => {
+          setHoveredPOI(poi)
+          setHoverPosition({ x: e.clientX, y: e.clientY })
+        }
+        
+        el.onmouseleave = () => {
+          setHoveredPOI(null)
+          setHoverPosition(null)
+        }
+        
+        el.onmousemove = (e) => {
+          setHoverPosition({ x: e.clientX, y: e.clientY })
+        }
+        
         el.onclick = () => {
           // Handle POI click - could open modal, show details, etc.
           alert(`${poi.title}\n${poi.description}`)
@@ -185,6 +207,21 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         // Add pulsing animation for moving vehicles
         el.style.animation = 'pulse 2s infinite'
         el.style.cursor = "pointer"
+
+        // Add hover handlers for vehicles
+        el.onmouseenter = (e) => {
+          setHoveredVehicleId(movement.id)
+          setVehicleHoverPosition({ x: e.clientX, y: e.clientY })
+        }
+        
+        el.onmouseleave = () => {
+          setHoveredVehicleId(null)
+          setVehicleHoverPosition(null)
+        }
+        
+        el.onmousemove = (e) => {
+          setVehicleHoverPosition({ x: e.clientX, y: e.clientY })
+        }
 
         // Add click handler
         el.onclick = () => {
@@ -254,9 +291,9 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         'line-cap': 'round'
       },
       paint: {
-        'line-color': '#1890ff', // Blue color
-        'line-width': 2, // Thinner line
-        'line-opacity': 0.8
+        'line-color': '#FA5053', // Neon blue color
+        'line-width': 3, // Slightly thicker for better visibility
+        'line-opacity': 1
         // Removed line-dasharray to make it a solid line
       }
     })
@@ -489,6 +526,134 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   return (
     <div className="w-full h-full relative">
       <div ref={mapContainer} className="w-full h-full" style={{ minHeight: "100%" }} />
+
+      {/* POI Hover Info Box */}
+      {hoveredPOI && hoverPosition && (
+        <div
+          className="absolute z-50 pointer-events-none"
+          style={{
+            left: hoverPosition.x + 10,
+            top: hoverPosition.y - 10,
+            transform: 'translateY(-100%)'
+          }}
+        >
+          <div
+            className="poi-hover-info"
+            style={{
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "8px",
+              padding: "12px 16px",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+              minWidth: "200px",
+              maxWidth: "300px"
+            }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">{getPOIIcon(hoveredPOI.type)}</span>
+              <h3 className="text-white font-semibold text-sm">{hoveredPOI.title}</h3>
+            </div>
+            <p className="text-white/80 text-xs leading-relaxed mb-2">{hoveredPOI.description}</p>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-white/60 capitalize">{hoveredPOI.type}</span>
+              {hoveredPOI.severity && (
+                <span 
+                  className="px-2 py-1 rounded text-xs font-medium"
+                  style={{
+                    backgroundColor: hoveredPOI.severity === 'high' ? 'rgba(255, 77, 79, 0.2)' : 
+                                   hoveredPOI.severity === 'medium' ? 'rgba(255, 193, 7, 0.2)' : 
+                                   'rgba(82, 196, 26, 0.2)',
+                    color: hoveredPOI.severity === 'high' ? '#ff4d4f' : 
+                           hoveredPOI.severity === 'medium' ? '#ffc107' : 
+                           '#52c41a'
+                  }}
+                >
+                  {hoveredPOI.severity}
+                </span>
+              )}
+            </div>
+            {hoveredPOI.contact && (
+              <div className="mt-2 text-xs text-white/60">
+                Contact: {hoveredPOI.contact}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Vehicle Hover Info Box */}
+      {hoveredVehicleId && vehicleHoverPosition && (() => {
+        const hoveredVehicle = vehicleMovements.find(v => v.id === hoveredVehicleId);
+        return hoveredVehicle ? (
+        <div
+          className="absolute z-50 pointer-events-none"
+          style={{
+            left: vehicleHoverPosition.x + 10,
+            top: vehicleHoverPosition.y - 10,
+            transform: 'translateY(-100%)'
+          }}
+        >
+          <div
+            className="vehicle-hover-info"
+            style={{
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "8px",
+              padding: "12px 16px",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+              minWidth: "200px",
+              maxWidth: "300px"
+            }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">{getVehicleIcon(hoveredVehicle.vehicleType)}</span>
+              <h3 className="text-white font-semibold text-sm capitalize">
+                {hoveredVehicle.vehicleType.replace('_', ' ')}
+              </h3>
+            </div>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-white/60">From:</span>
+                <span className="text-white/80">{hoveredVehicle.from.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/60">To:</span>
+                <span className="text-white/80">{hoveredVehicle.to.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/60">Progress:</span>
+                <span className="text-white/80">{Math.round(hoveredVehicle.progress * 100)}%</span>
+              </div>
+              {hoveredVehicle.route && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Distance:</span>
+                    <span className="text-white/80">{(hoveredVehicle.route.distance / 1000).toFixed(1)}km</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">ETA:</span>
+                    <span className="text-white/80">{Math.round(hoveredVehicle.route.duration / 60)}min</span>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="mt-2 pt-2 border-t border-white/10">
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: getVehicleColor(hoveredVehicle.vehicleType) }}
+                />
+                <span className="text-xs text-white/60">Currently moving</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        ) : null;
+      })()}
 
       {/* Placeholder when no token */}
       {!mapboxToken && (

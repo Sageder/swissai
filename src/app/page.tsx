@@ -11,6 +11,7 @@ import { AIChat } from "@/components/ai-chat";
 import { AlertContainer } from "@/components/alerts/alert-container";
 import { CrisisManagement } from "@/components/crisis-management";
 import { DebugAgentPanel } from "@/components/debug-agent-panel";
+import { MapSearch } from "@/components/map-search";
 import { motion } from "framer-motion";
 import { convertResourcesToPOIs, convertMonitoringStationsToPOIs, combinePOIs } from "@/utils/resource-to-poi";
 import { blattentPOIs } from "@/data/pois";
@@ -30,6 +31,7 @@ function MapWithData() {
   const [showPOIs, setShowPOIs] = useState(false);
   const [currentPOIs, setCurrentPOIs] = useState<any[]>([]);
   const [debugPanelOpen, setDebugPanelOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const mapRef = useRef<MapRef>(null);
 
   // Initialize alert context for programmatic use
@@ -145,6 +147,21 @@ function MapWithData() {
     setCrisisEvent(null);
   };
 
+  const handleSearchOpen = () => {
+    setSearchOpen(true);
+  };
+
+  const handleSearchClose = () => {
+    setSearchOpen(false);
+  };
+
+  const handleLocationSelect = (coordinates: [number, number], name: string, boundingBox?: [number, number, number, number]) => {
+    if (mapRef.current) {
+      mapRef.current.flyToLocation(coordinates, 14, boundingBox);
+    }
+    setSearchOpen(false);
+  };
+
   return (
     <div className="h-screen w-full bg-background text-foreground overflow-hidden dark">
       {/* Alert Container */}
@@ -162,6 +179,18 @@ function MapWithData() {
           {/* Full-screen Map */}
           <div className="absolute inset-0">
             <MapContainer ref={mapRef} pois={allPOIs} />
+            
+            {/* MapSearch Overlay - Centered */}
+            {searchOpen && (
+              <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
+                <div className="pointer-events-auto">
+                  <MapSearch
+                    onLocationSelect={handleLocationSelect}
+                    className="w-96"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
         </div>
@@ -173,6 +202,7 @@ function MapWithData() {
           onViewChange={handleViewChange}
           onAIChatOpen={handleAIChatOpen}
           onDebugPanelOpen={() => setDebugPanelOpen(!debugPanelOpen)}
+          onSearchOpen={handleSearchOpen}
         />
 
         {/* AI Chat Overlay */}
