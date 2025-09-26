@@ -4,15 +4,15 @@
  * can use the utility functions to control the UI
  */
 
-import { 
-  showTimeline, 
-  hideTimeline, 
-  addMonitoringSources, 
-  addResources, 
+import {
+  showTimeline,
+  hideTimeline,
+  addMonitoringSources,
+  addResources,
   addAuthorities,
   onlyShowSelectedResources,
   clearAllPOIs,
-  getStateSummary 
+  getStateSummary
 } from './util';
 
 // Example data (in real usage, this would come from the data context)
@@ -50,13 +50,13 @@ const exampleAuthorities = [
  */
 export function exampleShowTimelineWithMonitoring() {
   console.log('=== Example 1: Show Timeline with Monitoring ===');
-  
+
   // Show the timeline
   showTimeline();
-  
+
   // Add monitoring sources to POI display
   addMonitoringSources(exampleMonitoringStations);
-  
+
   // Check current state
   console.log('Current state:', getStateSummary());
 }
@@ -66,10 +66,10 @@ export function exampleShowTimelineWithMonitoring() {
  */
 export function exampleAddAllResources() {
   console.log('=== Example 2: Add All Resources ===');
-  
+
   // Add all resources to POI display
   addResources(exampleResources);
-  
+
   // Check current state
   console.log('Current state:', getStateSummary());
 }
@@ -79,10 +79,10 @@ export function exampleAddAllResources() {
  */
 export function exampleAddAllAuthorities() {
   console.log('=== Example 3: Add All Authorities ===');
-  
+
   // Add all authorities to POI display
   addAuthorities(exampleAuthorities);
-  
+
   // Check current state
   console.log('Current state:', getStateSummary());
 }
@@ -92,14 +92,14 @@ export function exampleAddAllAuthorities() {
  */
 export function exampleShowOnlySelectedResources() {
   console.log('=== Example 4: Show Only Selected Resources ===');
-  
+
   // Clear all POIs first
   clearAllPOIs();
-  
+
   // Show only specific resources
   const selectedResources = exampleResources.filter(r => r.resourceId === 'heli-1');
   onlyShowSelectedResources(selectedResources);
-  
+
   // Check current state
   console.log('Current state:', getStateSummary());
 }
@@ -109,13 +109,13 @@ export function exampleShowOnlySelectedResources() {
  */
 export function exampleHideEverything() {
   console.log('=== Example 5: Hide Everything ===');
-  
+
   // Hide timeline
   hideTimeline();
-  
+
   // Clear all POIs
   clearAllPOIs();
-  
+
   // Check current state
   console.log('Current state:', getStateSummary());
 }
@@ -125,19 +125,19 @@ export function exampleHideEverything() {
  */
 export function exampleEmergencyResponseSetup() {
   console.log('=== Example 6: Emergency Response Setup ===');
-  
+
   // Show timeline for monitoring
   showTimeline();
-  
+
   // Add all monitoring sources
   addMonitoringSources(exampleMonitoringStations);
-  
+
   // Add all resources
   addResources(exampleResources);
-  
+
   // Add all authorities
   addAuthorities(exampleAuthorities);
-  
+
   // Check final state
   console.log('Final state:', getStateSummary());
 }
@@ -147,11 +147,11 @@ export function exampleEmergencyResponseSetup() {
  */
 export function exampleShowStaticPOIs() {
   console.log('=== Example 7: Show Static POIs ===');
-  
+
   // Note: By default, no POIs are shown. This function demonstrates
   // how you could add static POIs if needed in the future.
   // Currently, all POIs must be explicitly added via utility functions.
-  
+
   console.log('No static POIs are shown by default');
   console.log('Use addMonitoringSources(), addResources(), or addAuthorities() to show POIs');
 }
@@ -170,16 +170,16 @@ export const examples = {
 // Example of how an AI model might use these functions
 export function aiModelExample() {
   console.log('=== AI Model Example ===');
-  
+
   // AI model decides to show timeline for monitoring
   showTimeline();
-  
+
   // AI model adds monitoring sources to help with situation awareness
   addMonitoringSources(exampleMonitoringStations);
-  
+
   // AI model adds resources for emergency response
   addResources(exampleResources);
-  
+
   console.log('AI model has set up the interface for emergency monitoring');
   console.log('Current state:', getStateSummary());
 }

@@ -3,23 +3,14 @@
 import { useState, useRef, useEffect } from "react";
 import { MapContainer, type MapRef } from "@/components/map-container";
 import { Sidebar } from "@/components/sidebar";
-import { BottomDock } from "@/components/bottom-dock";
 import { SettingsOverlay } from "@/components/overlays/settings-overlay";
-import { AnalyticsOverlay } from "@/components/overlays/analytics-overlay";
 import { Timeline } from "@/components/timeline";
 import { TimeProvider } from "@/lib/time-context";
 import { DataProvider, useData } from "@/lib/data-context";
 import { MapSearch } from "@/components/map-search";
 import { PolygonEditor, type PolygonData } from "@/components/polygon-editor";
 import { PolygonPopup } from "@/components/polygon-popup";
-// import { AIChat } from "@/components/ai-chat";
-// import { AlertContainer } from "@/components/alerts/alert-container";
 import { motion } from "framer-motion";
-// import { convertResourcesToPOIs, convertMonitoringStationsToPOIs, combinePOIs } from "@/utils/resource-to-poi";
-// import { blattentPOIs } from "@/data/pois";
-// import { useAlert } from "@/lib/alert-context";
-// import { setAlertContext, createLandslideAlert } from "@/lib/alert-service";
-// import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange } from "@/lib/util";
 import { AIChat } from "@/components/ai-chat";
 import { AlertContainer } from "@/components/alerts/alert-container";
 import { CrisisManagement } from "@/components/crisis-management";
@@ -42,22 +33,23 @@ import {
   shouldShowPOIs,
   getCurrentPOIs,
   onPOIVisibilityChange,
+  setDataContextRef,
+  addBlatten,
+  sendVehicle,
+  addAllPOIs,
 } from "@/lib/util";
 
 function DashboardContent() {
+  const { resources, monitoringStations, authorities, isLoading, addVehicleMovement } = useData();
+  const alertContext = useAlert();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const [dockHeight, setDockHeight] = useState(33); // percentage
   const [activeView, setActiveView] = useState("map");
-  const [selectedPolygon, setSelectedPolygon] = useState<PolygonData | null>(
-    null
-  );
+  const [selectedPolygon, setSelectedPolygon] = useState<PolygonData | null>(null);
   const [popupPosition, setPopupPosition] = useState<{
     x: number;
     y: number;
   } | null>(null);
-  const [editingPolygon, setEditingPolygon] = useState<PolygonData | null>(
-    null
-  );
+  const [editingPolygon, setEditingPolygon] = useState<PolygonData | null>(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [crisisManagementOpen, setCrisisManagementOpen] = useState(false);
   const [crisisEvent, setCrisisEvent] = useState<any>(null);
@@ -66,13 +58,8 @@ function DashboardContent() {
   const [debugPanelOpen, setDebugPanelOpen] = useState(false);
   const [actionsPanelOpen, setActionsPanelOpen] = useState(false);
   const [actionsPanelPolygon, setActionsPanelPolygon] = useState<PolygonData | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const mapRef = useRef<MapRef>(null);
-
-  // Get alert context from hook
-  const alertContext = useAlert();
-  
-  // Get data from context
-  const { resources, monitoringStations } = useData();
 
   // Initialize alert context for programmatic use
   useEffect(() => {
@@ -85,6 +72,11 @@ function DashboardContent() {
     });
   }, [alertContext]);
 
+  // Initialize data context reference for utility functions
+  useEffect(() => {
+    setDataContextRef({ addVehicleMovement });
+  }, [addVehicleMovement]);
+
   // Demo alert for Blatten landslide
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -93,6 +85,36 @@ function DashboardContent() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Demo vehicle movement scenario
+  useEffect(() => {
+    if (isLoading || resources.length === 0) return;
+
+    const timer = setTimeout(() => {
+      // Set up emergency scenario
+      addAllPOIs({
+        monitoringStations,
+        resources,
+        authorities
+      });
+      
+      // Add Blatten city center
+      addBlatten();
+      
+      // Wait a bit then send a vehicle from research station to Blatten
+      setTimeout(async () => {
+        const currentPOIs = getCurrentPOIs();
+        const blattenPOI = currentPOIs.find(poi => poi.id === 'blatten-city-center');
+        const researchPOI = currentPOIs.find(poi => poi.id === 'blatten-research-station');
+        
+        if (blattenPOI && researchPOI) {
+          await sendVehicle(researchPOI.id, blattenPOI.id, 'fire_truck', 20000); // 20 second journey
+        }
+      }, 3000);
+    }, 5000); // Start demo 5 seconds after component mounts
+
+    return () => clearTimeout(timer);
+  }, [isLoading, resources, monitoringStations, authorities]);
 
   // Keyboard shortcut for debug panel (Ctrl/Cmd + D)
   useEffect(() => {
@@ -129,25 +151,11 @@ function DashboardContent() {
   // Only show POIs if explicitly controlled by utility functions
   const allPOIs = showPOIs && currentPOIs.length > 0 ? currentPOIs : [];
 
-  const handleTerrainToggle = (enabled: boolean, exaggeration?: number) => {
-    if (mapRef.current) {
-      mapRef.current.toggleTerrain(enabled, exaggeration);
-    }
-  };
 
   const handleViewChange = (view: string) => {
     setActiveView(view);
   };
 
-  const handleLocationSelect = (
-    coordinates: [number, number],
-    name: string,
-    boundingBox?: [number, number, number, number]
-  ) => {
-    if (mapRef.current) {
-      mapRef.current.flyToLocation(coordinates, 14, boundingBox);
-    }
-  };
 
   const handleCloseOverlay = () => {
     setActiveView("map");
@@ -248,6 +256,21 @@ function DashboardContent() {
     setCrisisEvent(null);
   };
 
+  const handleSearchOpen = () => {
+    setSearchOpen(true);
+  };
+
+  const handleSearchClose = () => {
+    setSearchOpen(false);
+  };
+
+  const handleLocationSelect = (coordinates: [number, number], name: string, boundingBox?: [number, number, number, number]) => {
+    if (mapRef.current) {
+      mapRef.current.flyToLocation(coordinates, 14, boundingBox);
+    }
+    setSearchOpen(false);
+  };
+
   const handleActionsOpen = (polygon: PolygonData) => {
     setActionsPanelPolygon(polygon);
     setActionsPanelOpen(true);
@@ -257,6 +280,8 @@ function DashboardContent() {
     setActionsPanelOpen(false);
     setActionsPanelPolygon(null);
   };
+
+  
 
   return (
     <TimeProvider>
@@ -271,19 +296,25 @@ function DashboardContent() {
           {/* Main Content Area - Full Width */}
           <div className="flex-1 relative">
             {/* Full-screen Map */}
-            <motion.div
-              animate={{
-                bottom: `${dockHeight}%`,
-              }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="absolute inset-0"
-            >
-              <MapContainer
-                ref={mapRef}
-                pois={allPOIs}
+            <div className="absolute inset-0">
+              <MapContainer 
+                ref={mapRef} 
+                pois={allPOIs} 
                 onPolygonClick={handlePolygonClick}
               />
-            </motion.div>
+              
+              {/* MapSearch Overlay - Centered */}
+              {searchOpen && (
+                <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
+                  <div className="pointer-events-auto">
+                    <MapSearch
+                      onLocationSelect={handleLocationSelect}
+                      className="w-96"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Polygon Editor */}
             <PolygonEditor
@@ -303,50 +334,24 @@ function DashboardContent() {
               onDelete={handleDeletePolygon}
               onActions={handleActionsOpen}
             />
-
-            {/* Search Overlay - Positioned on the right side */}
-            <div className="absolute top-4 right-4 z-40 flex gap-2">
-              <MapSearch onLocationSelect={handleLocationSelect} />
-              <Button
-                onClick={() => setDebugPanelOpen(!debugPanelOpen)}
-                variant="outline"
-                size="sm"
-                className="bg-gray-900/80 border-gray-600 text-gray-300 hover:bg-gray-800"
-              >
-                Debug
-              </Button>
-            </div>
-
-            {/* Bottom Dock - Positioned to not overlap with sidebar */}
-            <motion.div
-              animate={{
-                height: `${dockHeight}%`,
-                left: sidebarExpanded ? "320px" : "60px",
-              }}
-              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-              className="absolute bottom-0 right-0"
-            >
-              <BottomDock
-                height={dockHeight}
-                onHeightChange={setDockHeight}
-                onTerrainToggle={handleTerrainToggle}
-              />
-            </motion.div>
           </div>
 
+          {/* Sidebar */}
           <Sidebar
             expanded={sidebarExpanded}
             onToggle={() => setSidebarExpanded(!sidebarExpanded)}
             activeView={activeView}
             onViewChange={handleViewChange}
             onAIChatOpen={handleAIChatOpen}
+            onDebugPanelOpen={() => setDebugPanelOpen(!debugPanelOpen)}
+            onSearchOpen={handleSearchOpen}
           />
 
-          {/* AI Chat Overlay - Commented out */}
-          {/* <AIChat
-          isOpen={aiChatOpen}
-          onClose={handleAIChatClose}
-        /> */}
+          {/* AI Chat Overlay */}
+          <AIChat
+            isOpen={aiChatOpen}
+            onClose={handleAIChatClose}
+          />
 
           {/* Crisis Management Overlay */}
           <CrisisManagement
@@ -372,12 +377,6 @@ function DashboardContent() {
         {/* Overlays */}
         <SettingsOverlay
           isOpen={activeView === "settings"}
-          onClose={handleCloseOverlay}
-          onTerrainToggle={handleTerrainToggle}
-        />
-
-        <AnalyticsOverlay
-          isOpen={activeView === "analytics"}
           onClose={handleCloseOverlay}
         />
 
