@@ -1,0 +1,148 @@
+{
+  "collections": {
+    "events": {
+      "description": "Master event records with complete hazard information",
+      "example_fields": [
+        "eventId",
+        "name",
+        "type",
+        "detectedAt",
+        "location",
+        "coordinates",
+        "severity",
+        "status",
+        "affectedPopulation",
+        "description",
+        "monitoringData",
+        "riskAssessment",
+        "scenarioModeling",
+        "authoritiesInvolved",
+        "resourcesDeployed",
+        "infrastructureImpact",
+        "publicCommunication",
+        "mediaCoordination",
+        "evacuationZones",
+        "secondaryHazards",
+        "weatherConditions",
+        "accessibilityStatus"
+      ]
+    },
+    "monitoring_data": {
+      "description": "Real-time sensor data from all monitoring systems",
+      "example_fields": [
+        "sensorId",
+        "sensorType",
+        "location",
+        "readings",
+        "timestamp",
+        "alertThresholds",
+        "dataQuality",
+        "batteryStatus",
+        "connectivity",
+        "calibrationDate",
+        "responsibleOrganization"
+      ]
+    },
+    "authorities": {
+      "description": "Complete directory of all emergency response organizations",
+      "example_fields": [
+        "authorityId",
+        "name",
+        "type",
+        "level",
+        "jurisdiction",
+        "specialization",
+        "contact",
+        "availableResources",
+        "activationProtocols",
+        "responseTime",
+        "capacity",
+        "currentStatus",
+        "equipmentInventory",
+        "personnelCount"
+      ]
+    },
+    "resources": {
+      "description": "Real-time inventory of all emergency resources",
+      "example_fields": [
+        "resourceId",
+        "type",
+        "subtype",
+        "location",
+        "status",
+        "capacity",
+        "equipment",
+        "personnel",
+        "availability",
+        "deploymentTime",
+        "specializations",
+        "operatingRadius",
+        "currentAssignment"
+      ]
+    },
+    "infrastructure": {
+      "description": "Critical infrastructure monitoring and status",
+      "example_fields": [
+        "infrastructureId",
+        "type",
+        "location",
+        "status",
+        "capacity",
+        "criticalityLevel",
+        "vulnerabilities",
+        "backupSystems",
+        "maintenanceStatus",
+        "affectedServices",
+        "evacuationImpact"
+      ]
+    },
+    "decision_log": {
+      "description": "Complete audit trail of all decisions and approvals",
+      "example_fields": [
+        "decisionId",
+        "eventId",
+        "decisionType",
+        "issuedBy",
+        "approvedBy",
+        "timestamp",
+        "rationale",
+        "affectedAreas",
+        "resourcesRequired",
+        "timelineTarget",
+        "communicationPlan",
+        "contingencyMeasures"
+      ]
+    },
+    "public_communications": {
+      "description": "All public-facing messages and media coordination",
+      "example_fields": [
+        "messageId",
+        "eventId",
+        "messageType",
+        "content",
+        "language",
+        "channels",
+        "targetAudience",
+        "urgencyLevel",
+        "issuedBy",
+        "approvedBy",
+        "timestamp",
+        "reach",
+        "engagement",
+        "translations"
+      ]
+    }
+  },
+  "subcollections": {
+    "events/{eventId}/timeline": "Chronological event log",
+    "events/{eventId}/actions": "Response actions and tasks",
+    "events/{eventId}/resource_assignments": "Resource deployment tracking",
+    "events/{eventId}/evacuees": "Individual evacuee tracking",
+    "events/{eventId}/damage_assessment": "Infrastructure and property damage",
+    "events/{eventId}/media_updates": "Press releases and media coordination",
+    "authorities/{authorityId}/personnel": "Staff assignments and availability",
+    "authorities/{authorityId}/equipment": "Equipment inventory and status",
+    "resources/{resourceId}/deployment_history": "Historical deployment data",
+    "infrastructure/{infraId}/monitoring": "Real-time infrastructure status"
+  }
+}

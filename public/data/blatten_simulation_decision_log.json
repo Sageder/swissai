@@ -1,0 +1,106 @@
+[
+  {
+    "decisionId": "DEC-001",
+    "eventId": "blatten-glacier-2025-05-28",
+    "decisionType": "monitoring_enhancement",
+    "issuedBy": "wsl-birmensdorf",
+    "approvedBy": "valais-cantonal-police",
+    "timestamp": "2025-05-17T08:30:00Z",
+    "rationale": "Unusual glacier acceleration requires enhanced monitoring to assess collapse risk",
+    "affectedAreas": [
+      "blatten_glacier",
+      "lonza_valley"
+    ],
+    "resourcesRequired": [
+      "additional_sensors",
+      "expert_assessment"
+    ],
+    "timelineTarget": "immediate",
+    "status": "implemented"
+  },
+  {
+    "decisionId": "DEC-002",
+    "decisionType": "partial_evacuation",
+    "issuedBy": "valais-cantonal-police",
+    "approvedBy": "focp-bern",
+    "timestamp": "2025-05-19T09:30:00Z",
+    "rationale": "Critical glacier acceleration poses immediate risk to closest residents",
+    "affectedAreas": [
+      "blatten_zone_a"
+    ],
+    "affectedPopulation": 92,
+    "resourcesRequired": [
+      "fire-naters-volunteer",
+      "shelter-naters-sports",
+      "transport_vehicles"
+    ],
+    "timelineTarget": "4 hours",
+    "communicationPlan": "direct_police_contact",
+    "status": "completed"
+  },
+  {
+    "decisionId": "DEC-003",
+    "decisionType": "full_evacuation",
+    "issuedBy": "valais-cantonal-police",
+    "approvedBy": "focp-bern",
+    "timestamp": "2025-05-19T11:45:00Z",
+    "rationale": "Glacier movement reaching critical levels - total village evacuation required",
+    "affectedAreas": [
+      "blatten_complete",
+      "surrounding_farmsteads"
+    ],
+    "affectedPopulation": 320,
+    "resourcesRequired": [
+      "all_fire_stations",
+      "multiple_shelters",
+      "helicopter_support",
+      "veterinary_services"
+    ],
+    "timelineTarget": "2 hours",
+    "communicationPlan": "alertswiss_sirens_police",
+    "contingencyMeasures": [
+      "livestock_evacuation",
+      "infrastructure_shutdown"
+    ],
+    "status": "completed"
+  },
+  {
+    "decisionId": "DEC-004",
+    "decisionType": "livestock_evacuation",
+    "issuedBy": "valais-vet-service",
+    "approvedBy": "valais-cantonal-police",
+    "timestamp": "2025-05-19T16:00:00Z",
+    "rationale": "320 residents evacuated, now focus on livestock rescue operations",
+    "resourcesRequired": [
+      "helicopter_transport",
+      "veterinary_teams",
+      "temporary_grazing"
+    ],
+    "timelineTarget": "72 hours",
+    "specialRequirements": [
+      "sedation_equipment",
+      "cargo_nets",
+      "landing_zones"
+    ],
+    "status": "in_progress"
+  },
+  {
+    "decisionId": "DEC-005",
+    "decisionType": "expanded_evacuation",
+    "issuedBy": "valais-cantonal-police",
+    "approvedBy": "focp-bern",
+    "timestamp": "2025-05-28T15:30:00Z",
+    "rationale": "River blockage creates flood risk for downstream communities",
+    "affectedAreas": [
+      "naters_lowlands",
+      "lonza_valley_downstream"
+    ],
+    "affectedPopulation": 45,
+    "resourcesRequired": [
+      "additional_shelters",
+      "flood_monitoring",
+      "evacuation_transport"
+    ],
+    "status": "implementing"
+  }
+]

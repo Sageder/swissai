@@ -1,0 +1,138 @@
+[
+  {
+    "authorityId": "valais-cantonal-police",
+    "name": "Valais Cantonal Police",
+    "type": "police",
+    "level": "cantonal",
+    "jurisdiction": "Valais Canton",
+    "specialization": [
+      "evacuation",
+      "traffic_control",
+      "coordination",
+      "public_order"
+    ],
+    "contact": {
+      "phone": "+41-27-326-5611",
+      "email": "ops@police-vs.ch",
+      "radio": "POLYCOM-VS-1"
+    },
+    "currentStatus": "activated",
+    "personnelCount": 45,
+    "responseTime": "15 minutes",
+    "headquarters": {
+      "lat": 46.233,
+      "lng": 7.359
+    },
+    "equipmentInventory": [
+      "patrol_vehicles",
+      "traffic_barriers",
+      "communication_equipment"
+    ]
+  },
+  {
+    "authorityId": "focp-bern",
+    "name": "Federal Office for Civil Protection",
+    "type": "federal_civil_protection",
+    "level": "federal",
+    "jurisdiction": "Switzerland",
+    "specialization": [
+      "coordination",
+      "federal_resources",
+      "international_aid",
+      "strategic_planning"
+    ],
+    "contact": {
+      "phone": "+41-58-462-5011",
+      "email": "neoc@babs.admin.ch"
+    },
+    "currentStatus": "coordinating",
+    "responseTime": "2 hours"
+  },
+  {
+    "authorityId": "municipality-blatten",
+    "name": "Municipality of Blatten",
+    "type": "municipal",
+    "level": "municipal",
+    "jurisdiction": "Blatten village",
+    "contact": {
+      "phone": "+41-27-923-4567",
+      "email": "gemeinde@blatten-vs.ch"
+    },
+    "currentStatus": "evacuated",
+    "population": 320,
+    "buildings": {
+      "residential": 85,
+      "commercial": 12,
+      "agricultural": 45
+    }
+  },
+  {
+    "authorityId": "valais-vet-service",
+    "name": "Valais Veterinary Service",
+    "type": "veterinary",
+    "level": "cantonal",
+    "jurisdiction": "Valais Canton",
+    "specialization": [
+      "livestock_evacuation",
+      "animal_care",
+      "agricultural_emergency"
+    ],
+    "contact": {
+      "phone": "+41-27-606-7300",
+      "email": "vet@vs.ch",
+      "emergency": "+41-79-555-7300"
+    },
+    "currentStatus": "deployed",
+    "personnelCount": 12,
+    "equipment": [
+      "veterinary_supplies",
+      "animal_transport",
+      "sedation_equipment"
+    ]
+  },
+  {
+    "authorityId": "wsl-birmensdorf",
+    "name": "WSL Swiss Federal Institute",
+    "type": "research",
+    "level": "federal",
+    "jurisdiction": "Switzerland",
+    "specialization": [
+      "hazard_monitoring",
+      "risk_assessment",
+      "scientific_advisory"
+    ],
+    "contact": {
+      "phone": "+41-44-739-2111",
+      "email": "emergency@wsl.ch"
+    },
+    "currentStatus": "monitoring",
+    "experts": [
+      "glaciologists",
+      "hazard_specialists",
+      "modelers"
+    ]
+  },
+  {
+    "authorityId": "red-cross-valais",
+    "name": "Swiss Red Cross Valais",
+    "type": "humanitarian",
+    "level": "cantonal",
+    "jurisdiction": "Valais Canton",
+    "specialization": [
+      "shelter_management",
+      "psychological_support",
+      "emergency_aid"
+    ],
+    "contact": {
+      "phone": "+41-27-322-1444",
+      "email": "valais@redcross.ch"
+    },
+    "currentStatus": "deployed",
+    "volunteers": 35,
+    "facilities": [
+      "emergency_shelter",
+      "mobile_kitchen",
+      "first_aid"
+    ]
+  }
+]

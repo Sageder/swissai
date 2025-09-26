@@ -1,0 +1,156 @@
+{
+  "dataset_inventory": {
+    "dataset_name": "Blatten Glacier Disaster - Complete Platform Simulation",
+    "created": "2025-09-26",
+    "version": "2.0_with_timeline_and_movements",
+    "description": "Complete simulation dataset showing unified emergency management platform coordinating the 2025 Blatten glacier disaster response",
+    "core_data_files": {
+      "blatten_simulation_main_event.json": {
+        "firestore_collection": "events",
+        "document_id": "blatten-glacier-2025-05-28",
+        "description": "Master event record with complete disaster details, affected population, scenario modeling, and weather conditions",
+        "demo_purpose": "Shows comprehensive event tracking and AI risk assessment capabilities"
+      },
+      "blatten_simulation_monitoring_stations.json": {
+        "firestore_collection": "monitoring_data",
+        "documents": 5,
+        "description": "Real-time sensor data from WSL, MeteoSwiss, FOEN, SED-ETHZ with readings progression and alert thresholds",
+        "demo_purpose": "Demonstrates automated multi-source data ingestion and threshold monitoring"
+      },
+      "blatten_simulation_authorities.json": {
+        "firestore_collection": "authorities",
+        "documents": 6,
+        "description": "Complete emergency response organization directory with contact info, specializations, and current status",
+        "demo_purpose": "Shows automatic authority discovery and multi-level coordination (federal/cantonal/municipal)"
+      },
+      "blatten_simulation_evacuees.json": {
+        "firestore_collection": "evacuees",
+        "documents": 3,
+        "description": "Individual and family tracking with evacuation details, shelter assignments, and livestock coordination",
+        "demo_purpose": "Demonstrates comprehensive evacuee management and special needs tracking"
+      },
+      "blatten_simulation_expanded_resources.json": {
+        "firestore_collection": "resources",
+        "documents": 31,
+        "description": "Complete regional emergency resource inventory with capabilities, status, and specializations",
+        "demo_purpose": "Shows automatic resource discovery and intelligent allocation optimization"
+      }
+    },
+    "timeline_and_history_files": {
+      "blatten_simulation_platform_events.json": {
+        "firestore_collection": "events/{eventId}/timeline",
+        "documents": 12,
+        "description": "Platform usage timeline showing how the unified app coordinated the entire response",
+        "demo_features": [
+          "AI threat detection and automated alerts",
+          "Expert validation through decision support dashboard",
+          "Multi-agency virtual coordination sessions",
+          "Resource optimization algorithms in action",
+          "Real-time evacuation coordination",
+          "Federal response integration"
+        ]
+      },
+      "blatten_simulation_resource_movements.json": {
+        "firestore_collection": "resource_movements",
+        "documents": 8,
+        "description": "Detailed resource movement timeline with GPS coordinates for map visualization",
+        "demo_features": [
+          "Initial resource positions across region",
+          "Strategic pre-positioning based on threat levels",
+          "Coordinated evacuation deployments",
+          "Mass resource mobilization",
+          "Specialized livestock operations",
+          "Disaster response repositioning",
+          "Secondary hazard response expansion"
+        ]
+      },
+      "blatten_simulation_activity_log.json": {
+        "firestore_collection": "platform_logs",
+        "documents": 13,
+        "description": "Comprehensive platform activity log with performance metrics and user interactions",
+        "demo_features": [
+          "System automation vs user-initiated actions",
+          "AI decision support system performance",
+          "Coordination efficiency measurements",
+          "Real-time response metrics",
+          "Federal integration success tracking"
+        ]
+      }
+    },
+    "supporting_files": {
+      "blatten_simulation_data_mapping.json": {
+        "description": "Complete data structure mapping for developers",
+        "purpose": "Integration reference for Firestore setup"
+      }
+    },
+    "dataset_statistics": {
+      "total_files": 9,
+      "total_data_points": {
+        "events": 1,
+        "monitoring_stations": 5,
+        "authorities": 6,
+        "evacuees": 3,
+        "resources": 31,
+        "platform_events": 12,
+        "resource_movements": 8,
+        "activity_logs": 13,
+        "total": 79
+      },
+      "geographic_coverage": "Complete Valais Canton (Zermatt to Martigny)",
+      "time_span": "May 17-28, 2025 (11 days)",
+      "coordination_complexity": "Federal/Cantonal/Municipal multi-agency"
+    }
+  },
+  "demo_features": {
+    "map_visualization_capabilities": {
+      "initial_resource_positions": "Show all 31 resources at starting locations",
+      "real_time_movements": "Step-through resource deployments with coordinates",
+      "deployment_reasoning": "Display why each resource was moved where",
+      "status_changes": "Visual status updates (available\u2192deployed\u2192active)",
+      "coordination_lines": "Show communication and coordination connections",
+      "impact_zones": "Visualize evacuation areas and hazard zones"
+    },
+    "timeline_demonstration": {
+      "platform_automation": "Show AI detection, analysis, and recommendations",
+      "user_interactions": "Display decision points and expert validations",
+      "coordination_sessions": "Virtual meetings and collaboration tools",
+      "efficiency_metrics": "Compare platform speed vs traditional methods",
+      "response_progression": "From detection through federal activation",
+      "parallel_operations": "Multiple simultaneous coordinated activities"
+    },
+    "performance_metrics_showcase": {
+      "speed_improvements": [
+        "AI threat detection: 0.8 seconds",
+        "Resource discovery: 2.3 minutes",
+        "Resource optimization: 4.3-8.7 seconds",
+        "Evacuation coordination: 15 minutes vs 3+ hours traditional",
+        "Federal activation: under 3 minutes",
+        "Secondary hazard response: 15 minutes"
+      ],
+      "efficiency_gains": [
+        "300% improvement in coordination efficiency",
+        "70-85% faster emergency response overall",
+        "95% reduction in information inconsistencies",
+        "60% better resource utilization",
+        "Zero communication delays or conflicting messages"
+      ]
+    },
+    "system_intelligence_features": {
+      "automated_capabilities": [
+        "Multi-source data fusion and analysis",
+        "Threshold monitoring and alert generation",
+        "Resource discovery and capability matching",
+        "Evacuation planning and optimization",
+        "Secondary hazard detection and response",
+        "Communication coordination and distribution"
+      ],
+      "decision_support": [
+        "AI-powered risk assessment with confidence scores",
+        "Scenario modeling and impact prediction",
+        "Resource allocation optimization algorithms",
+        "Real-time collaboration and coordination tools",
+        "Comprehensive tracking and progress monitoring"
+      ]
+    }
+  }
+}

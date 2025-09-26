@@ -1,0 +1,176 @@
+[
+  {
+    "sensorId": "WSL-GLAC-345",
+    "sensorType": "glacier_movement",
+    "location": {
+      "name": "Blatten Glacier Terminus",
+      "lat": 46.369,
+      "lng": 7.814
+    },
+    "readings": [
+      {
+        "timestamp": "2025-05-17T06:00:00Z",
+        "value": 1.7,
+        "unit": "m/day",
+        "status": "warning"
+      },
+      {
+        "timestamp": "2025-05-18T06:00:00Z",
+        "value": 2.1,
+        "unit": "m/day",
+        "status": "alert"
+      },
+      {
+        "timestamp": "2025-05-19T06:00:00Z",
+        "value": 2.8,
+        "unit": "m/day",
+        "status": "critical"
+      },
+      {
+        "timestamp": "2025-05-20T06:00:00Z",
+        "value": 3.4,
+        "unit": "m/day",
+        "status": "critical"
+      }
+    ],
+    "alertThresholds": {
+      "warning": 1.5,
+      "alert": 2.0,
+      "critical": 2.5
+    },
+    "responsibleOrganization": "WSL",
+    "batteryStatus": 87,
+    "connectivity": "online"
+  },
+  {
+    "sensorId": "WSL-GLAC-346",
+    "sensorType": "glacier_stress",
+    "location": {
+      "name": "Blatten Glacier Mid-section",
+      "lat": 46.368,
+      "lng": 7.812
+    },
+    "readings": [
+      {
+        "timestamp": "2025-05-27T18:00:00Z",
+        "value": 45,
+        "unit": "MPa",
+        "status": "critical"
+      },
+      {
+        "timestamp": "2025-05-28T06:00:00Z",
+        "value": 62,
+        "unit": "MPa",
+        "status": "failure_imminent"
+      }
+    ],
+    "responsibleOrganization": "WSL",
+    "batteryStatus": 91,
+    "connectivity": "online"
+  },
+  {
+    "sensorId": "SEISMO-VAL-092",
+    "sensorType": "seismic",
+    "location": {
+      "name": "Naters Valley",
+      "lat": 46.325,
+      "lng": 7.756
+    },
+    "readings": [
+      {
+        "timestamp": "2025-05-28T14:32:17Z",
+        "value": 3.1,
+        "unit": "magnitude",
+        "status": "major_event"
+      },
+      {
+        "timestamp": "2025-05-28T14:33:45Z",
+        "value": 2.8,
+        "unit": "magnitude",
+        "status": "aftershock"
+      },
+      {
+        "timestamp": "2025-05-28T14:45:12Z",
+        "value": 2.2,
+        "unit": "magnitude",
+        "status": "aftershock"
+      }
+    ],
+    "responsibleOrganization": "SED-ETHZ",
+    "batteryStatus": 92,
+    "connectivity": "online"
+  },
+  {
+    "sensorId": "HYDRO-LONZA-23",
+    "sensorType": "water_level",
+    "location": {
+      "name": "Lonza River - Blatten",
+      "lat": 46.371,
+      "lng": 7.819
+    },
+    "readings": [
+      {
+        "timestamp": "2025-05-28T14:30:00Z",
+        "value": 2.1,
+        "unit": "m",
+        "status": "normal"
+      },
+      {
+        "timestamp": "2025-05-28T15:00:00Z",
+        "value": 1.8,
+        "unit": "m",
+        "status": "blocked"
+      },
+      {
+        "timestamp": "2025-05-28T16:30:00Z",
+        "value": 4.7,
+        "unit": "m",
+        "status": "flood_risk"
+      },
+      {
+        "timestamp": "2025-05-28T17:00:00Z",
+        "value": 6.2,
+        "unit": "m",
+        "status": "emergency"
+      }
+    ],
+    "alertThresholds": {
+      "warning": 3.0,
+      "critical": 4.0,
+      "emergency": 5.5
+    },
+    "responsibleOrganization": "FOEN",
+    "batteryStatus": 89,
+    "connectivity": "online"
+  },
+  {
+    "sensorId": "METEO-VS-147",
+    "sensorType": "weather",
+    "location": {
+      "name": "Brig Weather Station",
+      "lat": 46.319,
+      "lng": 7.987
+    },
+    "readings": [
+      {
+        "timestamp": "2025-05-28T12:00:00Z",
+        "temperature": 18.5,
+        "humidity": 65,
+        "precipitation": 0,
+        "wind_speed": 12,
+        "visibility": 25
+      },
+      {
+        "timestamp": "2025-05-28T15:00:00Z",
+        "temperature": 19.2,
+        "humidity": 62,
+        "precipitation": 0,
+        "wind_speed": 8,
+        "visibility": 30
+      }
+    ],
+    "responsibleOrganization": "MeteoSwiss",
+    "batteryStatus": 95,
+    "connectivity": "online"
+  }
+]

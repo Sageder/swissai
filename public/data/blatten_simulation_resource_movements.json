@@ -1,0 +1,482 @@
+[
+  {
+    "movementId": "MOVE-001",
+    "timestamp": "2025-05-17T06:00:00Z",
+    "eventType": "initial_position",
+    "title": "System Baseline - All Resources at Home Locations",
+    "description": "Platform baseline scan completed. All resources at standard operational positions.",
+    "resourcePositions": [
+      {
+        "resourceId": "fire-naters-volunteer",
+        "position": {
+          "lat": 46.325,
+          "lng": 7.756,
+          "location": "Naters Fire Station"
+        },
+        "status": "available",
+        "personnel": 24,
+        "readiness": "standard"
+      },
+      {
+        "resourceId": "fire-brig-central",
+        "position": {
+          "lat": 46.319,
+          "lng": 7.987,
+          "location": "Brig Fire Station"
+        },
+        "status": "available",
+        "personnel": 18,
+        "readiness": "standard"
+      },
+      {
+        "resourceId": "heli-air-rescue-1",
+        "position": {
+          "lat": 46.294,
+          "lng": 7.889,
+          "location": "Visp Airfield"
+        },
+        "status": "available",
+        "fuel": 75,
+        "readiness": "standard"
+      },
+      {
+        "resourceId": "hospital-visp-regional",
+        "position": {
+          "lat": 46.294,
+          "lng": 7.876,
+          "location": "Spital Oberwallis"
+        },
+        "status": "normal_operations",
+        "availableBeds": 45,
+        "readiness": "standard"
+      }
+    ],
+    "systemAction": "baseline_scan",
+    "totalResourcesTracked": 31
+  },
+  {
+    "movementId": "MOVE-002",
+    "timestamp": "2025-05-17T06:30:00Z",
+    "eventType": "readiness_elevation",
+    "title": "Automated Resource Readiness Elevation",
+    "description": "Platform automatically elevated readiness levels for resources within 25km of Blatten after threat detection.",
+    "triggeredBy": "ai_threat_assessment",
+    "affectedResources": [
+      {
+        "resourceId": "fire-naters-volunteer",
+        "position": {
+          "lat": 46.325,
+          "lng": 7.756,
+          "location": "Naters Fire Station"
+        },
+        "statusChange": "available \u2192 standby",
+        "readinessChange": "standard \u2192 elevated",
+        "preparationActions": [
+          "equipment_check",
+          "crew_notification",
+          "fuel_top_off"
+        ],
+        "responseTime": "reduced_to_5_minutes"
+      },
+      {
+        "resourceId": "heli-air-rescue-1",
+        "position": {
+          "lat": 46.294,
+          "lng": 7.889,
+          "location": "Visp Airfield"
+        },
+        "statusChange": "available \u2192 standby",
+        "readinessChange": "standard \u2192 elevated",
+        "preparationActions": [
+          "preflight_check",
+          "fuel_top_off",
+          "crew_briefing"
+        ],
+        "responseTime": "reduced_to_10_minutes"
+      }
+    ],
+    "platformOptimization": "proximity_based_readiness_algorithm"
+  },
+  {
+    "movementId": "MOVE-003",
+    "timestamp": "2025-05-18T06:15:00Z",
+    "eventType": "strategic_pre_positioning",
+    "title": "Platform-Optimized Resource Pre-positioning",
+    "description": "Platform recommended and coordinated strategic pre-positioning of key resources closer to potential impact zone.",
+    "triggeredBy": "alert_level_escalation",
+    "resourceMovements": [
+      {
+        "resourceId": "fire-naters-volunteer",
+        "movement": {
+          "from": {
+            "lat": 46.325,
+            "lng": 7.756,
+            "location": "Naters Fire Station"
+          },
+          "to": {
+            "lat": 46.342,
+            "lng": 7.78,
+            "location": "Naters-Blatten Road Junction"
+          },
+          "reason": "reduce_response_time_to_blatten",
+          "distance": "2.8km",
+          "travelTime": "4 minutes"
+        },
+        "statusChange": "standby \u2192 pre_positioned",
+        "assignedPersonnel": 12,
+        "equipmentDeployed": [
+          "pumper",
+          "utility_truck"
+        ]
+      },
+      {
+        "resourceId": "shelter-naters-sports",
+        "position": {
+          "lat": 46.325,
+          "lng": 7.759,
+          "location": "Naters Sports Center"
+        },
+        "statusChange": "available \u2192 preparation_mode",
+        "preparationActions": [
+          "facility_setup_initiated",
+          "red_cross_team_deployment",
+          "supply_inventory_check"
+        ],
+        "capacityPrep": "150_beds_setup"
+      }
+    ],
+    "platformCalculation": "optimal_response_time_reduction_achieved"
+  },
+  {
+    "movementId": "MOVE-004",
+    "timestamp": "2025-05-19T09:30:00Z",
+    "eventType": "evacuation_deployment",
+    "title": "Partial Evacuation - Coordinated Resource Deployment",
+    "description": "Platform coordinated first-wave evacuation support deployment for 92 high-risk residents.",
+    "triggeredBy": "partial_evacuation_order",
+    "resourceDeployments": [
+      {
+        "resourceId": "fire-naters-volunteer",
+        "deployment": {
+          "from": {
+            "lat": 46.342,
+            "lng": 7.78,
+            "location": "Road Junction Staging"
+          },
+          "to": {
+            "lat": 46.369,
+            "lng": 7.814,
+            "location": "Blatten Village Center"
+          },
+          "reason": "evacuation_assistance_coordination",
+          "distance": "4.2km",
+          "deploymentTime": "6 minutes"
+        },
+        "statusChange": "pre_positioned \u2192 actively_deployed",
+        "missionType": "evacuation_coordination",
+        "assignedTasks": [
+          "door_to_door_notification",
+          "transport_coordination",
+          "medical_assistance"
+        ]
+      },
+      {
+        "resourceId": "police-brig-regional",
+        "deployment": {
+          "from": {
+            "lat": 46.319,
+            "lng": 7.987,
+            "location": "Brig Police Station"
+          },
+          "to": {
+            "lat": 46.355,
+            "lng": 7.798,
+            "location": "Blatten Access Road"
+          },
+          "reason": "traffic_control_evacuation_routes",
+          "distance": "8.1km",
+          "deploymentTime": "12 minutes"
+        },
+        "statusChange": "available \u2192 deployed",
+        "missionType": "traffic_coordination",
+        "assignedTasks": [
+          "road_closure",
+          "evacuation_route_management",
+          "security"
+        ]
+      }
+    ],
+    "coordinatedEvacuees": 92,
+    "platformEfficiency": "zero_delays_optimal_routing"
+  },
+  {
+    "movementId": "MOVE-005",
+    "timestamp": "2025-05-19T12:15:00Z",
+    "eventType": "mass_mobilization",
+    "title": "Full Evacuation - Platform Mass Resource Coordination",
+    "description": "Platform coordinated simultaneous deployment of all available regional resources for complete village evacuation.",
+    "triggeredBy": "full_evacuation_order",
+    "massDeployment": [
+      {
+        "resourceId": "fire-brig-central",
+        "deployment": {
+          "from": {
+            "lat": 46.319,
+            "lng": 7.987,
+            "location": "Brig Fire Station"
+          },
+          "to": {
+            "lat": 46.369,
+            "lng": 7.814,
+            "location": "Blatten Village - South Sector"
+          },
+          "reason": "evacuation_support_heavy_equipment",
+          "assignedSector": "blatten_south",
+          "equipmentDeployed": [
+            "ladder_truck",
+            "rescue_vehicle"
+          ]
+        },
+        "statusChange": "available \u2192 deployed",
+        "assignedFamilies": 85,
+        "specializations": [
+          "elderly_assistance",
+          "heavy_lifting",
+          "medical_support"
+        ]
+      },
+      {
+        "resourceId": "heli-air-rescue-1",
+        "deployment": {
+          "from": {
+            "lat": 46.294,
+            "lng": 7.889,
+            "location": "Visp Airfield"
+          },
+          "to": {
+            "lat": 46.371,
+            "lng": 7.819,
+            "location": "Blatten Landing Zone Alpha"
+          },
+          "reason": "aerial_evacuation_support",
+          "flightTime": "8 minutes",
+          "missionProfile": "personnel_transport_priority"
+        },
+        "statusChange": "standby \u2192 aerial_deployed",
+        "assignedTasks": [
+          "medical_evacuation",
+          "supply_transport",
+          "reconnaissance"
+        ],
+        "flightRotations": "continuous_operations"
+      },
+      {
+        "resourceId": "shelter-naters-sports",
+        "statusUpdate": {
+          "position": {
+            "lat": 46.325,
+            "lng": 7.759,
+            "location": "Naters Sports Center"
+          },
+          "statusChange": "preparation \u2192 fully_activated",
+          "capacityActivated": "150_beds_operational",
+          "servicesActivated": [
+            "medical_station",
+            "registration",
+            "family_services"
+          ]
+        },
+        "receivingCapacity": "primary_evacuation_center",
+        "staffing": [
+          "red_cross_volunteers",
+          "medical_personnel",
+          "translators"
+        ]
+      }
+    ],
+    "totalResourcesDeployed": 8,
+    "coordinationTime": "45 minutes",
+    "platformOptimization": "simultaneous_multi_resource_deployment"
+  },
+  {
+    "movementId": "MOVE-006",
+    "timestamp": "2025-05-20T08:30:00Z",
+    "eventType": "specialized_operations",
+    "title": "Livestock Evacuation - Multi-Aircraft Coordination",
+    "description": "Platform coordinated complex livestock evacuation using multiple helicopter assets and veterinary teams.",
+    "triggeredBy": "livestock_evacuation_plan",
+    "specializedDeployments": [
+      {
+        "resourceId": "heli-super-puma-2",
+        "deployment": {
+          "from": {
+            "lat": 46.219,
+            "lng": 7.326,
+            "location": "Sion Military Base"
+          },
+          "to": {
+            "lat": 46.369,
+            "lng": 7.814,
+            "location": "Blatten Landing Zone Bravo"
+          },
+          "reason": "heavy_livestock_transport",
+          "flightTime": "25 minutes",
+          "cargoCapacity": "cattle_transport_specialized"
+        },
+        "statusChange": "en_route \u2192 livestock_deployed",
+        "missionSpecialization": "large_animal_transport",
+        "equipmentConfiguration": [
+          "cargo_nets",
+          "animal_sedation_kit",
+          "veterinary_support"
+        ]
+      },
+      {
+        "resourceId": "vet-valais-central",
+        "deployment": {
+          "from": {
+            "lat": 46.233,
+            "lng": 7.359,
+            "location": "Sion Veterinary Office"
+          },
+          "to": {
+            "lat": 46.369,
+            "lng": 7.814,
+            "location": "Blatten Farm Coordination Center"
+          },
+          "reason": "on_site_veterinary_coordination",
+          "transportTime": "35 minutes"
+        },
+        "statusChange": "coordinating \u2192 field_deployed",
+        "teamComposition": [
+          "senior_veterinarian",
+          "animal_handling_specialists",
+          "sedation_technicians"
+        ],
+        "livestockManagement": {
+          "cattle": 180,
+          "sheep": 340,
+          "goats": 75,
+          "horses": 12
+        }
+      }
+    ],
+    "operationComplexity": "multi_asset_coordination",
+    "platformCoordination": [
+      "flight_path_optimization",
+      "landing_zone_management",
+      "veterinary_scheduling"
+    ]
+  },
+  {
+    "movementId": "MOVE-007",
+    "timestamp": "2025-05-28T14:35:00Z",
+    "eventType": "disaster_response_repositioning",
+    "title": "Glacier Collapse - Immediate Response Repositioning",
+    "description": "Platform automatically repositioned resources for post-collapse response and secondary hazard management.",
+    "triggeredBy": "seismic_event_detection",
+    "immediateRepositioning": [
+      {
+        "resourceId": "rescue-alpine-valais",
+        "emergency_deployment": {
+          "from": {
+            "lat": 46.233,
+            "lng": 7.359,
+            "location": "Sion Headquarters"
+          },
+          "to": {
+            "lat": 46.355,
+            "lng": 7.798,
+            "location": "Blatten Perimeter Safe Zone"
+          },
+          "reason": "search_and_rescue_preparation",
+          "responseTime": "emergency_protocol_40_minutes",
+          "equipmentDeployed": [
+            "heavy_rescue",
+            "avalanche_probe",
+            "medical_support"
+          ]
+        },
+        "statusChange": "standby \u2192 emergency_deployed",
+        "missionProfile": "disaster_site_assessment"
+      },
+      {
+        "resourceId": "hospital-visp-regional",
+        "statusUpdate": {
+          "position": {
+            "lat": 46.294,
+            "lng": 7.876,
+            "location": "Spital Oberwallis"
+          },
+          "statusChange": "normal_operations \u2192 disaster_emergency_mode",
+          "capacityActivation": "mass_casualty_protocols",
+          "helpadActivated": true,
+          "staffingIncrease": "all_off_duty_personnel_recalled"
+        },
+        "preparationActions": [
+          "trauma_bay_clearing",
+          "blood_bank_activation",
+          "helicopter_reception_ready"
+        ]
+      }
+    ],
+    "responseTime": "3_minutes_platform_coordination",
+    "automaticProtocols": [
+      "mass_casualty_preparation",
+      "search_rescue_activation",
+      "medical_surge_capacity"
+    ]
+  },
+  {
+    "movementId": "MOVE-008",
+    "timestamp": "2025-05-28T15:30:00Z",
+    "eventType": "secondary_hazard_response",
+    "title": "Flood Risk Response - Expanded Resource Deployment",
+    "description": "Platform detected Lonza River blockage and automatically deployed additional resources for expanded evacuation.",
+    "triggeredBy": "water_level_emergency_detection",
+    "expandedDeployment": [
+      {
+        "resourceId": "rescue-water-rhone",
+        "emergency_deployment": {
+          "from": {
+            "lat": 46.294,
+            "lng": 7.883,
+            "location": "Visp Water Rescue Base"
+          },
+          "to": {
+            "lat": 46.338,
+            "lng": 7.765,
+            "location": "Lonza River Monitoring Point"
+          },
+          "reason": "flood_risk_assessment_and_response",
+          "responseTime": "18_minutes",
+          "equipmentDeployed": [
+            "rescue_boats",
+            "swift_water_gear",
+            "flood_monitoring"
+          ]
+        },
+        "statusChange": "available \u2192 flood_response_deployed",
+        "missionProfile": "water_rescue_and_monitoring"
+      },
+      {
+        "resourceId": "shelter-brig-school",
+        "activation": {
+          "position": {
+            "lat": 46.319,
+            "lng": 7.994,
+            "location": "Brig Secondary School"
+          },
+          "statusChange": "standby \u2192 rapid_activation",
+          "reason": "expanded_evacuation_shelter_need",
+          "setupTime": "2_hours_emergency_protocol",
+          "capacity": "200_additional_beds"
+        },
+        "assignedPopulation": "downstream_flood_risk_residents",
+        "expectedOccupancy": 45
+      }
+    ],
+    "coordinationEfficiency": "15_minute_complete_deployment",
+    "platformIntelligence": "predictive_secondary_hazard_response"
+  }
+]
