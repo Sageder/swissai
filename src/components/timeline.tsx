@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useTime } from "@/lib/time-context";
-import { useData } from "@/lib/data-context";
+// import { useData } from "@/lib/data-context";
 import { isTimelineVisible, onTimelineVisibilityChange } from "@/lib/util";
 import { motion } from "framer-motion";
 
@@ -12,12 +12,11 @@ interface TimelineProps {
 
 export function Timeline({ className = "" }: TimelineProps) {
   const { timeOffset, setTimeOffset, getDisplayTime, isRealTimeEnabled, currentTime } = useTime();
-  const { 
-    monitoringStations,
-    authorities,
-    resources,
-    isLoading 
-  } = useData();
+  // Temporarily disabled data context
+  const monitoringStations: any[] = [];
+  const authorities: any[] = [];
+  const resources: any[] = [];
+  const isLoading = false;
   const [isDragging, setIsDragging] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [baseTime] = useState(new Date('2025-05-17T06:23:00Z')); // Blatten simulation start time
@@ -93,19 +92,15 @@ export function Timeline({ className = "" }: TimelineProps) {
     }
   }, [isDragging]);
 
-  // Generate hour markers - each marker shows what time would be displayed if slider was at that position
+  // Generate hour markers - each marker shows relative time offset
   const hourMarkers = Array.from({ length: 13 }, (_, i) => {
     const hour = i;
     const position = (hour / 12) * 100;
-    // Calculate what getDisplayTime() would return if timeOffset was set to this hour value
-    const baseTimeToUse = isRealTimeEnabled ? currentTime : baseTime;
-    const markerTime = new Date(baseTimeToUse.getTime() + hour * 60 * 60 * 1000);
-    const displayHour = markerTime.getHours();
 
     return {
       hour,
       position,
-      displayHour,
+      relativeLabel: hour === 0 ? "Now" : `+${hour}h`,
       isCurrentHour: Math.abs(timeOffset - hour) < 0.1,
     };
   });
@@ -282,7 +277,7 @@ export function Timeline({ className = "" }: TimelineProps) {
                     textAlign: "center",
                   }}
                 >
-                  {marker.displayHour.toString().padStart(2, "0")}:00
+                  {marker.relativeLabel}
                 </div>
               )}
             </div>

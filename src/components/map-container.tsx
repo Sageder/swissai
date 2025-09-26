@@ -14,11 +14,16 @@ import "mapbox-gl/dist/mapbox-gl.css"
 export interface MapRef {
   toggleTerrain: (enabled: boolean, exaggeration?: number) => void
   flyToLocation: (coordinates: [number, number], zoom?: number, boundingBox?: [number, number, number, number]) => void
+  addPolygon: (polygon: any) => void
+  removePolygon: (polygonId: string) => void
+  updatePolygon: (polygonId: string, updates: Partial<any>) => void
+  getMapInstance: () => any
 }
 
 interface MapContainerProps {
   onMapLoad?: (map: any) => void
   pois?: POI[]
+  onPolygonClick?: (polygon: any, clickPosition: { x: number; y: number }) => void
 }
 
 // Helper function to get Lucide React icon component
@@ -57,7 +62,7 @@ const getIconSVGPath = (iconName: string): string => {
   return iconPaths[iconName] || iconPaths.MapPin;
 };
 
-export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, pois = blattentPOIs }, ref) => {
+export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, pois = blattentPOIs, onPolygonClick }, ref) => {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<any>(null)
   const terrainEnabled = useRef(true)
@@ -65,6 +70,28 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   const [mapboxToken, setMapboxToken] = useState<string | null>(null)
   // Global array to track POI markers - following tutorial pattern
   const [poiMarkers, setPOIMarkers] = useState<any[]>([])
+  // Track polygons
+  const [polygons, setPolygons] = useState<any[]>([])
+  const polygonsRef = useRef<any[]>([])
+  const onPolygonClickRef = useRef<((polygon: any, clickPosition: { x: number; y: number }) => void) | undefined>(onPolygonClick)
+  const globalClickHandlerAdded = useRef(false)
+
+  // Simple point-in-polygon test
+  const pointInPolygon = (point: [number, number], polygon: [number, number][]) => {
+    const [x, y] = point
+    let inside = false
+    
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const [xi, yi] = polygon[i]
+      const [xj, yj] = polygon[j]
+      
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+        inside = !inside
+      }
+    }
+    
+    return inside
+  }
   // Global map to track vehicle markers by movement ID
   const [vehicleMarkers, setVehicleMarkers] = useState<Map<string, any>>(new Map())
   // Track which routes have been added to prevent re-adding
@@ -114,7 +141,197 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         })
       }
     },
+    addPolygon: (polygon: any) => {
+      if (!map.current) return
+      
+      console.log("[MapContainer] Adding polygon:", polygon)
+      
+      // Add polygon source and layer
+      const sourceId = `polygon-${polygon.id}`
+      const layerId = `polygon-layer-${polygon.id}`
+      const outlineLayerId = `polygon-outline-${polygon.id}`
+      
+      console.log("[MapContainer] Creating layers:", { sourceId, layerId, outlineLayerId })
+      
+      // Create GeoJSON for the polygon
+      const geojson = {
+        type: "Feature" as const,
+        geometry: {
+          type: "Polygon" as const,
+          coordinates: [polygon.vertices.map((vertex: [number, number]) => vertex)]
+        },
+        properties: {
+          id: polygon.id,
+          name: polygon.name,
+          color: polygon.color,
+          fillColor: polygon.fillColor
+        }
+      }
+      
+      // Add source
+      map.current.addSource(sourceId, {
+        type: "geojson",
+        data: geojson
+      })
+      
+      // Add fill layer at the very top of the layer stack for maximum click priority
+      map.current.addLayer({
+        id: layerId,
+        type: "fill",
+        source: sourceId,
+        minzoom: 0,
+        maxzoom: 24,
+        paint: {
+          "fill-color": polygon.fillColor,
+          "fill-opacity": 0.3
+        }
+      }) // No beforeLayer - adds to the very top
+      
+      // Add outline layer at the very top for maximum click priority
+      map.current.addLayer({
+        id: outlineLayerId,
+        type: "line",
+        source: sourceId,
+        minzoom: 0,
+        maxzoom: 24,
+        paint: {
+          "line-color": polygon.color,
+          "line-width": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0, 5,
+            5, 6,
+            10, 4,
+            15, 4,
+            20, 5
+          ],
+          "line-opacity": 1.0
+        }
+      }) // No beforeLayer - adds to the very top
+      
+      // Add a much larger invisible clickable area at the very top for maximum click priority
+      const clickableLayerId = `polygon-clickable-${polygon.id}`
+      map.current.addLayer({
+        id: clickableLayerId,
+        type: "fill",
+        source: sourceId,
+        minzoom: 0,
+        maxzoom: 24,
+        paint: {
+          "fill-color": "rgba(255,0,0,0.01)", // Barely visible red for debugging
+          "fill-opacity": 0.01
+        }
+      }) // No beforeLayer - adds to the very top
+      
+      // Store polygon data for global click handler
+      console.log("[MapContainer] Polygon added, will be handled by global click handler:", polygon.id)
+      
+      // Change cursor on hover for all layers
+      const polygonLayers = [layerId, outlineLayerId, clickableLayerId]
+      polygonLayers.forEach((layer: string) => {
+        map.current.on('mouseenter', layer, () => {
+          map.current.getCanvas().style.cursor = 'pointer'
+        })
+        
+        map.current.on('mouseleave', layer, () => {
+          map.current.getCanvas().style.cursor = ''
+        })
+      })
+      
+      setPolygons(prev => {
+        const newPolygons = [...prev, polygon]
+        console.log("[MapContainer] Updated polygons state:", newPolygons)
+        console.log("[MapContainer] Polygon layers created successfully")
+        
+        // Verify layers exist
+        setTimeout(() => {
+          const layerExists = map.current.getLayer(layerId)
+          const sourceExists = map.current.getSource(sourceId)
+          console.log("[MapContainer] Layer verification:", { layerExists: !!layerExists, sourceExists: !!sourceExists })
+        }, 100)
+        
+        return newPolygons
+      })
+    },
+    removePolygon: (polygonId: string) => {
+      if (!map.current) return
+      
+      console.log("[MapContainer] Removing polygon:", polygonId)
+      
+      const sourceId = `polygon-${polygonId}`
+      const layerId = `polygon-layer-${polygonId}`
+      const outlineLayerId = `polygon-outline-${polygonId}`
+      const clickableLayerId = `polygon-clickable-${polygonId}`
+      
+      // Remove event handlers first
+      const polygonLayersToRemove = [layerId, outlineLayerId, clickableLayerId]
+      polygonLayersToRemove.forEach((layer: string) => {
+        map.current.off('click', layer)
+        map.current.off('mouseenter', layer)
+        map.current.off('mouseleave', layer)
+      })
+      
+      // Remove layers and source
+      if (map.current.getLayer(layerId)) {
+        map.current.removeLayer(layerId)
+      }
+      if (map.current.getLayer(outlineLayerId)) {
+        map.current.removeLayer(outlineLayerId)
+      }
+      if (map.current.getLayer(clickableLayerId)) {
+        map.current.removeLayer(clickableLayerId)
+      }
+      if (map.current.getSource(sourceId)) {
+        map.current.removeSource(sourceId)
+      }
+      
+      setPolygons(prev => prev.filter(p => p.id !== polygonId))
+    },
+    updatePolygon: (polygonId: string, updates: Partial<any>) => {
+      if (!map.current) return
+      
+      console.log("[MapContainer] Updating polygon:", polygonId, updates)
+      
+      setPolygons(prev => prev.map(p => 
+        p.id === polygonId ? { ...p, ...updates } : p
+      ))
+      
+      // Update the map source data if needed
+      const sourceId = `polygon-${polygonId}`
+      if (map.current.getSource(sourceId)) {
+        const updatedPolygon = polygons.find(p => p.id === polygonId)
+        if (updatedPolygon) {
+          const geojson = {
+            type: "Feature" as const,
+            geometry: {
+              type: "Polygon" as const,
+              coordinates: [updatedPolygon.vertices.map((vertex: [number, number]) => vertex)]
+            },
+            properties: {
+              id: updatedPolygon.id,
+              name: updates.name || updatedPolygon.name,
+              color: updates.color || updatedPolygon.color,
+              fillColor: updates.fillColor || updatedPolygon.fillColor
+            }
+          }
+          map.current.getSource(sourceId).setData(geojson)
+        }
+      }
+    },
+    getMapInstance: () => {
+      return map.current
+    },
   }))
+
+  // Update refs when props or state change
+  useEffect(() => {
+    polygonsRef.current = polygons
+  }, [polygons])
+
+  useEffect(() => {
+    onPolygonClickRef.current = onPolygonClick
+  }, [onPolygonClick])
 
   // Handle client-side hydration
   useEffect(() => {
@@ -560,6 +777,36 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
                 "line-opacity": 0.8
               }
             })
+
+            console.log("[v0] Terrain layer added with 1.2x realistic exaggeration")
+            console.log("[v0] Building layers added with early visibility (zoom 10+)")
+
+            // Add SIMPLE global click handler that checks polygon geometry directly
+            if (!globalClickHandlerAdded.current) {
+              map.current.on('click', (e: any) => {
+                console.log("[MapContainer] Global click at:", e.lngLat.lng, e.lngLat.lat)
+                console.log("[MapContainer] Available polygons:", polygonsRef.current.length)
+                console.log("[MapContainer] Polygons data:", polygonsRef.current)
+                
+                // Check each polygon manually using point-in-polygon
+                const clickPoint: [number, number] = [e.lngLat.lng, e.lngLat.lat]
+                
+                for (const polygon of polygonsRef.current) {
+                  console.log("[MapContainer] Checking polygon:", polygon.id, "vertices:", polygon.vertices)
+                  if (pointInPolygon(clickPoint, polygon.vertices)) {
+                    console.log("[MapContainer] DIRECT GEOMETRY HIT - Polygon clicked:", polygon.id)
+                    if (onPolygonClickRef.current) {
+                      onPolygonClickRef.current(polygon, { x: e.point.x, y: e.point.y })
+                      return // Stop checking other polygons
+                    }
+                  }
+                }
+                
+                console.log("[MapContainer] No polygon hit at click point")
+              })
+              globalClickHandlerAdded.current = true
+              console.log("[MapContainer] Global polygon click handler added")
+            }
 
             // Create POI markers after map loads
             if (pois && pois.length > 0) {

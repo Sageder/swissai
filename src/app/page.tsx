@@ -7,30 +7,45 @@ import { SettingsOverlay } from "@/components/overlays/settings-overlay";
 import { Timeline } from "@/components/timeline";
 import { TimeProvider } from "@/lib/time-context";
 import { DataProvider, useData } from "@/lib/data-context";
+import { MapSearch } from "@/components/map-search";
+import { PolygonEditor, type PolygonData } from "@/components/polygon-editor";
+import { PolygonPopup } from "@/components/polygon-popup";
+import { motion } from "framer-motion";
 import { AIChat } from "@/components/ai-chat";
 import { AlertContainer } from "@/components/alerts/alert-container";
 import { CrisisManagement } from "@/components/crisis-management";
 import { DebugAgentPanel } from "@/components/debug-agent-panel";
-import { MapSearch } from "@/components/map-search";
-import { motion } from "framer-motion";
-import { convertResourcesToPOIs, convertMonitoringStationsToPOIs, combinePOIs } from "@/utils/resource-to-poi";
+import { ActionsSidePanel } from "@/components/actions-side-panel";
+import { Button } from "@/components/ui/button";
+import {
+  convertResourcesToPOIs,
+  convertMonitoringStationsToPOIs,
+  combinePOIs,
+} from "@/utils/resource-to-poi";
 import { blattentPOIs } from "@/data/pois";
 import { useAlert } from "@/lib/alert-context";
 import { setAlertContext, createLandslideAlert, setCrisisManagementCallback } from "@/lib/alert-service";
 import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs } from "@/lib/util";
 
-// Component that uses data context
-function MapWithData() {
+function DashboardContent() {
   const { resources, monitoringStations, authorities, isLoading, addVehicleMovement } = useData();
   const alertContext = useAlert();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [activeView, setActiveView] = useState("map");
+  const [selectedPolygon, setSelectedPolygon] = useState<PolygonData | null>(null);
+  const [popupPosition, setPopupPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [editingPolygon, setEditingPolygon] = useState<PolygonData | null>(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [crisisManagementOpen, setCrisisManagementOpen] = useState(false);
   const [crisisEvent, setCrisisEvent] = useState<any>(null);
   const [showPOIs, setShowPOIs] = useState(false);
   const [currentPOIs, setCurrentPOIs] = useState<any[]>([]);
   const [debugPanelOpen, setDebugPanelOpen] = useState(false);
+  const [actionsPanelOpen, setActionsPanelOpen] = useState(false);
+  const [actionsPanelPolygon, setActionsPanelPolygon] = useState<PolygonData | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [liveMode, setLiveMode] = useState(false);
   const mapRef = useRef<MapRef>(null);
@@ -54,7 +69,7 @@ function MapWithData() {
   // Demo alert for Blatten landslide
   useEffect(() => {
     const timer = setTimeout(() => {
-      createLandslideAlert('Blatten, Valais', { lat: 46.4, lng: 7.5 });
+      createLandslideAlert("Blatten, Valais", { lat: 46.4, lng: 7.5 });
     }, 2000); // Show alert 2 seconds after component mounts
 
     return () => clearTimeout(timer);
@@ -93,14 +108,14 @@ function MapWithData() {
   // Keyboard shortcut for debug panel (Ctrl/Cmd + D)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
+      if ((event.ctrlKey || event.metaKey) && event.key === "d") {
         event.preventDefault();
         setDebugPanelOpen(!debugPanelOpen);
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [debugPanelOpen]);
 
   // Listen for POI visibility changes
@@ -133,6 +148,88 @@ function MapWithData() {
 
   const handleCloseOverlay = () => {
     setActiveView("map");
+  };
+
+  const handlePolygonComplete = (polygon: PolygonData) => {
+    console.log("[Dashboard] Polygon completed:", polygon);
+    console.log("[Dashboard] Polygon vertices:", polygon.vertices);
+    console.log("[Dashboard] Adding polygon to map...");
+    if (mapRef.current) {
+      mapRef.current.addPolygon(polygon);
+      console.log("[Dashboard] Polygon added to map successfully");
+    } else {
+      console.error("[Dashboard] MapRef is null, cannot add polygon");
+    }
+  };
+
+  const handlePolygonClick = (
+    polygon: PolygonData,
+    clickPosition: { x: number; y: number }
+  ) => {
+    console.log("[Dashboard] Polygon clicked:", polygon);
+    setSelectedPolygon(polygon);
+    setPopupPosition(clickPosition);
+  };
+
+  const handleClosePopup = () => {
+    setSelectedPolygon(null);
+    setPopupPosition(null);
+  };
+
+  const handleUpdatePolygonName = (polygonId: string, newName: string) => {
+    console.log("[Dashboard] Updating polygon name:", polygonId, newName);
+    if (mapRef.current) {
+      mapRef.current.updatePolygon(polygonId, { name: newName });
+    }
+    // Update the selected polygon state
+    if (selectedPolygon && selectedPolygon.id === polygonId) {
+      setSelectedPolygon({ ...selectedPolygon, name: newName });
+    }
+  };
+
+  const handleEditPolygon = (polygonId: string) => {
+    console.log("[Dashboard] Edit polygon:", polygonId);
+
+    // Find the polygon data
+    const polygonToEdit = selectedPolygon;
+    if (!polygonToEdit) {
+      console.warn("[Dashboard] No polygon data found for editing");
+      return;
+    }
+
+    // Remove the polygon from the map
+    if (mapRef.current) {
+      mapRef.current.removePolygon(polygonId);
+    }
+
+    // Set the polygon for editing
+    setEditingPolygon(polygonToEdit);
+    handleClosePopup();
+
+    console.log("[Dashboard] Started editing polygon:", polygonToEdit);
+  };
+
+  const handlePolygonUpdate = (
+    polygonId: string,
+    updatedPolygon: PolygonData
+  ) => {
+    console.log("[Dashboard] Polygon updated:", polygonId, updatedPolygon);
+
+    // Add the updated polygon back to the map
+    if (mapRef.current) {
+      mapRef.current.addPolygon(updatedPolygon);
+    }
+
+    // Clear editing state
+    setEditingPolygon(null);
+  };
+
+  const handleDeletePolygon = (polygonId: string) => {
+    console.log("[Dashboard] Delete polygon:", polygonId);
+    if (mapRef.current) {
+      mapRef.current.removePolygon(polygonId);
+    }
+    handleClosePopup();
   };
 
   const handleAIChatOpen = () => {
@@ -183,59 +280,151 @@ function MapWithData() {
     setSearchOpen(false);
   };
 
+  const handleActionsOpen = (polygon: PolygonData) => {
+    setActionsPanelPolygon(polygon);
+    setActionsPanelOpen(true);
+  };
+
+  const handleActionsPanelClose = () => {
+    setActionsPanelOpen(false);
+    setActionsPanelPolygon(null);
+  };
+
+  
+
   return (
-    <div className={`h-screen w-full bg-background text-foreground overflow-hidden dark relative ${liveMode ? 'border-4 border-dashed border-red-500' : ''}`}>
-      {/* Live Mode Badge */}
-      {liveMode && (
-        <div className="absolute top-4 right-4 z-50">
-          <div className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg">
-            <div className="w-2 h-2 bg-red-300 rounded-full animate-ping"></div>
-            LIVE
+    <TimeProvider>
+      <div className={`h-screen w-full bg-background text-foreground overflow-hidden dark relative ${liveMode ? 'border-4 border-dashed border-red-500' : ''}`}>
+        {/* Live Mode Badge */}
+        {liveMode && (
+          <div className="absolute top-4 right-4 z-50">
+            <div className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg">
+              <div className="w-2 h-2 bg-red-300 rounded-full animate-ping"></div>
+              LIVE
+            </div>
           </div>
+        )}
+
+        {/* Alert Container */}
+        <AlertContainer />
+
+        {/* Timeline - Fixed at top */}
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-96">
+          <Timeline />
         </div>
-      )}
 
-      {/* Alert Container */}
-      <AlertContainer />
+        {/* Main Layout Container */}
+        <div className="relative h-full flex">
+          {/* Main Content Area - Full Width */}
+          <div className="flex-1 relative">
+            {/* Full-screen Map */}
+            <div className="absolute inset-0">
+              <MapContainer ref={mapRef} pois={allPOIs} />
 
-      {/* Timeline - Fixed at top */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-96">
-        <Timeline />
-      </div>
-
-      {/* Main Layout Container */}
-      <div className="relative h-full flex">
-        {/* Main Content Area - Full Width */}
-        <div className="flex-1 relative">
-          {/* Full-screen Map */}
-          <div className="absolute inset-0">
-            <MapContainer ref={mapRef} pois={allPOIs} />
-
-            {/* MapSearch Overlay - Centered */}
-            {searchOpen && (
-              <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
-                <div className="pointer-events-auto">
-                  <MapSearch
-                    onLocationSelect={handleLocationSelect}
-                    className="w-96"
-                  />
+              {/* MapSearch Overlay - Centered */}
+              {searchOpen && (
+                <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
+                  <div className="pointer-events-auto">
+                    <MapSearch
+                      onLocationSelect={handleLocationSelect}
+                      className="w-96"
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-
+              )}
+            </div>
         </div>
 
-        <Sidebar
-          expanded={sidebarExpanded}
-          onToggle={() => setSidebarExpanded(!sidebarExpanded)}
-          activeView={activeView}
-          onViewChange={handleViewChange}
-          onAIChatOpen={handleAIChatOpen}
-          onDebugPanelOpen={() => setDebugPanelOpen(!debugPanelOpen)}
-          onSearchOpen={handleSearchOpen}
+        {/* Main Layout Container */}
+        <div className="relative h-full flex">
+          {/* Main Content Area - Full Width */}
+          <div className="flex-1 relative">
+            {/* Full-screen Map */}
+            <div className="absolute inset-0">
+              <MapContainer 
+                ref={mapRef} 
+                pois={allPOIs} 
+                onPolygonClick={handlePolygonClick}
+              />
+              
+              {/* MapSearch Overlay - Centered */}
+              {searchOpen && (
+                <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
+                  <div className="pointer-events-auto">
+                    <MapSearch
+                      onLocationSelect={handleLocationSelect}
+                      className="w-96"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Polygon Editor */}
+            <PolygonEditor
+              onPolygonComplete={handlePolygonComplete}
+              onPolygonUpdate={handlePolygonUpdate}
+              editingPolygon={editingPolygon}
+              mapRef={mapRef}
+            />
+
+            {/* Polygon Popup */}
+            <PolygonPopup
+              polygon={selectedPolygon}
+              position={popupPosition}
+              onClose={handleClosePopup}
+              onUpdateName={handleUpdatePolygonName}
+              onEdit={handleEditPolygon}
+              onDelete={handleDeletePolygon}
+              onActions={handleActionsOpen}
+            />
+          </div>
+
+          {/* Sidebar */}
+          <Sidebar
+            expanded={sidebarExpanded}
+            onToggle={() => setSidebarExpanded(!sidebarExpanded)}
+            activeView={activeView}
+            onViewChange={handleViewChange}
+            onAIChatOpen={handleAIChatOpen}
+            onDebugPanelOpen={() => setDebugPanelOpen(!debugPanelOpen)}
+            onSearchOpen={handleSearchOpen}
+          />
+
+          {/* AI Chat Overlay */}
+          <AIChat
+            isOpen={aiChatOpen}
+            onClose={handleAIChatClose}
+          />
+
+          {/* Crisis Management Overlay */}
+          <CrisisManagement
+            isOpen={crisisManagementOpen}
+            onClose={handleCrisisManagementClose}
+            event={crisisEvent}
+          />
+
+          {/* Debug Agent Panel */}
+          <DebugAgentPanel
+            isOpen={debugPanelOpen}
+            onClose={() => setDebugPanelOpen(false)}
+          />
+
+          {/* Actions Side Panel */}
+          <ActionsSidePanel
+            isOpen={actionsPanelOpen}
+            onClose={handleActionsPanelClose}
+            polygon={actionsPanelPolygon}
+          />
+        </div>
+
+        {/* Overlays */}
+        <SettingsOverlay
+          isOpen={activeView === "settings"}
+          onClose={handleCloseOverlay}
         />
 
+<<<<<<< HEAD
         {/* AI Chat Overlay */}
         <AIChat
           isOpen={aiChatOpen}
@@ -257,23 +446,14 @@ function MapWithData() {
           onLiveModeToggle={handleLiveModeToggle}
         />
       </div>
-
-      {/* Overlays */}
-      <SettingsOverlay
-        isOpen={activeView === "settings"}
-        onClose={handleCloseOverlay}
-      />
-    </div>
+    </TimeProvider>
   );
 }
 
-// Main Dashboard component that provides the data context
 export default function Dashboard() {
   return (
     <DataProvider>
-      <TimeProvider>
-        <MapWithData />
-      </TimeProvider>
+      <DashboardContent />
     </DataProvider>
   );
 }
