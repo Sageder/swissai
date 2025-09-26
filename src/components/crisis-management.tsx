@@ -203,6 +203,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
                                                                             __html: part.text
                                                                                 .replace(/---/g, '') // Remove ---
                                                                                 .replace(/### (.*?)(\n|$)/g, '<strong class="text-orange-400 font-semibold">$1</strong>$2') // Convert ### to bold
+                                                                                .replace(/# (.*?)(\n|$)/g, '<strong class="text-orange-400 font-semibold">$1</strong>$2') // Convert # to bold
                                                                                 .replace(/\*\*(.*?)\*\*/g, '<strong class="text-orange-400">$1</strong>')
                                                                                 .replace(/\n\n/g, '</p><p class="mt-3">')
                                                                                 .replace(/\n/g, '<br>')
@@ -271,6 +272,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
                                                                                                         __html: part.text
                                                                                                             .replace(/---/g, '') // Remove ---
                                                                                                             .replace(/### (.*?)(\n|$)/g, '<strong class="text-orange-400 font-semibold">$1</strong>$2') // Convert ### to bold
+                                                                                                            .replace(/# (.*?)(\n|$)/g, '<strong class="text-orange-400 font-semibold">$1</strong>$2') // Convert # to bold
                                                                                                             .replace(/\*\*(.*?)\*\*/g, '<strong class="text-orange-400">$1</strong>')
                                                                                                             .replace(/\n\n/g, '</p><p class="mt-2">')
                                                                                                             .replace(/\n/g, '<br>')
