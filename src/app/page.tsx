@@ -17,6 +17,7 @@ import { convertResourcesToPOIs, convertMonitoringStationsToPOIs, combinePOIs } 
 import { blattentPOIs } from "@/data/pois";
 import { useAlert } from "@/lib/alert-context";
 import { setAlertContext, createLandslideAlert } from "@/lib/alert-service";
+import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange } from "@/lib/util";
 
 // Component that uses data context
 function MapWithData() {
@@ -26,6 +27,8 @@ function MapWithData() {
   const [dockHeight, setDockHeight] = useState(33); // percentage
   const [activeView, setActiveView] = useState("map");
   const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [showPOIs, setShowPOIs] = useState(false);
+  const [currentPOIs, setCurrentPOIs] = useState<any[]>([]);
   const mapRef = useRef<MapRef>(null);
 
   // Initialize alert context for programmatic use
@@ -42,18 +45,27 @@ function MapWithData() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Listen for POI visibility changes
+  useEffect(() => {
+    const unsubscribe = onPOIVisibilityChange(() => {
+      setShowPOIs(shouldShowPOIs());
+      setCurrentPOIs(getCurrentPOIs());
+    });
+    
+    // Set initial state
+    setShowPOIs(shouldShowPOIs());
+    setCurrentPOIs(getCurrentPOIs());
+    
+    return unsubscribe;
+  }, []);
+
   // Convert resources and monitoring stations to POIs and combine with static POIs
   const resourcePOIs = convertResourcesToPOIs(resources);
   const monitoringPOIs = convertMonitoringStationsToPOIs(monitoringStations);
-  const allPOIs = combinePOIs(blattentPOIs, resourcePOIs, monitoringPOIs);
-
-  console.log('🗺️ Map POIs:', {
-    static: blattentPOIs.length,
-    resources: resourcePOIs.length,
-    monitoring: monitoringPOIs.length,
-    total: allPOIs.length,
-    isLoading
-  });
+  const staticPOIs = combinePOIs(blattentPOIs, resourcePOIs, monitoringPOIs);
+  
+  // Only show POIs if explicitly controlled by utility functions
+  const allPOIs = showPOIs && currentPOIs.length > 0 ? currentPOIs : [];
 
   const handleTerrainToggle = (enabled: boolean, exaggeration?: number) => {
     if (mapRef.current) {
@@ -63,7 +75,6 @@ function MapWithData() {
 
   const handleViewChange = (view: string) => {
     setActiveView(view);
-    console.log(`[v0] Switched to ${view} view`);
   };
 
   const handleLocationSelect = (
@@ -71,7 +82,6 @@ function MapWithData() {
     name: string,
     boundingBox?: [number, number, number, number]
   ) => {
-    console.log(`Flying to ${name} at coordinates:`, coordinates);
     if (mapRef.current) {
       mapRef.current.flyToLocation(coordinates, 14, boundingBox);
     }
