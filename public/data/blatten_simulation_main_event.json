@@ -1,0 +1,83 @@
+{
+  "eventId": "blatten-glacier-2025-05-28",
+  "name": "Blatten Glacier Collapse - Mass Evacuation Event",
+  "type": "glacier_collapse",
+  "category": "natural_disaster",
+  "detectedAt": "2025-05-17T06:23:00Z",
+  "eventOccurred": "2025-05-28T14:32:17Z",
+  "location": {
+    "primary": "Blatten, Valais, CH",
+    "coordinates": {
+      "lat": 46.369,
+      "lng": 7.814
+    },
+    "impactRadius": 5.2,
+    "evacuationZones": [
+      "zone_a_immediate",
+      "zone_b_precautionary",
+      "zone_c_monitoring"
+    ]
+  },
+  "severity": "critical",
+  "status": "response_active",
+  "affectedPopulation": {
+    "residents": 320,
+    "tourists": 45,
+    "emergency_personnel": 95,
+    "livestock": {
+      "cattle": 180,
+      "sheep": 340,
+      "goats": 75,
+      "horses": 12
+    }
+  },
+  "description": "Accelerated glacier movement detected leading to major collapse event. River blockage creating secondary flood risk. Mass evacuation and livestock rescue operations underway.",
+  "initialDetection": {
+    "source": "WSL Sensor Network",
+    "detectorId": "WSL-GLAC-345",
+    "initialValue": "1.7 m/day movement",
+    "threshold": "1.5 m/day",
+    "confidence": 0.95
+  },
+  "scenarioModeling": {
+    "primaryImpact": {
+      "area_km2": 2.8,
+      "volume_m3": 9000000,
+      "velocity": "high"
+    },
+    "secondaryRisks": [
+      {
+        "type": "river_blockage",
+        "probability": 0.9,
+        "impact": "severe"
+      },
+      {
+        "type": "flooding",
+        "probability": 0.8,
+        "impact": "moderate"
+      },
+      {
+        "type": "infrastructure_damage",
+        "probability": 0.95,
+        "impact": "severe"
+      }
+    ],
+    "economicImpact": {
+      "estimate": "CHF 85M",
+      "confidence": "medium"
+    }
+  },
+  "weatherConditions": {
+    "temperature": 19.2,
+    "visibility": 30,
+    "windSpeed": 8,
+    "precipitation": 0,
+    "helicopterConditions": "favorable"
+  },
+  "mediaAttention": "international",
+  "politicalInvolvement": [
+    "federal_council",
+    "cantonal_government",
+    "municipal_authorities"
+  ]
+}

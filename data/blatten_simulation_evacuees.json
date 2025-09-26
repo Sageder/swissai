@@ -1,0 +1,136 @@
+[
+  {
+    "evacueeId": "EVA-001",
+    "familyName": "Mueller",
+    "individuals": [
+      {
+        "name": "Hans Mueller",
+        "age": 45,
+        "role": "head_of_household"
+      },
+      {
+        "name": "Maria Mueller",
+        "age": 42,
+        "role": "spouse"
+      },
+      {
+        "name": "Peter Mueller",
+        "age": 16,
+        "role": "child"
+      },
+      {
+        "name": "Anna Mueller",
+        "age": 12,
+        "role": "child"
+      }
+    ],
+    "address": {
+      "street": "Hauptstrasse 12",
+      "village": "Blatten",
+      "postal": "3919"
+    },
+    "evacuationDetails": {
+      "time": "2025-05-19T14:30:00Z",
+      "method": "private_vehicle",
+      "officer": "Sergeant Weber, Valais Police",
+      "notes": "Elderly grandmother requires assistance"
+    },
+    "shelter": {
+      "assigned": "shelter-naters-sports",
+      "checkIn": "2025-05-19T15:45:00Z",
+      "room": "Family Section A-12"
+    },
+    "status": "safe",
+    "specialNeeds": [
+      "elderly_care"
+    ],
+    "livestock": {
+      "cattle": 8,
+      "sheep": 15,
+      "evacuationStatus": "completed",
+      "helicopterEvac": "2025-05-20T09:00:00Z",
+      "temporaryLocation": "Grazing Area Delta-3"
+    },
+    "property": {
+      "buildings": [
+        "house",
+        "barn",
+        "shed"
+      ],
+      "insurance": "partially_covered",
+      "documentsSecured": true
+    }
+  },
+  {
+    "evacueeId": "EVA-002",
+    "familyName": "Zimmermann",
+    "individuals": [
+      {
+        "name": "Hans Zimmermann",
+        "age": 67,
+        "role": "head_of_household",
+        "medical": "mobility_issues"
+      }
+    ],
+    "address": {
+      "street": "Bergweg 5",
+      "village": "Blatten",
+      "postal": "3919"
+    },
+    "evacuationDetails": {
+      "time": "2025-05-19T15:15:00Z",
+      "method": "emergency_transport",
+      "officer": "Fire Brigade Naters",
+      "notes": "Required wheelchair assistance"
+    },
+    "shelter": {
+      "assigned": "shelter-naters-sports",
+      "checkIn": "2025-05-19T16:00:00Z",
+      "room": "Medical Support Section M-3"
+    },
+    "status": "safe",
+    "specialNeeds": [
+      "mobility_assistance",
+      "medical_monitoring"
+    ],
+    "livestock": {
+      "goats": 25,
+      "evacuationStatus": "completed",
+      "helicopterEvac": "2025-05-20T11:30:00Z",
+      "temporaryLocation": "Grazing Area Delta-5"
+    }
+  },
+  {
+    "evacueeId": "EVA-003",
+    "familyName": "Tourist Group - Hotel Blatten",
+    "individuals": [
+      {
+        "name": "Various tourists",
+        "count": 45,
+        "role": "temporary_residents"
+      }
+    ],
+    "address": {
+      "street": "Hotel Blatten",
+      "village": "Blatten",
+      "postal": "3919"
+    },
+    "evacuationDetails": {
+      "time": "2025-05-19T13:45:00Z",
+      "method": "bus_transport",
+      "coordinator": "Hotel Management + Police",
+      "notes": "Multiple nationalities, translation needs"
+    },
+    "shelter": {
+      "assigned": "shelter-brig-school",
+      "checkIn": "2025-05-19T14:30:00Z",
+      "room": "International Section"
+    },
+    "status": "safe",
+    "specialNeeds": [
+      "translation_services",
+      "embassy_contact"
+    ],
+    "repatriationStatus": "coordination_with_embassies"
+  }
+]

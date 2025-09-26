@@ -1,0 +1,133 @@
+[
+  {
+    "timestamp": "2025-05-17T06:23:00Z",
+    "eventType": "detection",
+    "description": "WSL sensor WSL-GLAC-345 detects glacier acceleration to 1.7 m/day",
+    "actor": "WSL Monitoring System",
+    "severity": "warning",
+    "automatic": true,
+    "notifications": [
+      "valais-cantonal-police",
+      "wsl-birmensdorf",
+      "municipality-blatten"
+    ]
+  },
+  {
+    "timestamp": "2025-05-17T08:15:00Z",
+    "eventType": "assessment",
+    "description": "WSL glaciologists confirm unusual acceleration pattern, recommend monitoring",
+    "actor": "WSL Expert Team",
+    "severity": "warning",
+    "automatic": false,
+    "decision": "increase_monitoring"
+  },
+  {
+    "timestamp": "2025-05-18T06:00:00Z",
+    "eventType": "escalation",
+    "description": "Glacier movement increases to 2.1 m/day, triggering alert level",
+    "actor": "WSL Monitoring System",
+    "severity": "alert",
+    "automatic": true,
+    "notifications": [
+      "focp-bern",
+      "valais-vet-service",
+      "red-cross-valais"
+    ]
+  },
+  {
+    "timestamp": "2025-05-18T14:30:00Z",
+    "eventType": "coordination",
+    "description": "LAINAT emergency coordination meeting convened",
+    "actor": "FOCP Coordination",
+    "severity": "alert",
+    "participants": [
+      "focp-bern",
+      "valais-cantonal-police",
+      "wsl-birmensdorf",
+      "municipality-blatten"
+    ],
+    "decisions": [
+      "enhanced_monitoring",
+      "preliminary_evacuation_planning"
+    ]
+  },
+  {
+    "timestamp": "2025-05-19T06:00:00Z",
+    "eventType": "critical_escalation",
+    "description": "Glacier movement reaches 2.8 m/day - critical threshold exceeded",
+    "actor": "WSL Monitoring System",
+    "severity": "critical",
+    "automatic": true,
+    "triggers": [
+      "evacuation_planning",
+      "resource_mobilization"
+    ]
+  },
+  {
+    "timestamp": "2025-05-19T09:45:00Z",
+    "eventType": "decision",
+    "description": "Partial evacuation order issued for high-risk areas",
+    "actor": "Valais Cantonal Police",
+    "severity": "critical",
+    "affectedResidents": 92,
+    "resources": [
+      "fire-naters-volunteer",
+      "shelter-naters-sports"
+    ]
+  },
+  {
+    "timestamp": "2025-05-19T12:00:00Z",
+    "eventType": "full_evacuation",
+    "description": "Complete evacuation order for all Blatten residents",
+    "actor": "Valais Cantonal Police",
+    "severity": "critical",
+    "affectedResidents": 320,
+    "evacuationWindow": "2 hours",
+    "resources": [
+      "all_emergency_services"
+    ]
+  },
+  {
+    "timestamp": "2025-05-20T08:00:00Z",
+    "eventType": "livestock_operations",
+    "description": "Large-scale livestock evacuation operations begin",
+    "actor": "Valais Veterinary Service",
+    "resources": [
+      "heli-air-rescue-1",
+      "heli-super-puma-2"
+    ],
+    "livestock": {
+      "cattle": 180,
+      "sheep": 340,
+      "goats": 75
+    }
+  },
+  {
+    "timestamp": "2025-05-28T14:32:17Z",
+    "eventType": "disaster_event",
+    "description": "Major glacier collapse - 9 million tons of material, 3.1 magnitude seismic event",
+    "actor": "Natural Event",
+    "severity": "catastrophic",
+    "seismicDetection": "SEISMO-VAL-092",
+    "impactAssessment": "total_destruction_blatten"
+  },
+  {
+    "timestamp": "2025-05-28T15:15:00Z",
+    "eventType": "secondary_hazard",
+    "description": "Lonza River blocked by debris - flood risk escalation",
+    "actor": "HYDRO-LONZA-23",
+    "severity": "critical",
+    "waterLevel": "6.2m",
+    "floodRisk": "expanded_evacuation_required"
+  },
+  {
+    "timestamp": "2025-05-28T16:00:00Z",
+    "eventType": "federal_response",
+    "description": "Federal Council activates national emergency response",
+    "actor": "Swiss Federal Council",
+    "resources": [
+      "federal_aid_10M_CHF",
+      "military_helicopter_support"
+    ]
+  }
+]

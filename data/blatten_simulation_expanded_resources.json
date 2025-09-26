@@ -1,0 +1,964 @@
+[
+  {
+    "resourceId": "fire-brig-central",
+    "type": "fire_station",
+    "subtype": "professional",
+    "location": {
+      "name": "Brig Fire Station",
+      "lat": 46.319,
+      "lng": 7.987,
+      "address": "Bahnhofstrasse 1, Brig"
+    },
+    "status": "deployed",
+    "personnel": 18,
+    "vehicles": [
+      {
+        "type": "ladder_truck",
+        "capacity": "30m ladder",
+        "crew": 4,
+        "status": "deployed"
+      },
+      {
+        "type": "pumper",
+        "capacity": "3000L/min",
+        "crew": 6,
+        "status": "deployed"
+      },
+      {
+        "type": "rescue_vehicle",
+        "equipment": "heavy_rescue",
+        "crew": 4,
+        "status": "available"
+      }
+    ],
+    "specializations": [
+      "structural_fire",
+      "rescue",
+      "hazmat",
+      "technical_rescue"
+    ],
+    "responseTime": "12 minutes",
+    "operatingRadius": 25,
+    "currentAssignment": "blatten_evacuation_support",
+    "equipment": [
+      "breathing_apparatus",
+      "hydraulic_tools",
+      "rope_rescue",
+      "foam_systems"
+    ]
+  },
+  {
+    "resourceId": "fire-naters-volunteer",
+    "type": "fire_station",
+    "subtype": "volunteer",
+    "location": {
+      "name": "Naters Volunteer Fire Brigade",
+      "lat": 46.325,
+      "lng": 7.756,
+      "address": "Dorfplatz 3, Naters"
+    },
+    "status": "deployed",
+    "personnel": 24,
+    "vehicles": [
+      {
+        "type": "pumper",
+        "capacity": "2000L/min",
+        "crew": 6,
+        "status": "deployed"
+      },
+      {
+        "type": "utility_truck",
+        "equipment": "support",
+        "crew": 4,
+        "status": "deployed"
+      },
+      {
+        "type": "command_vehicle",
+        "equipment": "coordination",
+        "crew": 2,
+        "status": "available"
+      }
+    ],
+    "responseTime": "8 minutes",
+    "operatingRadius": 15,
+    "currentAssignment": "evacuation_coordination",
+    "volunteers": 24
+  },
+  {
+    "resourceId": "fire-visp-professional",
+    "type": "fire_station",
+    "subtype": "professional",
+    "location": {
+      "name": "Visp Fire Station",
+      "lat": 46.294,
+      "lng": 7.883,
+      "address": "Kantonsstrasse 45, Visp"
+    },
+    "status": "standby",
+    "personnel": 22,
+    "vehicles": [
+      {
+        "type": "aerial_ladder",
+        "capacity": "42m ladder",
+        "crew": 4,
+        "status": "ready"
+      },
+      {
+        "type": "pumper",
+        "capacity": "3500L/min",
+        "crew": 6,
+        "status": "ready"
+      },
+      {
+        "type": "hazmat_unit",
+        "equipment": "chemical_response",
+        "crew": 4,
+        "status": "ready"
+      },
+      {
+        "type": "rescue_tender",
+        "equipment": "heavy_rescue",
+        "crew": 4,
+        "status": "ready"
+      }
+    ],
+    "specializations": [
+      "industrial_fire",
+      "chemical_response",
+      "technical_rescue"
+    ],
+    "responseTime": "15 minutes",
+    "operatingRadius": 30,
+    "equipment": [
+      "foam_systems",
+      "chemical_suits",
+      "confined_space_equipment"
+    ]
+  },
+  {
+    "resourceId": "fire-zermatt-mountain",
+    "type": "fire_station",
+    "subtype": "alpine_specialist",
+    "location": {
+      "name": "Zermatt Alpine Fire Service",
+      "lat": 46.021,
+      "lng": 7.749,
+      "address": "Bahnhofstrasse 9, Zermatt"
+    },
+    "status": "available",
+    "personnel": 16,
+    "vehicles": [
+      {
+        "type": "alpine_pumper",
+        "capacity": "2500L/min",
+        "crew": 4,
+        "status": "ready"
+      },
+      {
+        "type": "mountain_rescue",
+        "equipment": "alpine_rescue",
+        "crew": 6,
+        "status": "ready"
+      }
+    ],
+    "specializations": [
+      "alpine_rescue",
+      "mountain_fire",
+      "tourist_evacuation"
+    ],
+    "responseTime": "25 minutes",
+    "operatingRadius": 20,
+    "equipment": [
+      "alpine_rescue_gear",
+      "avalanche_equipment",
+      "helicopter_coordination"
+    ]
+  },
+  {
+    "resourceId": "fire-sion-airport",
+    "type": "fire_station",
+    "subtype": "airport_rescue",
+    "location": {
+      "name": "Sion Airport Fire Rescue",
+      "lat": 46.219,
+      "lng": 7.326,
+      "address": "Airport Sion, Sion"
+    },
+    "status": "available",
+    "personnel": 12,
+    "vehicles": [
+      {
+        "type": "arff_truck",
+        "capacity": "crash_rescue",
+        "crew": 3,
+        "status": "ready"
+      },
+      {
+        "type": "foam_tender",
+        "capacity": "20000L_foam",
+        "crew": 2,
+        "status": "ready"
+      }
+    ],
+    "specializations": [
+      "aircraft_rescue",
+      "aviation_fuel_fire",
+      "mass_casualty"
+    ],
+    "responseTime": "3 minutes",
+    "operatingRadius": 10,
+    "runway_access": true
+  },
+  {
+    "resourceId": "fire-martigny-regional",
+    "type": "fire_station",
+    "subtype": "regional",
+    "location": {
+      "name": "Martigny Regional Fire Service",
+      "lat": 46.103,
+      "lng": 7.068,
+      "address": "Avenue du Grand-Saint-Bernard 2, Martigny"
+    },
+    "status": "available",
+    "personnel": 28,
+    "vehicles": [
+      {
+        "type": "ladder_truck",
+        "capacity": "32m_ladder",
+        "crew": 4,
+        "status": "ready"
+      },
+      {
+        "type": "pumper",
+        "capacity": "4000L/min",
+        "crew": 6,
+        "status": "ready"
+      },
+      {
+        "type": "rescue_truck",
+        "equipment": "urban_rescue",
+        "crew": 4,
+        "status": "ready"
+      },
+      {
+        "type": "command_trailer",
+        "equipment": "mobile_command",
+        "crew": 3,
+        "status": "ready"
+      }
+    ],
+    "specializations": [
+      "urban_rescue",
+      "flood_response",
+      "industrial_accident"
+    ],
+    "responseTime": "45 minutes",
+    "operatingRadius": 35
+  },
+  {
+    "resourceId": "hospital-visp-regional",
+    "type": "hospital",
+    "subtype": "regional",
+    "location": {
+      "name": "Spital Oberwallis Visp",
+      "lat": 46.294,
+      "lng": 7.876,
+      "address": "\u00dcberlandstrasse 14, Visp"
+    },
+    "status": "emergency_mode",
+    "capacity": {
+      "beds": 180,
+      "emergency": 25,
+      "icu": 12,
+      "surgery": 6,
+      "helipad": true
+    },
+    "specializations": [
+      "emergency_medicine",
+      "trauma",
+      "surgery",
+      "internal_medicine",
+      "cardiology"
+    ],
+    "staff": {
+      "doctors": 45,
+      "nurses": 120,
+      "support": 85
+    },
+    "currentCapacity": {
+      "available_beds": 35,
+      "emergency_available": 15
+    },
+    "evacuationCapacity": 45,
+    "equipment": [
+      "ct_scanner",
+      "mri",
+      "operating_theaters",
+      "icu_ventilators",
+      "blood_bank"
+    ]
+  },
+  {
+    "resourceId": "medical-center-brig",
+    "type": "medical_center",
+    "subtype": "outpatient",
+    "location": {
+      "name": "Brig Medical Center",
+      "lat": 46.319,
+      "lng": 7.991,
+      "address": "Sebastiansplatz 7, Brig"
+    },
+    "status": "emergency_support",
+    "capacity": {
+      "treatment_rooms": 8,
+      "staff": 15,
+      "minor_surgery": 2
+    },
+    "specializations": [
+      "primary_care",
+      "minor_trauma",
+      "emergency_stabilization"
+    ],
+    "currentAssignment": "evacuation_medical_support"
+  },
+  {
+    "resourceId": "hospital-sion-central",
+    "type": "hospital",
+    "subtype": "cantonal",
+    "location": {
+      "name": "H\u00f4pital de Sion",
+      "lat": 46.233,
+      "lng": 7.359,
+      "address": "Avenue du Grand-Champsec 80, Sion"
+    },
+    "status": "standby",
+    "capacity": {
+      "beds": 320,
+      "emergency": 40,
+      "icu": 20,
+      "surgery": 12,
+      "helipad": true
+    },
+    "specializations": [
+      "emergency_medicine",
+      "trauma",
+      "surgery",
+      "pediatrics",
+      "psychiatry",
+      "cardiology"
+    ],
+    "staff": {
+      "doctors": 95,
+      "nurses": 240,
+      "support": 180
+    },
+    "currentCapacity": {
+      "available_beds": 85,
+      "emergency_available": 25
+    },
+    "evacuationCapacity": 120,
+    "equipment": [
+      "trauma_center",
+      "burn_unit",
+      "neonatal_icu",
+      "cardiac_surgery"
+    ]
+  },
+  {
+    "resourceId": "hospital-martigny",
+    "type": "hospital",
+    "subtype": "regional",
+    "location": {
+      "name": "H\u00f4pital de Martigny",
+      "lat": 46.103,
+      "lng": 7.068,
+      "address": "Avenue de la Fusion 27, Martigny"
+    },
+    "status": "available",
+    "capacity": {
+      "beds": 140,
+      "emergency": 18,
+      "icu": 8,
+      "surgery": 4
+    },
+    "specializations": [
+      "general_medicine",
+      "emergency",
+      "orthopedics",
+      "maternity"
+    ],
+    "staff": {
+      "doctors": 35,
+      "nurses": 85,
+      "support": 60
+    },
+    "currentCapacity": {
+      "available_beds": 45,
+      "emergency_available": 12
+    },
+    "responseTime": "45 minutes"
+  },
+  {
+    "resourceId": "clinic-zermatt-mountain",
+    "type": "medical_clinic",
+    "subtype": "mountain_medicine",
+    "location": {
+      "name": "Zermatt Medical Clinic",
+      "lat": 46.021,
+      "lng": 7.749,
+      "address": "Hofmattstrasse 6, Zermatt"
+    },
+    "status": "available",
+    "capacity": {
+      "treatment_rooms": 6,
+      "staff": 12,
+      "mountain_rescue_medical": true
+    },
+    "specializations": [
+      "mountain_medicine",
+      "altitude_sickness",
+      "trauma_stabilization"
+    ],
+    "helicopter_access": true,
+    "equipment": [
+      "portable_medical",
+      "altitude_chamber"
+    ]
+  },
+  {
+    "resourceId": "heli-air-rescue-1",
+    "type": "helicopter",
+    "subtype": "rescue",
+    "location": {
+      "name": "Visp Airfield",
+      "lat": 46.294,
+      "lng": 7.889
+    },
+    "status": "deployed",
+    "capacity": {
+      "passengers": 8,
+      "cargo_kg": 1200,
+      "hoist": true,
+      "medical_equipment": true
+    },
+    "specializations": [
+      "personnel_transport",
+      "medical_evacuation",
+      "cargo_lift",
+      "livestock_transport"
+    ],
+    "crew": {
+      "pilot": "on_duty",
+      "paramedic": "on_board",
+      "technician": "on_board"
+    },
+    "fuel_status": 85,
+    "currentAssignment": "livestock_evacuation",
+    "flight_hours_remaining": 4.5,
+    "weather_restrictions": null
+  },
+  {
+    "resourceId": "heli-super-puma-2",
+    "type": "helicopter",
+    "subtype": "heavy_lift",
+    "location": {
+      "name": "Sion Military Base",
+      "lat": 46.219,
+      "lng": 7.326
+    },
+    "status": "en_route",
+    "capacity": {
+      "passengers": 20,
+      "cargo_kg": 4500,
+      "external_load": true,
+      "winch": true
+    },
+    "specializations": [
+      "heavy_cargo",
+      "mass_evacuation",
+      "construction_support",
+      "external_load"
+    ],
+    "eta": "16:45",
+    "crew": {
+      "pilots": 2,
+      "crew_chief": 1,
+      "loadmaster": 1
+    },
+    "currentAssignment": "federal_resource_deployment"
+  },
+  {
+    "resourceId": "heli-air-glaciers-1",
+    "type": "helicopter",
+    "subtype": "mountain_rescue",
+    "location": {
+      "name": "Sion Heliport",
+      "lat": 46.219,
+      "lng": 7.325
+    },
+    "status": "available",
+    "capacity": {
+      "passengers": 5,
+      "cargo_kg": 800,
+      "mountain_operations": true
+    },
+    "specializations": [
+      "mountain_rescue",
+      "alpine_transport",
+      "reconnaissance"
+    ],
+    "crew": {
+      "pilot": "standby",
+      "mountain_guide": "available"
+    },
+    "fuel_status": 95,
+    "flight_hours_remaining": 6.0,
+    "mountain_certified": true
+  },
+  {
+    "resourceId": "heli-rega-3",
+    "type": "helicopter",
+    "subtype": "medical",
+    "location": {
+      "name": "Bern Airport",
+      "lat": 46.914,
+      "lng": 7.497
+    },
+    "status": "standby",
+    "capacity": {
+      "passengers": 6,
+      "medical_stretcher": 2,
+      "advanced_medical": true
+    },
+    "specializations": [
+      "medical_evacuation",
+      "critical_care_transport",
+      "organ_transport"
+    ],
+    "crew": {
+      "pilot": "available",
+      "doctor": "on_call",
+      "paramedic": "available"
+    },
+    "fuel_status": 100,
+    "eta_if_deployed": "55 minutes",
+    "equipment": [
+      "ventilator",
+      "defibrillator",
+      "blood_products"
+    ]
+  },
+  {
+    "resourceId": "fixed-wing-surveillance",
+    "type": "aircraft",
+    "subtype": "surveillance",
+    "location": {
+      "name": "Sion Airport",
+      "lat": 46.219,
+      "lng": 7.326
+    },
+    "status": "available",
+    "capacity": {
+      "crew": 3,
+      "surveillance_equipment": true,
+      "communication_relay": true
+    },
+    "specializations": [
+      "aerial_reconnaissance",
+      "communication_relay",
+      "coordination_support"
+    ],
+    "flight_time": "8 hours",
+    "equipment": [
+      "thermal_camera",
+      "radio_relay",
+      "gps_mapping"
+    ]
+  },
+  {
+    "resourceId": "shelter-naters-sports",
+    "type": "emergency_shelter",
+    "subtype": "sports_facility",
+    "location": {
+      "name": "Naters Sports Center",
+      "lat": 46.325,
+      "lng": 7.759,
+      "address": "Sportplatzweg 12, Naters"
+    },
+    "status": "activated",
+    "capacity": {
+      "beds": 150,
+      "meals_per_day": 300,
+      "parking": 50,
+      "pet_area": true
+    },
+    "facilities": [
+      "industrial_kitchen",
+      "medical_station",
+      "communications",
+      "showers",
+      "childcare",
+      "internet"
+    ],
+    "occupancy": 85,
+    "services": [
+      "red_cross",
+      "psychological_support",
+      "translation",
+      "childcare"
+    ],
+    "supplies": {
+      "food_days": 5,
+      "water_days": 7,
+      "medical_basic": true,
+      "blankets": 200
+    },
+    "currentAssignment": "primary_evacuation_shelter"
+  },
+  {
+    "resourceId": "shelter-brig-school",
+    "type": "emergency_shelter",
+    "subtype": "school",
+    "location": {
+      "name": "Brig Secondary School",
+      "lat": 46.319,
+      "lng": 7.994,
+      "address": "Schulhausstrasse 15, Brig"
+    },
+    "status": "standby",
+    "capacity": {
+      "beds": 200,
+      "meals_per_day": 400,
+      "classrooms": 18,
+      "gymnasium": true
+    },
+    "preparation_time": "3 hours",
+    "facilities": [
+      "cafeteria",
+      "nurse_office",
+      "computer_lab",
+      "sports_facilities"
+    ],
+    "supplies": {
+      "emergency_kit": true,
+      "first_aid": true
+    }
+  },
+  {
+    "resourceId": "shelter-visp-community",
+    "type": "emergency_shelter",
+    "subtype": "community_center",
+    "location": {
+      "name": "Visp Community Hall",
+      "lat": 46.294,
+      "lng": 7.881,
+      "address": "Gemeindestrasse 8, Visp"
+    },
+    "status": "available",
+    "capacity": {
+      "beds": 120,
+      "meals_per_day": 250,
+      "meeting_rooms": 6
+    },
+    "facilities": [
+      "kitchen",
+      "medical_room",
+      "childcare",
+      "storage"
+    ],
+    "preparation_time": "2 hours"
+  },
+  {
+    "resourceId": "shelter-sion-convention",
+    "type": "emergency_shelter",
+    "subtype": "convention_center",
+    "location": {
+      "name": "Sion Convention Center",
+      "lat": 46.233,
+      "lng": 7.356,
+      "address": "Rue de l'Industrie 43, Sion"
+    },
+    "status": "available",
+    "capacity": {
+      "beds": 400,
+      "meals_per_day": 800,
+      "parking": 200,
+      "conference_rooms": 12
+    },
+    "facilities": [
+      "industrial_kitchen",
+      "medical_center",
+      "telecommunications",
+      "translation_booth"
+    ],
+    "preparation_time": "4 hours",
+    "equipment": [
+      "av_systems",
+      "simultaneous_translation",
+      "accessibility_features"
+    ]
+  },
+  {
+    "resourceId": "police-valais-central",
+    "type": "police_station",
+    "subtype": "cantonal_headquarters",
+    "location": {
+      "name": "Valais Cantonal Police HQ",
+      "lat": 46.233,
+      "lng": 7.359,
+      "address": "Place de la Planta 3, Sion"
+    },
+    "status": "coordinating",
+    "personnel": 85,
+    "vehicles": [
+      "patrol_cars",
+      "riot_control",
+      "command_vehicles",
+      "motorcycles"
+    ],
+    "specializations": [
+      "command_coordination",
+      "riot_control",
+      "traffic_management",
+      "investigations"
+    ],
+    "equipment": [
+      "communication_center",
+      "detention_facilities",
+      "forensics_lab"
+    ],
+    "currentRole": "incident_command"
+  },
+  {
+    "resourceId": "police-brig-regional",
+    "type": "police_station",
+    "subtype": "regional",
+    "location": {
+      "name": "Brig Regional Police",
+      "lat": 46.319,
+      "lng": 7.987,
+      "address": "Bahnhofplatz 9, Brig"
+    },
+    "status": "deployed",
+    "personnel": 25,
+    "vehicles": [
+      "patrol_cars",
+      "traffic_control_equipment"
+    ],
+    "specializations": [
+      "traffic_control",
+      "evacuation_support",
+      "public_order"
+    ],
+    "currentAssignment": "traffic_management_evacuation_routes"
+  },
+  {
+    "resourceId": "police-visp-station",
+    "type": "police_station",
+    "subtype": "local",
+    "location": {
+      "name": "Visp Police Station",
+      "lat": 46.294,
+      "lng": 7.883,
+      "address": "Bahnhofstrasse 23, Visp"
+    },
+    "status": "standby",
+    "personnel": 18,
+    "vehicles": [
+      "patrol_cars",
+      "emergency_equipment"
+    ],
+    "specializations": [
+      "local_patrol",
+      "emergency_response",
+      "community_policing"
+    ]
+  },
+  {
+    "resourceId": "rescue-alpine-valais",
+    "type": "rescue_team",
+    "subtype": "alpine_rescue",
+    "location": {
+      "name": "Valais Alpine Rescue",
+      "lat": 46.233,
+      "lng": 7.359
+    },
+    "status": "standby",
+    "personnel": 35,
+    "specializations": [
+      "mountain_rescue",
+      "avalanche_rescue",
+      "technical_rope_rescue",
+      "cave_rescue"
+    ],
+    "equipment": [
+      "avalanche_equipment",
+      "rope_rescue_systems",
+      "medical_equipment",
+      "communication_systems"
+    ],
+    "deployment_time": "45 minutes",
+    "helicopter_certified": true
+  },
+  {
+    "resourceId": "rescue-water-rhone",
+    "type": "rescue_team",
+    "subtype": "water_rescue",
+    "location": {
+      "name": "Rhone Valley Water Rescue",
+      "lat": 46.294,
+      "lng": 7.883
+    },
+    "status": "available",
+    "personnel": 20,
+    "specializations": [
+      "swift_water_rescue",
+      "flood_response",
+      "boat_operations"
+    ],
+    "equipment": [
+      "rescue_boats",
+      "swift_water_gear",
+      "diving_equipment"
+    ],
+    "boats": 4,
+    "divers": 8
+  },
+  {
+    "resourceId": "vet-valais-central",
+    "name": "Valais Cantonal Veterinary Service",
+    "type": "veterinary_service",
+    "subtype": "cantonal",
+    "location": {
+      "name": "Sion Veterinary Office",
+      "lat": 46.233,
+      "lng": 7.359
+    },
+    "status": "coordinating",
+    "personnel": 12,
+    "specializations": [
+      "livestock_evacuation",
+      "animal_care",
+      "emergency_veterinary"
+    ],
+    "equipment": [
+      "mobile_veterinary_units",
+      "sedation_equipment",
+      "animal_transport"
+    ],
+    "currentRole": "livestock_evacuation_coordination"
+  },
+  {
+    "resourceId": "vet-clinic-brig",
+    "type": "veterinary_clinic",
+    "subtype": "private_practice",
+    "location": {
+      "name": "Brig Animal Clinic",
+      "lat": 46.319,
+      "lng": 7.989
+    },
+    "status": "supporting",
+    "personnel": 8,
+    "specializations": [
+      "small_animal",
+      "emergency_care",
+      "livestock_support"
+    ],
+    "equipment": [
+      "surgery_suite",
+      "x_ray",
+      "laboratory"
+    ]
+  },
+  {
+    "resourceId": "power-grid-oberwallis",
+    "type": "power_system",
+    "subtype": "distribution",
+    "location": {
+      "name": "Oberwallis Power Distribution",
+      "lat": 46.319,
+      "lng": 7.987
+    },
+    "status": "monitoring",
+    "capacity": {
+      "mw_total": 45,
+      "backup_mw": 8,
+      "customers": 15000
+    },
+    "backupSystems": [
+      "diesel_generators",
+      "battery_storage",
+      "mobile_generators"
+    ],
+    "vulnerableLines": [
+      "blatten_feeder",
+      "lonza_transmission"
+    ],
+    "affectedCustomers": 320,
+    "repairCrew": "on_standby"
+  },
+  {
+    "resourceId": "water-system-regional",
+    "type": "water_system",
+    "location": {
+      "name": "Valais Regional Water Authority",
+      "lat": 46.233,
+      "lng": 7.359
+    },
+    "status": "monitoring",
+    "capacity": {
+      "liters_per_day": 8500000,
+      "reserve_days": 5,
+      "treatment_plants": 3
+    },
+    "vulnerabilities": [
+      "lonza_river_intake",
+      "blatten_pumping_station"
+    ],
+    "backup_sources": [
+      "groundwater_wells",
+      "emergency_supply",
+      "mobile_treatment"
+    ]
+  },
+  {
+    "resourceId": "comm-polycom-primary",
+    "type": "communication",
+    "subtype": "radio_network",
+    "location": {
+      "name": "Valais POLYCOM Network",
+      "coverage": "canton_wide"
+    },
+    "status": "operational",
+    "channels": {
+      "emergency": "active",
+      "police": "active",
+      "fire": "active",
+      "medical": "active",
+      "coordination": "active",
+      "logistics": "available"
+    },
+    "redundancy": "triple_backup",
+    "coverage_quality": {
+      "blatten": "excellent",
+      "naters": "excellent",
+      "brig": "excellent",
+      "visp": "excellent"
+    }
+  },
+  {
+    "resourceId": "comm-cell-towers",
+    "type": "communication",
+    "subtype": "cellular_network",
+    "location": {
+      "name": "Regional Cell Network"
+    },
+    "status": "operational",
+    "coverage": {
+      "area": "regional",
+      "emergency_priority": true
+    },
+    "backup_power": "24_hours",
+    "emergency_broadcast": "capable"
+  }
+]

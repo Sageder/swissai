@@ -1,0 +1,304 @@
+[
+  {
+    "eventId": "PLAT-001",
+    "timestamp": "2025-05-17T06:23:15Z",
+    "eventType": "automated_detection",
+    "title": "Automated Threat Detection Triggered",
+    "description": "WSL sensor WSL-GLAC-345 readings automatically ingested. Platform AI detected anomalous glacier acceleration pattern.",
+    "systemAction": "automatic",
+    "triggeredBy": "ai_threat_detection_engine",
+    "dataSource": "WSL-GLAC-345",
+    "readings": {
+      "value": 1.7,
+      "unit": "m/day",
+      "threshold_exceeded": "warning"
+    },
+    "automaticActions": [
+      "authority_notifications_sent",
+      "resource_discovery_initiated",
+      "risk_assessment_model_activated"
+    ],
+    "notifiedAuthorities": [
+      "valais-cantonal-police",
+      "wsl-birmensdorf",
+      "municipality-blatten"
+    ],
+    "confidence": 0.87
+  },
+  {
+    "eventId": "PLAT-002",
+    "timestamp": "2025-05-17T06:25:30Z",
+    "eventType": "resource_discovery",
+    "title": "Automatic Regional Resource Discovery Completed",
+    "description": "Platform automatically mapped all emergency resources within 50km radius of Blatten.",
+    "systemAction": "automatic",
+    "triggeredBy": "resource_discovery_engine",
+    "discoveredResources": {
+      "fire_stations": 6,
+      "medical_facilities": 5,
+      "aviation": 5,
+      "shelters": 4,
+      "police": 3,
+      "specialized_teams": 4,
+      "infrastructure": 4
+    },
+    "totalResources": 31,
+    "discoveryTime": "2.3 minutes",
+    "mapDataUpdated": true
+  },
+  {
+    "eventId": "PLAT-003",
+    "timestamp": "2025-05-17T08:30:45Z",
+    "eventType": "expert_validation",
+    "title": "WSL Expert Confirmed Threat Assessment",
+    "description": "Dr. Sarah Weber (WSL) used platform to validate AI threat assessment and upgrade monitoring protocols.",
+    "systemAction": "user_initiated",
+    "user": "Dr. Sarah Weber, WSL",
+    "action": "threat_validation",
+    "validationResult": "confirmed_critical_risk",
+    "recommendedActions": [
+      "enhanced_monitoring_activation",
+      "preliminary_evacuation_planning",
+      "authority_coordination_initiation"
+    ],
+    "platformSupport": "decision_support_dashboard",
+    "confidenceUpdate": 0.95
+  },
+  {
+    "eventId": "PLAT-004",
+    "timestamp": "2025-05-18T06:00:22Z",
+    "eventType": "escalation_trigger",
+    "title": "Alert Level Escalation - Resource Pre-positioning",
+    "description": "Glacier movement reached 2.1 m/day. Platform automatically escalated alert level and suggested resource pre-positioning.",
+    "systemAction": "automatic",
+    "triggeredBy": "threshold_monitoring",
+    "previousLevel": "warning",
+    "newLevel": "alert",
+    "automaticActions": [
+      "expanded_authority_notification",
+      "resource_pre_positioning_recommendations",
+      "evacuation_scenario_modeling"
+    ],
+    "suggestedResourceMoves": [
+      {
+        "resource": "fire-naters-volunteer",
+        "action": "ready_deployment",
+        "eta": "15_minutes"
+      },
+      {
+        "resource": "heli-air-rescue-1",
+        "action": "fuel_and_standby",
+        "location": "visp_airfield"
+      }
+    ]
+  },
+  {
+    "eventId": "PLAT-005",
+    "timestamp": "2025-05-18T14:45:12Z",
+    "eventType": "coordination_meeting",
+    "title": "Virtual LAINAT Coordination Session",
+    "description": "Platform facilitated virtual coordination meeting between all key authorities using integrated collaboration tools.",
+    "systemAction": "user_initiated",
+    "meetingType": "virtual_coordination",
+    "participants": [
+      {
+        "authority": "focp-bern",
+        "user": "Commander Hans M\u00fcller"
+      },
+      {
+        "authority": "valais-cantonal-police",
+        "user": "Chief Inspector Maria Zufferey"
+      },
+      {
+        "authority": "wsl-birmensdorf",
+        "user": "Dr. Sarah Weber"
+      },
+      {
+        "authority": "municipality-blatten",
+        "user": "Mayor Peter Volken"
+      }
+    ],
+    "platformFeatures": [
+      "shared_real_time_data_dashboard",
+      "resource_allocation_optimizer",
+      "scenario_modeling_tools",
+      "decision_tracking_system"
+    ],
+    "decisionsLogged": [
+      "enhanced_monitoring_approved",
+      "evacuation_planning_initiated",
+      "resource_mobilization_authorized"
+    ],
+    "meetingDuration": "45 minutes"
+  },
+  {
+    "eventId": "PLAT-006",
+    "timestamp": "2025-05-19T06:00:18Z",
+    "eventType": "critical_threshold_alert",
+    "title": "Critical Threshold Exceeded - Evacuation Recommendation",
+    "description": "Glacier movement reached 2.8 m/day. Platform AI generated evacuation recommendations with optimized resource allocation.",
+    "systemAction": "automatic",
+    "triggeredBy": "ai_decision_support",
+    "criticalReading": {
+      "value": 2.8,
+      "unit": "m/day",
+      "status": "critical"
+    },
+    "aiRecommendations": {
+      "primary_action": "immediate_evacuation_order",
+      "affected_population": 320,
+      "evacuation_window": "2_hours",
+      "optimal_shelter": "shelter-naters-sports",
+      "resource_allocation": "automatic_optimization_completed"
+    },
+    "riskAssessment": {
+      "collapse_probability": 0.85,
+      "time_window": "24-72_hours",
+      "secondary_risks": [
+        "river_blockage",
+        "flooding"
+      ]
+    }
+  },
+  {
+    "eventId": "PLAT-007",
+    "timestamp": "2025-05-19T09:15:30Z",
+    "eventType": "partial_evacuation_order",
+    "title": "Partial Evacuation Authorized via Platform",
+    "description": "Chief Inspector Zufferey used platform to issue partial evacuation order for 92 high-risk residents.",
+    "systemAction": "user_initiated",
+    "user": "Chief Inspector Maria Zufferey, Valais Police",
+    "decisionType": "evacuation_order",
+    "scope": "partial_evacuation",
+    "affectedResidents": 92,
+    "evacuationArea": "blatten_zone_a_immediate_risk",
+    "platformActions": [
+      "automatic_resource_assignment",
+      "resident_notification_system",
+      "logistics_coordination",
+      "progress_tracking_activation"
+    ],
+    "assignedResources": [
+      "fire-naters-volunteer",
+      "shelter-naters-sports"
+    ],
+    "estimatedCompletion": "4_hours"
+  },
+  {
+    "eventId": "PLAT-008",
+    "timestamp": "2025-05-19T11:45:22Z",
+    "eventType": "full_evacuation_decision",
+    "title": "Full Village Evacuation - Complete Platform Coordination",
+    "description": "Platform coordinated full evacuation order with automatic resource optimization and task distribution.",
+    "systemAction": "user_initiated",
+    "user": "Chief Inspector Maria Zufferey, Valais Police",
+    "approvedBy": "Commander Hans M\u00fcller, FOCP",
+    "decisionType": "full_evacuation",
+    "affectedPopulation": 320,
+    "evacuationWindow": "2_hours",
+    "platformCoordination": {
+      "automatic_resource_optimization": true,
+      "multi_agency_task_distribution": true,
+      "real_time_progress_tracking": true,
+      "public_communication_coordination": true
+    },
+    "resourceMobilization": "all_available_regional_resources"
+  },
+  {
+    "eventId": "PLAT-009",
+    "timestamp": "2025-05-20T08:00:45Z",
+    "eventType": "livestock_coordination",
+    "title": "Automated Livestock Evacuation Coordination",
+    "description": "Platform coordinated complex livestock evacuation involving 607 animals across multiple farms using optimization algorithms.",
+    "systemAction": "user_initiated",
+    "coordinatedBy": "Dr. Klaus Imhof, Valais Veterinary Service",
+    "livestockInventory": {
+      "cattle": 180,
+      "sheep": 340,
+      "goats": 75,
+      "horses": 12
+    },
+    "platformOptimization": {
+      "helicopter_scheduling": "optimized_flight_routes",
+      "landing_zone_allocation": "automatic_gps_selection",
+      "veterinary_team_deployment": "skills_based_assignment",
+      "temporary_grazing_allocation": "capacity_matching"
+    },
+    "assignedResources": [
+      "heli-air-rescue-1",
+      "heli-super-puma-2",
+      "vet-valais-central"
+    ],
+    "estimatedDuration": "72_hours"
+  },
+  {
+    "eventId": "PLAT-010",
+    "timestamp": "2025-05-28T14:32:17Z",
+    "eventType": "disaster_event_detection",
+    "title": "Real-time Collapse Detection and Response Activation",
+    "description": "Platform detected glacier collapse through seismic sensors and immediately activated emergency response protocols.",
+    "systemAction": "automatic",
+    "triggeredBy": "seismic_detection_network",
+    "seismicData": {
+      "magnitude": 3.1,
+      "location": "blatten_glacier",
+      "sensor": "SEISMO-VAL-092"
+    },
+    "automaticResponses": [
+      "all_authorities_immediate_notification",
+      "resource_status_update_all_units",
+      "secondary_hazard_monitoring_activation",
+      "federal_coordination_protocol_triggered",
+      "media_coordination_initiated"
+    ],
+    "secondaryThreats": [
+      "river_blockage_detected",
+      "flood_risk_elevated"
+    ]
+  },
+  {
+    "eventId": "PLAT-011",
+    "timestamp": "2025-05-28T15:15:33Z",
+    "eventType": "secondary_hazard_response",
+    "title": "Automated Secondary Hazard Management - River Blockage",
+    "description": "Platform detected Lonza River blockage and automatically coordinated expanded evacuation for downstream communities.",
+    "systemAction": "automatic",
+    "triggeredBy": "hydro_monitoring_network",
+    "waterLevelData": {
+      "current": 6.2,
+      "normal": 2.1,
+      "status": "emergency_flood_risk"
+    },
+    "expandedEvacuation": {
+      "additional_residents": 45,
+      "new_areas": [
+        "naters_lowlands",
+        "lonza_valley_downstream"
+      ],
+      "automatic_shelter_allocation": "shelter-brig-school",
+      "transport_coordination": "automatic_bus_routing"
+    },
+    "platformEfficiency": "15_minute_complete_coordination"
+  },
+  {
+    "eventId": "PLAT-012",
+    "timestamp": "2025-05-28T16:00:00Z",
+    "eventType": "federal_activation",
+    "title": "Federal Resources Activated Through Platform",
+    "description": "Federal Council activated through platform coordination, deploying additional resources and funding.",
+    "systemAction": "user_initiated",
+    "user": "Commander Hans M\u00fcller, FOCP",
+    "federalActivation": {
+      "emergency_funding": "CHF_10M_immediate",
+      "military_helicopter_support": "super_puma_squadron",
+      "federal_coordination_center": "activated",
+      "international_aid_protocols": "standby"
+    },
+    "platformCoordination": [
+      "federal_resource_integration",
+      "unified_command_structure",
+      "consolidated_communications",
+      "real_time_situation_awareness"
+    ]
+  }
+]

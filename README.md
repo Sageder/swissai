@@ -1,24 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SwissAI
+
+A modern Next.js application with TypeScript, Tailwind CSS, and shadcn/ui components.
+
+## Tech Stack
+
+- **Framework**: Next.js 15.1.6 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4
+- **UI Components**: shadcn/ui with Radix UI primitives
+- **Icons**: Lucide React
+- **Maps**: Mapbox GL
+- **Animations**: Framer Motion
+- **Charts**: Recharts
+- **Linting**: Biome
+- **Font**: Geist
+
+## Prerequisites
+
+- Node.js 18+ 
+- npm 11.6.1+ (or yarn/pnpm)
 
 ## Getting Started
 
-First, run the development server:
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+2. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
+
+3. **Open your browser**:
+   Navigate to [http://localhost:3000](http://localhost:3000) to see the application.
+
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run linting with Biome
+
+## Project Structure
+
+```
+src/
+├── app/                 # Next.js App Router pages
+├── components/          # React components
+│   ├── ui/             # shadcn/ui components
+│   └── tabs/           # Tab components
+└── lib/                # Utility functions
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Modern UI with shadcn/ui components
+- Responsive design with Tailwind CSS
+- Interactive maps with Mapbox
+- Data visualization with Recharts
+- Smooth animations with Framer Motion
+- Type-safe development with TypeScript
 
 ## Learn More
 

@@ -1,0 +1,333 @@
+[
+  {
+    "resourceId": "fire-brig-central",
+    "type": "fire_station",
+    "subtype": "professional",
+    "location": {
+      "name": "Brig Fire Station",
+      "lat": 46.319,
+      "lng": 7.987,
+      "address": "Bahnhofstrasse 1, Brig"
+    },
+    "status": "available",
+    "personnel": 18,
+    "vehicles": [
+      {
+        "type": "ladder_truck",
+        "capacity": "30m ladder",
+        "crew": 4
+      },
+      {
+        "type": "pumper",
+        "capacity": "3000L/min",
+        "crew": 6
+      },
+      {
+        "type": "rescue_vehicle",
+        "equipment": "heavy_rescue",
+        "crew": 4
+      }
+    ],
+    "specializations": [
+      "structural_fire",
+      "rescue",
+      "hazmat",
+      "technical_rescue"
+    ],
+    "responseTime": "12 minutes",
+    "operatingRadius": 25,
+    "equipment": [
+      "breathing_apparatus",
+      "hydraulic_tools",
+      "rope_rescue"
+    ]
+  },
+  {
+    "resourceId": "fire-naters-volunteer",
+    "type": "fire_station",
+    "subtype": "volunteer",
+    "location": {
+      "name": "Naters Volunteer Fire Brigade",
+      "lat": 46.325,
+      "lng": 7.756
+    },
+    "status": "activated",
+    "personnel": 24,
+    "vehicles": [
+      {
+        "type": "pumper",
+        "capacity": "2000L/min",
+        "crew": 6
+      },
+      {
+        "type": "utility_truck",
+        "equipment": "support",
+        "crew": 4
+      }
+    ],
+    "responseTime": "8 minutes",
+    "operatingRadius": 15,
+    "currentAssignment": "evacuation_support"
+  },
+  {
+    "resourceId": "fire-visp-industrial",
+    "type": "fire_station",
+    "subtype": "industrial",
+    "location": {
+      "name": "Visp Industrial Fire Service",
+      "lat": 46.294,
+      "lng": 7.883
+    },
+    "status": "standby",
+    "personnel": 12,
+    "vehicles": [
+      {
+        "type": "foam_truck",
+        "capacity": "foam_concentrate",
+        "crew": 3
+      },
+      {
+        "type": "hazmat_unit",
+        "equipment": "chemical_response",
+        "crew": 4
+      }
+    ],
+    "specializations": [
+      "chemical",
+      "industrial_accident",
+      "foam_suppression"
+    ],
+    "responseTime": "18 minutes"
+  },
+  {
+    "resourceId": "hospital-visp",
+    "type": "hospital",
+    "subtype": "regional",
+    "location": {
+      "name": "Spital Oberwallis Visp",
+      "lat": 46.294,
+      "lng": 7.876
+    },
+    "status": "normal_operations",
+    "capacity": {
+      "beds": 180,
+      "emergency": 25,
+      "icu": 12,
+      "surgery": 6
+    },
+    "specializations": [
+      "emergency_medicine",
+      "trauma",
+      "surgery",
+      "internal_medicine"
+    ],
+    "evacuationCapacity": 45,
+    "helicopter_pad": true,
+    "staff": {
+      "doctors": 45,
+      "nurses": 120,
+      "support": 85
+    }
+  },
+  {
+    "resourceId": "medical-center-brig",
+    "type": "medical_center",
+    "subtype": "outpatient",
+    "location": {
+      "name": "Brig Medical Center",
+      "lat": 46.319,
+      "lng": 7.991
+    },
+    "status": "emergency_mode",
+    "capacity": {
+      "treatment_rooms": 8,
+      "staff": 15
+    },
+    "specializations": [
+      "primary_care",
+      "minor_trauma",
+      "emergency_stabilization"
+    ]
+  },
+  {
+    "resourceId": "heli-air-rescue-1",
+    "type": "helicopter",
+    "subtype": "rescue",
+    "location": {
+      "name": "Visp Airfield",
+      "lat": 46.294,
+      "lng": 7.889
+    },
+    "status": "deployed",
+    "capacity": {
+      "passengers": 8,
+      "cargo_kg": 1200,
+      "hoist": true
+    },
+    "specializations": [
+      "personnel_transport",
+      "medical_evacuation",
+      "cargo_lift"
+    ],
+    "crew": {
+      "pilot": "on_duty",
+      "paramedic": "on_board",
+      "technician": "on_board"
+    },
+    "fuel_status": 85,
+    "currentAssignment": "livestock_evacuation",
+    "flight_hours_remaining": 4.5
+  },
+  {
+    "resourceId": "heli-super-puma-2",
+    "type": "helicopter",
+    "subtype": "heavy_lift",
+    "location": {
+      "name": "Sion Military Base",
+      "lat": 46.219,
+      "lng": 7.326
+    },
+    "status": "en_route",
+    "capacity": {
+      "passengers": 20,
+      "cargo_kg": 4500,
+      "external_load": true
+    },
+    "specializations": [
+      "heavy_cargo",
+      "mass_evacuation",
+      "construction_support"
+    ],
+    "eta": "2025-05-28T16:45:00Z",
+    "crew": {
+      "pilots": 2,
+      "crew_chief": 1,
+      "loadmaster": 1
+    }
+  },
+  {
+    "resourceId": "shelter-naters-sports",
+    "type": "emergency_shelter",
+    "subtype": "sports_facility",
+    "location": {
+      "name": "Naters Sports Center",
+      "lat": 46.325,
+      "lng": 7.759
+    },
+    "status": "activated",
+    "capacity": {
+      "beds": 150,
+      "meals_per_day": 300,
+      "parking": 50
+    },
+    "facilities": [
+      "industrial_kitchen",
+      "medical_station",
+      "communications",
+      "showers",
+      "childcare"
+    ],
+    "occupancy": 85,
+    "services": [
+      "red_cross",
+      "psychological_support",
+      "translation"
+    ],
+    "supplies": {
+      "food_days": 5,
+      "water_days": 7,
+      "medical_basic": true
+    }
+  },
+  {
+    "resourceId": "shelter-brig-school",
+    "type": "emergency_shelter",
+    "subtype": "school",
+    "location": {
+      "name": "Brig Secondary School",
+      "lat": 46.319,
+      "lng": 7.994
+    },
+    "status": "standby",
+    "capacity": {
+      "beds": 200,
+      "meals_per_day": 400,
+      "classrooms": 18
+    },
+    "preparation_time": "3 hours",
+    "facilities": [
+      "gymnasium",
+      "cafeteria",
+      "nurse_office"
+    ]
+  },
+  {
+    "resourceId": "power-grid-oberwallis",
+    "type": "power_grid",
+    "subtype": "distribution",
+    "location": {
+      "name": "Oberwallis Power Distribution",
+      "lat": 46.319,
+      "lng": 7.987
+    },
+    "status": "normal",
+    "affectedCustomers": 0,
+    "backupSystems": [
+      "diesel_generators",
+      "battery_storage",
+      "mobile_generators"
+    ],
+    "vulnerableLines": [
+      "blatten_feeder",
+      "lonza_transmission"
+    ],
+    "capacity": {
+      "mw_total": 45,
+      "backup_mw": 8
+    }
+  },
+  {
+    "resourceId": "water-system-brig",
+    "type": "water_system",
+    "location": {
+      "name": "Brig Water Treatment",
+      "lat": 46.318,
+      "lng": 7.985
+    },
+    "status": "operational",
+    "capacity": {
+      "liters_per_day": 2500000,
+      "reserve_days": 3
+    },
+    "vulnerabilities": [
+      "lonza_river_intake"
+    ],
+    "backup_sources": [
+      "groundwater_wells",
+      "emergency_supply"
+    ]
+  },
+  {
+    "resourceId": "comm-polycom-vs",
+    "type": "communication",
+    "subtype": "radio_network",
+    "location": {
+      "name": "Valais POLYCOM Network",
+      "coverage": "canton_wide"
+    },
+    "status": "operational",
+    "channels": {
+      "emergency": "active",
+      "police": "active",
+      "fire": "active",
+      "medical": "active",
+      "coordination": "active"
+    },
+    "redundancy": "triple_backup",
+    "coverage_quality": {
+      "blatten": "excellent",
+      "naters": "excellent",
+      "brig": "excellent"
+    }
+  }
+]
