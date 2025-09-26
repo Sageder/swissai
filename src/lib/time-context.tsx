@@ -14,10 +14,11 @@ interface TimeContextType {
 const TimeContext = createContext<TimeContextType | undefined>(undefined)
 
 export function TimeProvider({ children }: { children: React.ReactNode }) {
-  const [baseTime] = useState(new Date()) // Fixed base time when component mounts
+  // Initialize with Blatten simulation start time: 2025-05-17T06:23:00Z
+  const [baseTime] = useState(new Date('2025-05-17T06:23:00Z'))
   const [timeOffset, setTimeOffset] = useState(0) // Hours offset from base time
   const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(false)
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const [currentTime, setCurrentTime] = useState(new Date('2025-05-17T06:23:00Z'))
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Update current time when real-time is enabled

@@ -7,6 +7,7 @@ import { ChevronUp, ChevronDown, GripHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NodeEditorTab } from "@/components/tabs/node-editor-tab"
 import { DataTab } from "@/components/tabs/data-tab"
+import { POIDataTab } from "@/components/tabs/poi-data-tab"
 import { LogsTab } from "@/components/tabs/logs-tab"
 import { ChatTab } from "@/components/tabs/chat-tab"
 import { motion, AnimatePresence } from "framer-motion"
@@ -27,6 +28,7 @@ export function BottomDock({ height, onHeightChange, onTerrainToggle }: BottomDo
   const tabs = [
     { id: "node-editor", label: "Graph Editor", component: NodeEditorTab },
     { id: "data", label: "Data Sources", component: DataTab },
+    { id: "poi-data", label: "POI Data", component: POIDataTab },
     { id: "chat", label: "AI Assistant", component: ChatTab },
     { id: "logs", label: "System Logs", component: LogsTab },
   ]
