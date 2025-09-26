@@ -1,9 +1,16 @@
 // POI visibility management utility functions
 // These are placeholder implementations for the POI visibility system
 
+import { MonitoringStation, Resource, Authority } from '@/types/emergency';
+
+// POI state management
 let showPOIsState = false;
 let currentPOIsState: any[] = [];
 let listeners: (() => void)[] = [];
+
+// Timeline state management
+let timelineVisibleState = true;
+let timelineListeners: (() => void)[] = [];
 
 export const shouldShowPOIs = (): boolean => {
   return showPOIsState;
@@ -15,8 +22,6 @@ export const getCurrentPOIs = (): any[] => {
 
 export const onPOIVisibilityChange = (callback: () => void): (() => void) => {
   listeners.push(callback);
-
-  // Return unsubscribe function
   return () => {
     listeners = listeners.filter(listener => listener !== callback);
   };
@@ -41,9 +46,6 @@ export const togglePOIVisibility = (): void => {
 };
 
 // Timeline visibility management
-let timelineVisibleState = true;
-let timelineListeners: (() => void)[] = [];
-
 export const isTimelineVisible = (): boolean => {
   return timelineVisibleState;
 };
