@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { NodeEditorTab } from "@/components/tabs/node-editor-tab"
 import { DataTab } from "@/components/tabs/data-tab"
 import { LogsTab } from "@/components/tabs/logs-tab"
+import { ChatTab } from "@/components/tabs/chat-tab"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface BottomDockProps {
@@ -23,6 +24,7 @@ export function BottomDock({ height, onHeightChange, onTerrainToggle }: BottomDo
   const tabs = [
     { id: "node-editor", label: "Graph Editor", component: NodeEditorTab },
     { id: "data", label: "Data Sources", component: DataTab },
+    { id: "chat", label: "AI Assistant", component: ChatTab },
     { id: "logs", label: "System Logs", component: LogsTab },
   ]
 
@@ -111,7 +113,7 @@ export function BottomDock({ height, onHeightChange, onTerrainToggle }: BottomDo
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
-                className="h-full"
+                className="h-full flex flex-col"
               >
                 <ActiveComponent />
               </motion.div>

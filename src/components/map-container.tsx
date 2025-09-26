@@ -191,10 +191,16 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
             })
 
             // Add building layers with lower zoom thresholds for earlier visibility
+            // First add the building source
+            map.current.addSource("mapbox-buildings", {
+              type: "vector",
+              url: "mapbox://mapbox.mapbox-streets-v8"
+            })
+
             map.current.addLayer({
               id: "buildings-3d",
               type: "fill-extrusion",
-              source: "composite",
+              source: "mapbox-buildings",
               "source-layer": "building",
               minzoom: 10, // Show buildings starting at zoom level 10 (much earlier)
               paint: {
@@ -221,7 +227,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
             map.current.addLayer({
               id: "building-outline",
               type: "line",
-              source: "composite",
+              source: "mapbox-buildings",
               "source-layer": "building",
               minzoom: 10, // Show outlines starting at zoom level 10
               paint: {
