@@ -160,7 +160,9 @@ export function ActionsSidePanel({ isOpen, onClose, polygon }: ActionsSidePanelP
 Please provide a comprehensive emergency response plan with specific actionable recommendations.`;
 
     try {
+      console.log("Sending message to AI:", polygonPrompt.substring(0, 100) + "...");
       await sendMessage({ text: polygonPrompt });
+      console.log("Message sent successfully");
     } catch (error) {
       console.error('Error sending initial polygon analysis:', error);
     } finally {
@@ -415,9 +417,8 @@ Respond ONLY with valid JSON in this exact structure:
             <div className="flex-1 min-h-0">
               <ScrollArea className="h-full p-4">
                 <div className="prose prose-invert max-w-none">
-                  {messages.length > 0 && (
-                    <div className="space-y-6">
-                      {/* Main Header */}
+                  {messages.length > 0 ? (
+                    <div className="space-y-4">
                       <header className="border-b border-white/20 pb-4">
                         <h1 className="text-2xl font-bold text-white mb-2">
                           Emergency Response Analysis
@@ -427,120 +428,32 @@ Respond ONLY with valid JSON in this exact structure:
                         </p>
                       </header>
 
-                      {/* AI Analysis Section */}
-                      <section>
-                        <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                          <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                          AI Response Analysis
-                        </h2>
-
-                        {messages.filter(m => m.role === 'assistant').map((message, index) => (
-                          <div key={`analysis-${message.id}-${index}`} className="mb-6">
-                            <div className="text-sm text-white/90 leading-relaxed">
-                              {message.parts.map((part, i) => {
-                                if (part.type === 'text') {
-                                  return (
-                                    <div
-                                      key={`analysis-part-${message.id}-${i}`}
-                                      dangerouslySetInnerHTML={{
-                                        __html: part.text
-                                          .replace(/---/g, '') // Remove ---
-                                          .replace(/^#{1,} (.*?)$/gm, '<strong class="text-orange-400 font-semibold">$1</strong>') // Convert any # headers to bold
-                                          .replace(/\*\*(.*?)\*\*/g, '<strong class="text-orange-400">$1</strong>')
-                                          .replace(/\n\n/g, '</p><p class="mt-3">')
-                                          .replace(/\n/g, '<br>')
-                                          .replace(/^/, '<p>')
-                                          .replace(/$/, '</p>')
-                                      }}
-                                    />
-                                  );
-                                }
-                                return null;
-                              })}
+                      {messages.map((message, index) => {
+                        const messageContent = (message as any).content || (message as any).text || JSON.stringify(message);
+                        console.log("\ud83d\udcac Message structure:", message);
+                        console.log("\ud83d\udcac Message content:", messageContent);
+                        return (
+                          <div key={`message-${message.id}-${index}`} className="mb-4">
+                            <div className={`p-3 rounded-lg ${message.role === 'assistant' ? 'bg-orange-500/10 border-l-4 border-orange-500' : 'bg-white/5'}`}>
+                              <div className="text-xs text-white/60 mb-2 uppercase font-medium">
+                                {message.role === 'assistant' ? '\ud83e\udd16 AI Response' : '\ud83d\udc64 User'}
+                              </div>
+                              <div className="text-sm text-white/90 leading-relaxed">
+                                <pre className="whitespace-pre-wrap font-sans">{messageContent}</pre>
+                              </div>
                             </div>
                           </div>
-                        ))}
+                        );
+                      })}
 
-                        {isLoading && (
-                          <div className="flex items-center gap-2 text-white/60 mb-4">
-                            <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
-                            <span className="text-sm">AI is analyzing...</span>
-                          </div>
-                        )}
-                      </section>
-
-                      {/* User Questions Section - Only show actual user questions, not system prompts */}
-                      {messages.filter(m => m.role === 'user' && !m.parts.some(part =>
-                        part.type === 'text' && part.text.includes('Analyze this emergency polygon area:')
-                      )).length > 0 && (
-                        <section>
-                          <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                            <div className="w-2 h-2 bg-white/60 rounded-full"></div>
-                            Questions & Responses
-                          </h2>
-
-                          <div className="space-y-4">
-                            {messages.filter(m => m.role === 'user' && !m.parts.some(part =>
-                              part.type === 'text' && part.text.includes('Analyze this emergency polygon area:')
-                            )).map((message, index) => (
-                              <div key={`question-${message.id}-${index}`} className="border-l-2 border-white/30 pl-4">
-                                <h3 className="text-sm font-medium text-white/90 mb-2">
-                                  Question {index + 1}
-                                </h3>
-                                <p className="text-sm text-white/80 mb-3">
-                                  {message.parts.map((part, i) => {
-                                    if (part.type === 'text') {
-                                      return part.text;
-                                    }
-                                    return null;
-                                  }).join('')}
-                                </p>
-
-                                {/* Find corresponding AI response */}
-                                {(() => {
-                                  const userIndex = messages.findIndex(m => m.id === message.id);
-                                  const aiResponse = messages[userIndex + 1];
-                                  if (aiResponse && aiResponse.role === 'assistant') {
-                                    return (
-                                      <div className="bg-white/5 rounded-lg p-3">
-                                        <p className="text-xs text-white/60 mb-2">AI Response:</p>
-                                        <div className="text-sm text-white/90">
-                                          {aiResponse.parts.map((part, i) => {
-                                            if (part.type === 'text') {
-                                              return (
-                                                <div
-                                                  key={`response-${aiResponse.id}-${i}`}
-                                                  dangerouslySetInnerHTML={{
-                                                    __html: part.text
-                                                      .replace(/---/g, '') // Remove ---
-                                                      .replace(/^#{1,} (.*?)$/gm, '<strong class="text-orange-400 font-semibold">$1</strong>') // Convert any # headers to bold
-                                                      .replace(/\*\*(.*?)\*\*/g, '<strong class="text-orange-400">$1</strong>')
-                                                      .replace(/\n\n/g, '</p><p class="mt-2">')
-                                                      .replace(/\n/g, '<br>')
-                                                      .replace(/^/, '<p>')
-                                                      .replace(/$/, '</p>')
-                                                  }}
-                                                />
-                                              );
-                                            }
-                                            return null;
-                                          })}
-                                        </div>
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                })()}
-                              </div>
-                            ))}
-                          </div>
-                        </section>
+                      {isLoading && (
+                        <div className="flex items-center gap-2 text-white/60 mb-4">
+                          <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                          <span className="text-sm">AI is analyzing...</span>
+                        </div>
                       )}
-
                     </div>
-                  )}
-
-                  {messages.length === 0 && !isLoading && (
+                  ) : (
                     <div className="text-center text-white/60 py-8">
                       <div className="text-4xl mb-4">⚡</div>
                       <h2 className="text-lg font-medium mb-2">Emergency Response Ready</h2>

@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamText, UIMessage, convertToModelMessages } from "ai";
 import {
-  firebaseDataTool,
+  mockDataTool,
   weatherTool,
   emergencyResourcesTool,
   geospatialAnalysisTool,
@@ -14,8 +14,8 @@ import {
   massNotificationTool,
 } from "@/lib/agent";
 
-// Allow streaming responses up to 30 seconds
-export const maxDuration = 30;
+// Allow streaming responses up to 60 seconds for complex tool operations
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
@@ -23,13 +23,6 @@ export async function POST(req: Request) {
 
     // Get OpenAI API key from environment variables
     const apiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY;
-
-    console.log("API Key exists:", !!apiKey);
-    console.log("Messages received:", messages?.length);
-    console.log(
-      "Environment variables available:",
-      Object.keys(process.env).filter((key) => key.includes("OPENAI"))
-    );
 
     if (!apiKey) {
       console.error("OpenAI API key not found in environment variables");
@@ -43,8 +36,6 @@ export async function POST(req: Request) {
     const openai = createOpenAI({
       apiKey: apiKey,
     });
-
-    console.log("About to call streamText...");
 
     // Enhanced system prompt with SwissAI context
     const systemPrompt = `You are an advanced AI assistant for the SwissAI Emergency Management System, a comprehensive crisis response platform designed for the Swiss Alpine region.
@@ -61,7 +52,7 @@ You are integrated into a sophisticated emergency management dashboard that incl
 
 ## YOUR CAPABILITIES
 You have access to powerful tools for:
-1. **Data Access**: Query Firebase collections for events, monitoring data, authorities, resources, infrastructure, decision logs, and public communications
+1. **Data Access**: Query local JSON data files for events, monitoring data, authorities, resources, infrastructure, decision logs, and public communications
 2. **Emergency Vehicle Dispatch**: Deploy ambulances, fire trucks, police, helicopters, and evacuation buses
 3. **Evacuation Management**: Initiate and coordinate large-scale evacuations with route planning
 4. **Communication Infrastructure**: Deploy mobile towers, satellite links, and emergency broadcast systems
@@ -96,7 +87,7 @@ When analyzing polygon areas, consider:
 5. **Recovery Operations**: Plan for post-incident recovery
 
 When responding to emergency scenarios, always use your tools to:
-- Gather relevant data from Firebase
+- Gather relevant data from local JSON files
 - Dispatch appropriate emergency vehicles
 - Initiate evacuations if necessary
 - Set up communication infrastructure
@@ -106,7 +97,7 @@ When responding to emergency scenarios, always use your tools to:
 Provide detailed, actionable responses with specific recommendations and tool usage.`;
 
     const tools = {
-      firebase_data: firebaseDataTool,
+      mock_data: mockDataTool,
       weather: weatherTool,
       emergency_resources: emergencyResourcesTool,
       geospatial_analysis: geospatialAnalysisTool,
@@ -119,11 +110,12 @@ Provide detailed, actionable responses with specific recommendations and tool us
       mass_notification: massNotificationTool,
     };
 
+    const convertedMessages = convertToModelMessages(messages);
+
     const result = streamText({
-        model: openai('gpt-4o'),
-        messages: convertToModelMessages(messages),
-        system: systemPrompt,
-        tools,
+        model: openai('gpt-4o-mini'),
+        messages: convertedMessages,
+        system: "You are a helpful AI assistant for emergency management. Provide clear, actionable emergency response recommendations.",
         temperature: 0.7,
     });
 
