@@ -1,21 +1,13 @@
 import { openai } from "@ai-sdk/openai";
 import { generateText, tool, stepCountIs } from "ai";
 import { z } from "zod";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  getDocs,
-  Timestamp,
-} from "firebase/firestore";
-import { db } from "./firebase";
+import { readFileSync } from "fs";
+import { join } from "path";
 
-// Firebase data access tool for emergency management data
-export const firebaseDataTool = tool({
+// Mock data access tool for emergency management data from JSON files
+export const mockDataTool = tool({
   description:
-    "Access emergency management data from Firebase with smart filtering capabilities",
+    "Access emergency management data from local JSON files with smart filtering capabilities",
   inputSchema: z.object({
     collection: z
       .enum([
@@ -26,8 +18,12 @@ export const firebaseDataTool = tool({
         "infrastructure",
         "decision_log",
         "public_communications",
+        "activity_log",
+        "evacuees",
+        "resource_movements",
+        "timeline_events",
       ])
-      .describe("Firebase collection to query"),
+      .describe("Data collection to query"),
     filters: z
       .object({
         location: z
@@ -104,7 +100,7 @@ export const firebaseDataTool = tool({
     sortOrder = "desc",
   }) => {
     try {
-      console.log("🔥 Firebase Data Tool - Request:", {
+      console.log("📁 Mock Data Tool - Request:", {
         collection: collectionName,
         filters,
         searchText,
@@ -113,115 +109,103 @@ export const firebaseDataTool = tool({
         timestamp: new Date().toISOString(),
       });
 
-      // Build the base query
-      const collectionRef = collection(db, collectionName);
-      let q = query(collectionRef);
+      // Map collection names to JSON file names
+      const fileMap: Record<string, string> = {
+        events: "blatten_simulation_platform_events.json",
+        monitoring_data: "blatten_simulation_monitoring_stations.json",
+        authorities: "blatten_simulation_authorities.json",
+        resources: "blatten_simulation_expanded_resources.json",
+        infrastructure: "blatten_simulation_expanded_resources.json",
+        decision_log: "blatten_simulation_decision_log.json",
+        public_communications: "blatten_simulation_platform_events.json",
+        activity_log: "blatten_simulation_activity_log.json",
+        evacuees: "blatten_simulation_evacuees.json",
+        resource_movements: "blatten_simulation_resource_movements.json",
+        timeline_events: "blatten_simulation_timeline_events.json",
+      };
 
-      // Apply filters based on collection type
-      const whereConditions = [];
+      const fileName = fileMap[collectionName];
+      if (!fileName) {
+        throw new Error(`Unknown collection: ${collectionName}`);
+      }
 
-      // Common filters for all collections
+      // Read data from JSON file using Node.js file system
+      const filePath = join(process.cwd(), 'public', 'data', fileName);
+      console.log("📁 Attempting to read file:", filePath);
+      
+      let jsonData: any;
+      try {
+        const fileContent = readFileSync(filePath, 'utf-8');
+        console.log("📁 File read successfully, size:", fileContent.length);
+        jsonData = JSON.parse(fileContent);
+        console.log("📁 JSON parsed successfully, type:", typeof jsonData);
+      } catch (fileError: any) {
+        console.error("📁 File read error:", fileError);
+        throw new Error(`Failed to read or parse ${fileName}: ${fileError?.message || 'Unknown error'}`);
+      }
+      
+      let results: any[] = [];
+
+      // Handle different JSON structures
+      if (Array.isArray(jsonData)) {
+        results = jsonData;
+      } else if (jsonData.data && Array.isArray(jsonData.data)) {
+        results = jsonData.data;
+      } else if (typeof jsonData === 'object') {
+        // Convert object to array if it's a single object
+        results = [jsonData];
+      }
+
+      // Apply filters
+      let filteredResults = results;
+
+      // Status filter
       if (filters.status) {
-        whereConditions.push(where("status", "==", filters.status));
+        filteredResults = filteredResults.filter(item => 
+          item.status?.toLowerCase() === filters.status?.toLowerCase()
+        );
       }
 
+      // Type filter
       if (filters.type) {
-        whereConditions.push(where("type", "==", filters.type));
+        filteredResults = filteredResults.filter(item => 
+          item.type?.toLowerCase() === filters.type?.toLowerCase() ||
+          item.category?.toLowerCase() === filters.type?.toLowerCase()
+        );
       }
 
+      // Severity filter
       if (filters.severity) {
-        whereConditions.push(where("severity", "==", filters.severity));
+        filteredResults = filteredResults.filter(item => 
+          item.severity?.toLowerCase() === filters.severity?.toLowerCase() ||
+          item.priority?.toLowerCase() === filters.severity?.toLowerCase()
+        );
       }
 
+      // Organization filter
       if (filters.organization) {
-        whereConditions.push(
-          where("responsibleOrganization", "==", filters.organization)
+        filteredResults = filteredResults.filter(item => 
+          item.organization?.toLowerCase().includes(filters.organization?.toLowerCase() || '') ||
+          item.responsibleOrganization?.toLowerCase().includes(filters.organization?.toLowerCase() || '')
         );
       }
 
-      if (filters.eventId) {
-        whereConditions.push(where("eventId", "==", filters.eventId));
-      }
-
-      // Collection-specific filters
-      if (collectionName === "resources" && filters.resourceType) {
-        whereConditions.push(where("type", "==", filters.resourceType));
-      }
-
-      if (collectionName === "monitoring_data" && filters.organization) {
-        whereConditions.push(
-          where("responsibleOrganization", "==", filters.organization)
-        );
-      }
-
-      // Time-based filtering
+      // Time range filter
       if (filters.timeRange) {
-        if (filters.timeRange.start) {
-          whereConditions.push(
-            where("timestamp", ">=", new Date(filters.timeRange.start))
-          );
-        }
-        if (filters.timeRange.end) {
-          whereConditions.push(
-            where("timestamp", "<=", new Date(filters.timeRange.end))
-          );
-        }
+        const now = new Date();
         if (filters.timeRange.lastHours) {
-          const cutoffTime = new Date(
-            Date.now() - filters.timeRange.lastHours * 60 * 60 * 1000
-          );
-          whereConditions.push(where("timestamp", ">=", cutoffTime));
+          const cutoffTime = new Date(now.getTime() - filters.timeRange.lastHours * 60 * 60 * 1000);
+          filteredResults = filteredResults.filter(item => {
+            const itemTime = new Date(item.timestamp || item.createdAt || item.time || now);
+            return itemTime >= cutoffTime;
+          });
         }
       }
 
-      // Apply all where conditions
-      if (whereConditions.length > 0) {
-        q = query(collectionRef, ...whereConditions);
-      }
-
-      // Add sorting
-      const sortField =
-        sortBy === "timestamp"
-          ? "timestamp"
-          : sortBy === "severity"
-          ? "severity"
-          : sortBy === "name"
-          ? "name"
-          : sortBy === "status"
-          ? "status"
-          : "createdAt";
-
-      q = query(q, orderBy(sortField, sortOrder));
-
-      // Add limit
-      q = query(q, limit(filters.limit || 20));
-
-      // Execute query
-      const querySnapshot = await getDocs(q);
-      const results: any[] = [];
-
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        results.push({
-          id: doc.id,
-          ...data,
-          // Convert Firestore timestamps to ISO strings for better readability
-          timestamp:
-            data.timestamp?.toDate?.()?.toISOString() || data.timestamp,
-          createdAt:
-            data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
-          detectedAt:
-            data.detectedAt?.toDate?.()?.toISOString() || data.detectedAt,
-          eventOccurred:
-            data.eventOccurred?.toDate?.()?.toISOString() || data.eventOccurred,
-        });
-      });
-
-      // Apply text search if provided
-      let filteredResults: any[] = results;
+      // Text search
       if (searchText) {
         const searchLower = searchText.toLowerCase();
-        filteredResults = results.filter((item) => {
+        filteredResults = filteredResults.filter((item) => {
           return Object.values(item).some((value) => {
             if (typeof value === "string") {
               return value.toLowerCase().includes(searchLower);
@@ -234,7 +218,7 @@ export const firebaseDataTool = tool({
         });
       }
 
-      // Apply location-based filtering if coordinates provided
+      // Location-based filtering
       if (filters.location?.lat && filters.location?.lng) {
         const { lat, lng, radius = 10 } = filters.location;
         filteredResults = filteredResults.filter((item) => {
@@ -247,14 +231,27 @@ export const firebaseDataTool = tool({
             );
             return distance <= radius;
           }
+          if (item.coordinates?.lat && item.coordinates?.lng) {
+            const distance = calculateDistance(
+              lat,
+              lng,
+              item.coordinates.lat,
+              item.coordinates.lng
+            );
+            return distance <= radius;
+          }
           return true; // Include items without location data
         });
       }
 
-      const response = {
+      // Apply limit
+      const limit = filters.limit || 20;
+      filteredResults = filteredResults.slice(0, limit);
+
+      const mockResponse = {
         collection: collectionName,
         totalResults: filteredResults.length,
-        requestedLimit: filters.limit || 20,
+        requestedLimit: limit,
         filters: filters,
         searchText: searchText,
         sortBy: sortBy,
@@ -262,19 +259,19 @@ export const firebaseDataTool = tool({
         results: filteredResults,
         timestamp: new Date().toISOString(),
         queryTime: new Date().toISOString(),
+        dataSource: `JSON file: ${fileName}`,
       };
 
-      console.log("🔥 Firebase Data Tool - Response:", {
+      console.log("📁 Mock Data Tool - Response:", {
         collection: collectionName,
         totalResults: filteredResults.length,
-        filters: filters,
-        searchText: searchText,
+        dataSource: fileName,
         timestamp: new Date().toISOString(),
       });
 
-      return response;
+      return mockResponse;
     } catch (error) {
-      console.error("🔥 Firebase Data Tool - Error:", error);
+      console.error("📁 Mock Data Tool - Error:", error);
       return {
         collection: collectionName,
         error: true,
@@ -1075,13 +1072,13 @@ export async function generateTextWithWebSearch(
   return result;
 }
 
-// Function to generate text with Firebase data access
-export async function generateTextWithFirebaseData(
+// Function to generate text with mock data access
+export async function generateTextWithMockData(
   prompt: string,
   systemPrompt?: string
 ) {
   const tools = {
-    firebase_data: firebaseDataTool,
+    mock_data: mockDataTool,
     weather: weatherTool,
     emergency_resources: emergencyResourcesTool,
     geospatial_analysis: geospatialAnalysisTool,
@@ -1094,7 +1091,7 @@ export async function generateTextWithFirebaseData(
     mass_notification: massNotificationTool,
   };
 
-  console.log("🤖 generateTextWithFirebaseData - Request Parameters:", {
+  console.log("🤖 generateTextWithMockData - Request Parameters:", {
     model: "gpt-5",
     prompt: prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""),
     systemPrompt: systemPrompt
@@ -1115,7 +1112,7 @@ export async function generateTextWithFirebaseData(
     tools,
   });
 
-  console.log("🤖 generateTextWithFirebaseData - Response:", {
+  console.log("🤖 generateTextWithMockData - Response:", {
     model: "gpt-5",
     text:
       result.text.substring(0, 200) + (result.text.length > 200 ? "..." : ""),
@@ -1124,8 +1121,8 @@ export async function generateTextWithFirebaseData(
     usage: result.usage,
     toolCalls: result.toolCalls?.length || 0,
     toolResults: result.toolResults?.length || 0,
-    firebaseDataCalls:
-      result.toolCalls?.filter((tc) => tc.toolName === "firebase_data")
+    mockDataCalls:
+      result.toolCalls?.filter((tc) => tc.toolName === "mock_data")
         ?.length || 0,
     vehicleDispatchCalls:
       result.toolCalls?.filter((tc) => tc.toolName === "vehicle_dispatch")
@@ -1144,3 +1141,6 @@ export async function generateTextWithFirebaseData(
 
   return result;
 }
+
+// Backward compatibility export
+export const generateTextWithFirebaseData = generateTextWithMockData;
