@@ -689,6 +689,66 @@ export function addBlatten(): void {
 
 
 /**
+ * Cinematic fly-to for Blatten close-up POV
+ * Starts from a wide, flat POV and then flies into the close cinematic POV
+ */
+export function blattenClose(): void {
+  try {
+    if (typeof window === 'undefined') return;
+    const mapInstance = (window as any).debugMapInstance;
+    if (!mapInstance || typeof mapInstance.flyTo !== 'function') {
+      console.warn('Map instance not available for blattenClose()');
+      return;
+    }
+
+    const start = {
+      center: [7.822202, 46.422625] as [number, number],
+      zoom: 10.9,
+      pitch: 0,
+      bearing: -113.7
+    };
+
+    const final = {
+      center: [7.816784, 46.41891] as [number, number],
+      zoom: 15.26,
+      pitch: 78.2,
+      bearing: -112.9
+    };
+
+    // Step 1: Set the starting wide POV (shorter duration)
+    mapInstance.flyTo({
+      center: start.center,
+      zoom: start.zoom,
+      pitch: start.pitch,
+      bearing: start.bearing,
+      duration: 1500,
+      essential: true
+    });
+
+    // Step 2: After the first move ends, perform a long cinematic fly to final POV
+    const handler = () => {
+      try {
+        mapInstance.off('moveend', handler);
+        mapInstance.flyTo({
+          center: final.center,
+          zoom: final.zoom,
+          pitch: final.pitch,
+          bearing: final.bearing,
+          duration: 5000,
+          essential: true
+        });
+      } catch (e) {
+        // no-op
+      }
+    };
+    mapInstance.on('moveend', handler);
+  } catch (err) {
+    console.error('Failed to execute blattenClose():', err);
+  }
+}
+
+
+/**
  * Send a helicopter from one POI to another POI
  * Helicopters move in a straight line (no road routing)
  * @param fromPOIId - ID of the source POI

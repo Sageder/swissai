@@ -61,6 +61,8 @@ import {
   Plus,
   Link
 } from 'lucide-react';
+import { Compass } from 'lucide-react';
+import { blattenClose } from '@/lib/util';
 
 interface DebugAgentPanelProps {
   isOpen: boolean;
@@ -454,6 +456,58 @@ export function DebugAgentPanel({ isOpen, onClose, liveMode, onLiveModeToggle }:
                 Test Alert
               </Button>
             </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={blattenClose}
+              size="sm"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+            >
+              🎬 Blatten Close (Cinematic)
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                const mapInstance = (window as any).debugMapInstance;
+                if (!mapInstance) {
+                  alert('Map not available. Try again in a moment.');
+                  return;
+                }
+
+                const center = mapInstance.getCenter();
+                const zoom = mapInstance.getZoom();
+                const pitch = mapInstance.getPitch();
+                const bearing = mapInstance.getBearing();
+
+                const pov = {
+                  center: [Number(center.lng.toFixed(6)), Number(center.lat.toFixed(6))] as [number, number],
+                  zoom: Number(zoom.toFixed(2)),
+                  pitch: Number(pitch.toFixed(1)),
+                  bearing: Number(bearing.toFixed(1))
+                };
+
+                // Console-friendly outputs
+                console.log('🧭 Map POV:', pov);
+                console.log(
+                  'Paste into map config:',
+                  `center: [${pov.center[0]}, ${pov.center[1]}], zoom: ${pov.zoom}, pitch: ${pov.pitch}, bearing: ${pov.bearing}`
+                );
+                console.log('flyTo snippet:', {
+                  center: pov.center,
+                  zoom: pov.zoom,
+                  pitch: pov.pitch,
+                  bearing: pov.bearing,
+                  duration: 0,
+                  essential: true
+                });
+              }}
+              size="sm"
+              className="flex-1 bg-slate-600 hover:bg-slate-700 text-white"
+            >
+              <Compass className="w-4 h-4 mr-1" />
+              Log Map POV
+            </Button>
+          </div>
           </div>
 
           {/* Crisis Node Editor Controls */}
