@@ -121,6 +121,17 @@ export function SettingsTab({ onTerrainToggle }: SettingsTabProps) {
             />
           </div>
 
+          {/* Auto-progression Info */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock size={16} className="text-green-400" />
+              <Label className="text-sm font-medium text-green-400">
+                Auto-progression (1h/min)
+              </Label>
+            </div>
+            <div className="text-xs text-green-400">Always Active</div>
+          </div>
+
           <Separator />
 
           {/* Quick Time Controls */}

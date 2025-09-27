@@ -137,28 +137,32 @@ export function DebugAgentPanel({ isOpen, onClose, liveMode, onLiveModeToggle }:
   };
 
   const handleSendVehicle = async () => {
-    // First add Blatten if not already added
-    addBlatten();
+    // Ensure POIs exist (resources for roads)
+    addResources(resources);
+    addAuthorities(authorities);
 
-    // Get current POIs to find one to send vehicle from
-    const currentPOIs = getCurrentPOIs();
-    if (currentPOIs.length === 0) {
-      alert('No POIs available. Please add some POIs first.');
+    // Prefer a realistic road test: fire station -> hospital
+    let pois = getCurrentPOIs();
+    if (!pois || pois.length === 0) {
+      addBlatten();
+      pois = getCurrentPOIs();
+    }
+
+    const fireStation = pois.find((p: any) => p.type === 'fire_station');
+    const hospital = pois.find((p: any) => p.type === 'hospital');
+
+    if (fireStation && hospital) {
+      await sendVehicle(fireStation.id, hospital.id, 'fire_truck');
       return;
     }
 
-    // Find Blatten POI
-    const blattenPOI = currentPOIs.find(poi => poi.id === 'blatten-city-center');
-    if (!blattenPOI) {
-      alert('Blatten POI not found. Please add Blatten first.');
+    // Fallback: any two distinct POIs
+    if (pois.length >= 2) {
+      await sendVehicle(pois[0].id, pois[1].id, 'fire_truck');
       return;
     }
 
-    // Find another POI to send vehicle from (prefer research station)
-    const fromPOI = currentPOIs.find(poi => poi.id === 'blatten-research-station') || currentPOIs[0];
-
-    // Send vehicle from the other POI to Blatten
-    await sendVehicle(fromPOI.id, blattenPOI.id, 'fire_truck', 15000); // 15 second journey
+    alert('No suitable POIs found to test vehicle. Please add resources/authorities.');
   };
 
   const handleSendHelicopter = async () => {
@@ -168,29 +172,19 @@ export function DebugAgentPanel({ isOpen, onClose, liveMode, onLiveModeToggle }:
       return;
     }
 
-    // First add Blatten if not already added
-    addBlatten();
-
     // Get current POIs to find one to send helicopter from
     const currentPOIs = getCurrentPOIs();
-    if (currentPOIs.length === 0) {
-      alert('No POIs available. Please add some POIs first.');
-      return;
+    if (currentPOIs.length < 2) {
+      addBlatten();
     }
+    const pois = getCurrentPOIs();
 
-    // Find Blatten POI
-    const blattenPOI = currentPOIs.find(poi => poi.id === 'blatten-city-center');
-    if (!blattenPOI) {
-      alert('Blatten POI not found. Please add Blatten first.');
-      return;
-    }
-
-    // Find another POI to send helicopter from (prefer research station)
-    const fromPOI = currentPOIs.find(poi => poi.id === 'blatten-research-station') || currentPOIs[0];
+    // Prefer fire station -> blatten-city-center for visibility
+    const blattenPOI = pois.find((p: any) => p.id === 'blatten-city-center') || pois[1] || pois[0];
+    const fromPOI = pois.find((p: any) => p.type === 'fire_station') || pois[0];
 
     try {
-      // Send helicopter from the other POI to Blatten
-      await sendHelicopter(fromPOI.id, blattenPOI.id, 10000); // 10 second journey
+      await sendHelicopter(fromPOI.id, blattenPOI.id, 12000);
     } catch (error) {
       console.error('Failed to send helicopter:', error);
       alert('Failed to send helicopter. Please try again.');
@@ -201,7 +195,7 @@ export function DebugAgentPanel({ isOpen, onClose, liveMode, onLiveModeToggle }:
 
   return (
     <div className="fixed bottom-4 left-4 z-50 w-80">
-      <Card className="bg-gray-900/95 backdrop-blur-sm border-gray-700 text-white">
+      <Card className="bg-gray-900/95 backdrop-blur-sm border-gray-700 text-white flex flex-col max-h-[80vh]">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -230,7 +224,7 @@ export function DebugAgentPanel({ isOpen, onClose, liveMode, onLiveModeToggle }:
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 overflow-y-auto flex-1 min-h-0">
           {/* Live Mode Toggle */}
           <div className="space-y-2">
             <div className="text-sm font-medium text-gray-300">Live Mode:</div>
@@ -351,6 +345,71 @@ export function DebugAgentPanel({ isOpen, onClose, liveMode, onLiveModeToggle }:
               >
                 <Car className="w-4 h-4 mr-1" />
                 Send Vehicle
+              </Button>
+              <Button
+                onClick={() => {
+                  // Force add a test path directly to map for debugging
+                  const mapInstance = (window as any).debugMapInstance;
+                  if (!mapInstance) {
+                    alert('Map not available. Try again in a moment.');
+                    return;
+                  }
+                  
+                  const testSourceId = 'test-path-source';
+                  const testLayerId = 'test-path-layer';
+                  
+                  // Remove existing test path
+                  if (mapInstance.getLayer(testLayerId)) {
+                    mapInstance.removeLayer(testLayerId);
+                  }
+                  if (mapInstance.getSource(testSourceId)) {
+                    mapInstance.removeSource(testSourceId);
+                  }
+                  
+                  // Create a simple test path around Blatten
+                  const testPath = {
+                    type: "Feature",
+                    geometry: {
+                      type: "LineString",
+                      coordinates: [
+                        [7.8219, 46.4208], // Blatten center
+                        [7.8250, 46.4220],
+                        [7.8280, 46.4230],
+                        [7.8300, 46.4240],
+                        [7.8320, 46.4250]
+                      ]
+                    }
+                  };
+                  
+                  mapInstance.addSource(testSourceId, {
+                    type: "geojson",
+                    data: testPath
+                  });
+                  
+                  mapInstance.addLayer({
+                    id: testLayerId,
+                    type: "line",
+                    source: testSourceId,
+                    paint: {
+                      "line-color": "#ff0000",
+                      "line-width": 8,
+                      "line-opacity": 1.0
+                    }
+                  });
+                  
+                  console.log('🔴 FORCED TEST PATH ADDED - Should be visible as thick red line');
+                  
+                  // Fly to the test path
+                  mapInstance.flyTo({
+                    center: [7.8250, 46.4220],
+                    zoom: 14,
+                    duration: 2000
+                  });
+                }}
+                size="sm"
+                className="bg-red-600 hover:bg-red-700"
+              >
+                🔴 Test Path
               </Button>
               <Button
                 onClick={handleSendHelicopter}

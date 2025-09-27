@@ -27,7 +27,7 @@ export interface VehicleMovement {
     lng: number;
   };
   progress: number; // 0 to 1
-  status: 'traveling' | 'arrived' | 'cancelled';
+  status: 'traveling' | 'arrived';
   vehicleType: 'ambulance' | 'fire_truck' | 'police' | 'helicopter' | 'evacuation_bus';
   route?: {
     coordinates: [number, number][] | [number, number, number][]; // Route coordinates from Mapbox Directions API (2D or 3D)
@@ -54,6 +54,7 @@ interface DataContextType {
   addVehicleMovement: (movement: Omit<VehicleMovement, 'id' | 'currentPosition' | 'progress' | 'status'>) => void
   updateVehicleMovement: (id: string, updates: Partial<VehicleMovement>) => void
   removeVehicleMovement: (id: string) => void
+  getVehiclesWithCurrentPositions: (currentTime: number) => VehicleMovement[]
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -122,6 +123,143 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setVehicleMovements(prev => [...prev, newMovement])
   }, [])
 
+  // Calculate vehicle position based on current time
+  const calculateVehiclePosition = useCallback((movement: VehicleMovement, currentTime: number) => {
+    // If time is before start time, stay at start position
+    if (currentTime < movement.startTime) {
+      return {
+        position: movement.from,
+        progress: 0,
+        status: 'traveling' as const
+      }
+    }
+
+    const elapsed = currentTime - movement.startTime
+    const progress = Math.min(elapsed / movement.duration, 1)
+    
+    // If progress >= 1, stay at end position
+    if (progress >= 1) {
+      return {
+        position: movement.to,
+        progress: 1,
+        status: 'arrived' as const
+      }
+    }
+
+    // Calculate position based on route type with smooth interpolation
+    let position: { lat: number; lng: number }
+    
+    if (movement.vehicleType === 'helicopter' && movement.route) {
+      // Helicopter: move along 3D route coordinates with smooth interpolation
+      const routeCoords = movement.route.coordinates as [number, number, number][]
+      const totalDistance = movement.route.distance // Total distance in meters
+      const currentDistance = progress * totalDistance // Current distance traveled
+      
+      // Find the current segment based on cumulative distance
+      let cumulativeDistance = 0
+      let currentSegmentIndex = 0
+      
+      for (let i = 0; i < routeCoords.length - 1; i++) {
+        const segmentDistance = calculateDistance3D(routeCoords[i], routeCoords[i + 1])
+        if (cumulativeDistance + segmentDistance >= currentDistance) {
+          currentSegmentIndex = i
+          break
+        }
+        cumulativeDistance += segmentDistance
+        currentSegmentIndex = i
+      }
+      
+      if (currentSegmentIndex >= routeCoords.length - 1) {
+        position = { lat: movement.to.lat, lng: movement.to.lng }
+      } else {
+        const currentPoint = routeCoords[currentSegmentIndex]
+        const nextPoint = routeCoords[currentSegmentIndex + 1]
+        const segmentDistance = calculateDistance3D(currentPoint, nextPoint)
+        const segmentProgress = Math.max(0, (currentDistance - cumulativeDistance) / segmentDistance)
+        
+        position = {
+          lat: currentPoint[1] + (nextPoint[1] - currentPoint[1]) * segmentProgress,
+          lng: currentPoint[0] + (nextPoint[0] - currentPoint[0]) * segmentProgress
+        }
+      }
+    } else if (movement.route && movement.route.coordinates.length > 0) {
+      // Ground vehicle: move along 2D route coordinates with smooth interpolation
+      const routeCoords = movement.route.coordinates as [number, number][]
+      const totalDistance = movement.route.distance // Total distance in meters
+      const currentDistance = progress * totalDistance // Current distance traveled
+      
+      // Find the current segment based on cumulative distance
+      let cumulativeDistance = 0
+      let currentSegmentIndex = 0
+      
+      for (let i = 0; i < routeCoords.length - 1; i++) {
+        const segmentDistance = calculateDistance2D(routeCoords[i], routeCoords[i + 1])
+        if (cumulativeDistance + segmentDistance >= currentDistance) {
+          currentSegmentIndex = i
+          break
+        }
+        cumulativeDistance += segmentDistance
+        currentSegmentIndex = i
+      }
+      
+      if (currentSegmentIndex >= routeCoords.length - 1) {
+        position = { lat: movement.to.lat, lng: movement.to.lng }
+      } else {
+        const currentPoint = routeCoords[currentSegmentIndex]
+        const nextPoint = routeCoords[currentSegmentIndex + 1]
+        const segmentDistance = calculateDistance2D(currentPoint, nextPoint)
+        const segmentProgress = Math.max(0, (currentDistance - cumulativeDistance) / segmentDistance)
+        
+        position = {
+          lat: currentPoint[1] + (nextPoint[1] - currentPoint[1]) * segmentProgress,
+          lng: currentPoint[0] + (nextPoint[0] - currentPoint[0]) * segmentProgress
+        }
+      }
+    } else {
+      // Direct route (fallback) - smooth linear interpolation
+      position = {
+        lat: movement.from.lat + (movement.to.lat - movement.from.lat) * progress,
+        lng: movement.from.lng + (movement.to.lng - movement.from.lng) * progress
+      }
+    }
+
+    return {
+      position,
+      progress,
+      status: 'traveling' as const
+    }
+  }, []) // Empty dependency array since this function doesn't depend on any external state
+
+  // Helper function to calculate distance between 2D coordinates
+  const calculateDistance2D = (coord1: [number, number], coord2: [number, number]): number => {
+    const R = 6371000 // Earth's radius in meters
+    const dLat = (coord2[1] - coord1[1]) * Math.PI / 180
+    const dLng = (coord2[0] - coord1[0]) * Math.PI / 180
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(coord1[1] * Math.PI / 180) * Math.cos(coord2[1] * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return R * c
+  }
+
+  // Helper function to calculate distance between 3D coordinates (ignoring altitude)
+  const calculateDistance3D = (coord1: [number, number, number], coord2: [number, number, number]): number => {
+    return calculateDistance2D([coord1[0], coord1[1]], [coord2[0], coord2[1]])
+  }
+
+  // Get vehicles with current positions
+  const getVehiclesWithCurrentPositions = useCallback((currentTime: number) => {
+    return vehicleMovements.map(movement => {
+      const { position, progress, status } = calculateVehiclePosition(movement, currentTime)
+      return {
+        ...movement,
+        currentPosition: position,
+        progress,
+        status
+      }
+    })
+  }, [vehicleMovements, calculateVehiclePosition])
+
   const updateVehicleMovement = useCallback((id: string, updates: Partial<VehicleMovement>) => {
     setVehicleMovements(prev => 
       prev.map(movement => 
@@ -149,7 +287,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     refreshData,
     addVehicleMovement,
     updateVehicleMovement,
-    removeVehicleMovement
+    removeVehicleMovement,
+    getVehiclesWithCurrentPositions
   }), [
     monitoringStations,
     authorities,
@@ -160,7 +299,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     refreshData,
     addVehicleMovement,
     updateVehicleMovement,
-    removeVehicleMovement
+    removeVehicleMovement,
+    getVehiclesWithCurrentPositions
   ])
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>

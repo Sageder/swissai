@@ -5,7 +5,7 @@ import { MapContainer, type MapRef } from "@/components/map-container";
 import { Sidebar } from "@/components/sidebar";
 import { SettingsOverlay } from "@/components/overlays/settings-overlay";
 import { Timeline } from "@/components/timeline";
-import { TimeProvider } from "@/lib/time-context";
+import { TimeProvider, useTime } from "@/lib/time-context";
 import { DataProvider, useData } from "@/lib/data-context";
 import { MapSearch } from "@/components/map-search";
 import { PolygonEditor, type PolygonData } from "@/components/polygon-editor";
@@ -25,12 +25,13 @@ import {
 import { blattentPOIs } from "@/data/pois";
 import { useAlert } from "@/lib/alert-context";
 import { setAlertContext, createLandslideAlert, setCrisisManagementCallback } from "@/lib/alert-service";
-import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs, setMapControlRef } from "@/lib/util";
+import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, setTimelineRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs, setMapControlRef } from "@/lib/util";
 import { onLiveModeChange } from "@/lib/live-mode";
 
 function DashboardContent() {
   const { resources, monitoringStations, authorities, isLoading, addVehicleMovement } = useData();
   const alertContext = useAlert();
+  const { getDisplayTime } = useTime();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [activeView, setActiveView] = useState("map");
   const [selectedPolygon, setSelectedPolygon] = useState<PolygonData | null>(null);
@@ -87,6 +88,11 @@ function DashboardContent() {
     const unsubscribe = onLiveModeChange((active) => setLiveMode(active));
     return unsubscribe;
   }, []);
+
+  // Initialize timeline reference for utility functions
+  useEffect(() => {
+    setTimelineRef({ getCurrentTime: getDisplayTime });
+  }, [getDisplayTime]);
 
   // Demo alert for Blatten landslide
   useEffect(() => {
@@ -295,6 +301,7 @@ function DashboardContent() {
 
 
   return (
+<<<<<<< HEAD
     <TimeProvider>
       <div className={"h-screen w-full bg-background text-foreground overflow-hidden dark " + (liveMode ? 'outline outline-2 outline-red-500/70 outline-dashed' : '')}>
         {/* Timeline - Fixed at top */}
@@ -333,6 +340,7 @@ function DashboardContent() {
               onPolygonUpdate={handlePolygonUpdate}
               editingPolygon={editingPolygon}
               mapRef={mapRef}
+              sidebarExpanded={sidebarExpanded}
             />
 
             {/* Polygon Popup */}
@@ -396,14 +404,15 @@ function DashboardContent() {
         {/* Alert Container */}
         <AlertContainer />
       </div>
-    </TimeProvider>
-  );
+      );
 }
 
-export default function Dashboard() {
+      export default function Dashboard() {
   return (
-    <DataProvider>
-      <DashboardContent />
-    </DataProvider>
-  );
+      <DataProvider>
+        <TimeProvider>
+          <DashboardContent />
+        </TimeProvider>
+      </DataProvider>
+      );
 }
