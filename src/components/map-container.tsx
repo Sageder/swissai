@@ -1,8 +1,10 @@
 "use client"
 
-import { useEffect, useRef, forwardRef, useImperativeHandle, useState } from "react"
+import { useEffect, useRef, forwardRef, useImperativeHandle, useState, useMemo } from "react"
 import { POI, getPOICoordinates, getPOIColor, getPOIIcon, getPOIIconName, blattentPOIs } from "@/data/pois"
 import { useTime } from "@/lib/time-context"
+import { useData } from "@/lib/data-context"
+import { VehicleMarker } from "@/components/vehicle-marker"
 import {
   Microscope, Radio, AlertTriangle, Cross, Shield, Flame,
   Plane, Home, Zap, AlertCircle, MapPin
@@ -73,6 +75,10 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   const polygonsRef = useRef<any[]>([])
   const onPolygonClickRef = useRef<((polygon: any, clickPosition: { x: number; y: number }) => void) | undefined>(onPolygonClick)
   const globalClickHandlerAdded = useRef(false)
+  
+  // Track vehicle paths
+  const [vehiclePaths, setVehiclePaths] = useState<any[]>([])
+  const vehiclePathsRef = useRef<any[]>([])
 
   // Simple point-in-polygon test
   const pointInPolygon = (point: [number, number], polygon: [number, number][]) => {
@@ -93,9 +99,23 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   // State for POI hover info
   const [hoveredPOI, setHoveredPOI] = useState<POI | null>(null)
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null)
+  const [hoveredVehicleId, setHoveredVehicleId] = useState<string | null>(null)
 
   // Get timeline context
   const { getDisplayTime, timeOffset, isRealTimeEnabled } = useTime()
+  
+  // Get data context for vehicles
+  const { getVehiclesWithCurrentPositions, vehicleMovements } = useData()
+  
+  // Get current vehicles with positions - memoize to prevent infinite re-renders
+  const currentVehicles = useMemo(() => {
+    return getVehiclesWithCurrentPositions(getDisplayTime().getTime())
+  }, [getVehiclesWithCurrentPositions, timeOffset, isRealTimeEnabled])
+
+  const hoveredVehicleLive = useMemo(() => {
+    if (!hoveredVehicleId) return null
+    return currentVehicles.find(v => v.id === hoveredVehicleId) || null
+  }, [currentVehicles, hoveredVehicleId])
 
   useImperativeHandle(ref, () => ({
     toggleTerrain: (enabled: boolean, exaggeration = 1.2) => {
@@ -322,6 +342,10 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
     onPolygonClickRef.current = onPolygonClick
   }, [onPolygonClick])
 
+  useEffect(() => {
+    vehiclePathsRef.current = vehiclePaths
+  }, [vehiclePaths])
+
   // Handle client-side hydration
   useEffect(() => {
     setIsClient(true)
@@ -329,6 +353,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
     setMapboxToken(token)
 
   }, [])
+
 
   // Function to create POI markers - following tutorial pattern exactly
   const createPOIMarkers = async (mapInstance: any, poisData: POI[]) => {
@@ -566,6 +591,9 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
               createPOIMarkers(map.current, pois).catch(() => { })
             }
 
+            // Expose map instance to window for debugging
+            (window as any).debugMapInstance = map.current;
+
             if (onMapLoad) {
               onMapLoad(map.current)
             }
@@ -597,6 +625,170 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
 
     createPOIMarkers(map.current, pois).catch(() => { })
   }, [pois])
+
+  // Compute a stable dependency for route changes only (not position/progress)
+  const vehicleRouteKeys = useMemo(() => {
+    return (vehicleMovements || [])
+      .filter(v => v.route && v.route.coordinates && v.route.coordinates.length > 0)
+      .map(v => `${v.id}:${v.vehicleType}:${v.from.lat}:${v.from.lng}:${v.to.lat}:${v.to.lng}:${v.route?.coordinates.length}:${v.route?.distance}`)
+      .sort()
+      .join("|")
+  }, [vehicleMovements])
+
+  // Update vehicle paths when vehicles change
+  useEffect(() => {
+    if (!map.current || !vehicleMovements || vehicleMovements.length === 0) return
+    
+    // Simple approach: clear all and re-add paths for all active vehicles
+    vehicleMovements.forEach(vehicle => {
+      if (!vehicle.route || !vehicle.route.coordinates || vehicle.route.coordinates.length === 0) {
+        return
+      }
+
+      const sourceId = `vehicle-path-${vehicle.id}`
+      const layerId = `vehicle-path-${vehicle.id}`
+
+      // Remove existing if present
+      if (map.current.getLayer(layerId)) {
+        map.current.removeLayer(layerId)
+      }
+      if (map.current.getSource(sourceId)) {
+        map.current.removeSource(sourceId)
+      }
+
+      // Create GeoJSON for the path
+      const geojson = {
+        type: "Feature" as const,
+        geometry: {
+          type: "LineString" as const,
+          coordinates: vehicle.route.coordinates.map((coord: any) =>
+            Array.isArray(coord) && coord.length >= 2 ? [coord[0], coord[1]] : coord
+          )
+        }
+      }
+      
+      console.log(`📍 GEOJSON COORDINATES for ${vehicle.vehicleType}:`, geojson.geometry.coordinates.slice(0, 3), '...', geojson.geometry.coordinates.slice(-2))
+      
+      // Validate coordinates are in correct format [lng, lat]
+      const firstCoord = geojson.geometry.coordinates[0]
+      const lastCoord = geojson.geometry.coordinates[geojson.geometry.coordinates.length - 1]
+      console.log(`📊 FIRST: [${firstCoord[0]}, ${firstCoord[1]}], LAST: [${lastCoord[0]}, ${lastCoord[1]}]`)
+      
+      // Check if coordinates are in valid range for Switzerland
+      const isValidSwiss = (coord: [number, number]) => {
+        const [lng, lat] = coord
+        return lng >= 5.9 && lng <= 10.5 && lat >= 45.8 && lat <= 47.8
+      }
+      
+      if (!isValidSwiss(firstCoord) || !isValidSwiss(lastCoord)) {
+        console.warn(`⚠️ COORDINATES OUT OF SWISS BOUNDS:`, { first: firstCoord, last: lastCoord })
+      }
+
+      // Add source
+      map.current.addSource(sourceId, {
+        type: "geojson",
+        data: geojson
+      })
+
+      // Get vehicle color
+      const getVehicleColor = (vehicleType: string): string => {
+        switch (vehicleType) {
+          case 'helicopter':
+            return '#3b82f6'
+          case 'ambulance':
+            return '#ef4444'
+          case 'fire_truck':
+            return '#dc2626'
+          case 'police':
+            return '#1f2937'
+          case 'evacuation_bus':
+            return '#f59e0b'
+          default:
+            return '#6b7280'
+        }
+      }
+
+      // Add path layer - insert ABOVE all building layers for visibility
+      try {
+        // Try to add above building layers
+        const beforeLayer = map.current.getLayer('buildings-3d') ? 'buildings-3d' : undefined
+        
+        const unifiedColor = '#60a5fa'
+        const paint: any = {
+          "line-color": unifiedColor,
+          "line-width": 3,
+          "line-opacity": 1.0,
+          // Shorter dashes for all vehicles (both helicopter and non-helicopter)
+          "line-dasharray": [
+            "step",
+            ["zoom"],
+            ["literal", [1, 1]],
+            10, ["literal", [2, 1]],
+            14, ["literal", [3, 2]]
+          ]
+        }
+
+        map.current.addLayer({
+          id: layerId,
+          type: "line",
+          source: sourceId,
+          layout: {
+            "line-join": "round",
+            "line-cap": "round"
+          },
+          paint
+        }, beforeLayer)
+        
+        // Verify the layer was added and fly to path for visibility
+        setTimeout(() => {
+          const layerExists = map.current.getLayer(layerId)
+          const sourceExists = map.current.getSource(sourceId)
+          console.log(`🔍 LAYER VERIFICATION: ${layerId} - Layer exists: ${!!layerExists}, Source exists: ${!!sourceExists}`)
+          
+          if (layerExists) {
+            const layerStyle = map.current.getPaintProperty(layerId, 'line-color')
+            console.log(`🎨 LAYER STYLE: ${layerId} color = ${layerStyle}`)
+            
+            // Fly to the vehicle path to make sure it's visible
+            try {
+              const mapboxgl = require('mapbox-gl')
+              const bounds = new mapboxgl.LngLatBounds()
+              geojson.geometry.coordinates.forEach((coord: [number, number]) => {
+                bounds.extend(coord)
+              })
+              
+              map.current.fitBounds(bounds, {
+                padding: 50,
+                maxZoom: 15,
+                duration: 2000
+              })
+              
+              console.log(`🎯 FLYING TO VEHICLE PATH: ${layerId}`)
+            } catch (boundError) {
+              console.warn('Could not fly to path bounds:', boundError)
+              // Fallback: fly to first coordinate
+              const firstCoord = geojson.geometry.coordinates[0]
+              if (firstCoord) {
+                map.current.flyTo({
+                  center: firstCoord,
+                  zoom: 14,
+                  duration: 2000
+                })
+                console.log(`🎯 FLYING TO FIRST COORD: ${firstCoord}`)
+              }
+            }
+          }
+        }, 100)
+        
+      } catch (error) {
+        console.error(`❌ ERROR adding layer ${layerId}:`, error)
+      }
+
+      console.log(`🔴 ADDED VEHICLE PATH: ${layerId} (${vehicle.vehicleType}) with ${vehicle.route.coordinates.length} points - COLOR: ${getVehicleColor(vehicle.vehicleType)}`)
+    })
+  }, [vehicleMovements.length, vehicleMovements.map(v => v.id).join(',')])
+
+  // No need for this effect - currentVehicles is already memoized and will update when time changes
 
 
 
@@ -709,6 +901,52 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         </div>
       )}
 
+
+      {/* Vehicle Markers */}
+      {currentVehicles.map(vehicle => (
+        <VehicleMarker
+          key={vehicle.id}
+          vehicle={vehicle}
+          map={map.current}
+          onHover={(veh, pos) => { setHoveredVehicleId(veh.id); setHoverPosition(pos) }}
+          onLeave={() => { setHoveredVehicleId(null); setHoverPosition(null) }}
+        />
+      ))}
+
+      {/* Vehicle Hover Overlay */}
+      {hoveredVehicleLive && hoverPosition && (
+        <div
+          className="absolute z-50 pointer-events-none"
+          style={{ left: hoverPosition.x + 20, top: hoverPosition.y - 10, transform: 'translateY(-100%)' }}
+        >
+          <div
+            className="poi-hover-dark-glass"
+            style={{
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8))',
+              backdropFilter: 'blur(24px)',
+              border: '1px solid rgba(148, 163, 184, 0.2)',
+              borderRadius: '16px',
+              padding: '16px',
+              color: '#e2e8f0',
+              fontSize: '13px',
+              minWidth: '220px',
+              boxShadow: '0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+              position: 'relative'
+            }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div style={{ fontSize: 16 }}>{hoveredVehicleLive.vehicleType === 'helicopter' ? '🚁' : hoveredVehicleLive.vehicleType === 'ambulance' ? '🚑' : hoveredVehicleLive.vehicleType === 'fire_truck' ? '🚒' : hoveredVehicleLive.vehicleType === 'police' ? '🚔' : '🚌'}</div>
+              <h3 className="font-semibold text-sm text-slate-100" style={{ textTransform: 'capitalize' }}>{hoveredVehicleLive.vehicleType.replace('_', ' ')}</h3>
+            </div>
+            <div className="text-xs text-slate-300 space-y-1">
+              <div>From: {hoveredVehicleLive.from?.name || 'Unknown'}</div>
+              <div>To: {hoveredVehicleLive.to?.name || 'Unknown'}</div>
+              <div>Status: {hoveredVehicleLive.status === 'arrived' ? 'Arrived' : 'Traveling'}</div>
+              <div>Progress: {Math.round((hoveredVehicleLive.progress ?? 0) * 100)}%</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Placeholder when no token */}
       {!mapboxToken && (

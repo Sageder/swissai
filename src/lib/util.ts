@@ -367,18 +367,31 @@ async function getDirections(
   from: { lat: number; lng: number },
   to: { lat: number; lng: number }
 ): Promise<{ coordinates: [number, number][]; distance: number; duration: number } | null> {
+  // Try Mapbox first if token exists
   try {
     const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
-    if (!mapboxToken) {
-      console.warn('Mapbox token not available, using direct route');
-      return null;
+    if (mapboxToken) {
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&access_token=${mapboxToken}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        return {
+          coordinates: route.geometry.coordinates,
+          distance: route.distance,
+          duration: route.duration
+        };
+      }
     }
+  } catch (error) {
+    console.warn('Mapbox routing failed, will try OSRM fallback:', error);
+  }
 
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${from.lng},${from.lat};${to.lng},${to.lat}?geometries=geojson&access_token=${mapboxToken}`;
-
-    const response = await fetch(url);
+  // Fallback to OSRM public API for road routing if Mapbox unavailable
+  try {
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+    const response = await fetch(osrmUrl);
     const data = await response.json();
-
     if (data.routes && data.routes.length > 0) {
       const route = data.routes[0];
       return {
@@ -387,12 +400,11 @@ async function getDirections(
         duration: route.duration
       };
     }
-
-    return null;
   } catch (error) {
-    console.error('Error getting directions:', error);
-    return null;
+    console.warn('OSRM routing failed, will use direct line fallback:', error);
   }
+
+  return null;
 }
 
 /**
@@ -422,29 +434,54 @@ export async function sendVehicle(
     return;
   }
 
-  // Get directions from Mapbox
+  // Get directions using Mapbox/OSRM (roads)
   const route = await getDirections(
     { lat: fromPOI.metadata.coordinates.lat, lng: fromPOI.metadata.coordinates.long },
     { lat: toPOI.metadata.coordinates.lat, lng: toPOI.metadata.coordinates.long }
   );
 
+  // Base vehicle speed (m/s) ~ 50 km/h => 13.89 m/s
+  const vehicleSpeedMs = 13.89;
   let finalDuration = duration;
   let routeData = undefined;
 
   if (route) {
-    // Use Mapbox route data
+    // Use routed road path and speed-based duration
     routeData = route;
-    // Convert duration from seconds to milliseconds, but cap it for demo purposes
-    finalDuration = Math.min(route.duration * 1000, 60000); // Max 60 seconds for demo
+    const distanceMeters = route.distance; // meters
+    finalDuration = (distanceMeters / vehicleSpeedMs) * 1000; // ms
+    console.log('✅ VEHICLE ROUTE FOUND:', route.coordinates.length, 'points');
   } else {
-    // Fallback to direct distance calculation
-    const distance = calculateDistance(
+    // Create a fallback route using the SAME approach as helicopters
+    const distanceKm = calculateDistance(
       fromPOI.metadata.coordinates.lat,
       fromPOI.metadata.coordinates.long,
       toPOI.metadata.coordinates.lat,
       toPOI.metadata.coordinates.long
     );
-    finalDuration = duration === 30000 ? Math.max(10000, distance * 72) : duration;
+    const distanceMeters = distanceKm * 1000;
+    finalDuration = (distanceMeters / vehicleSpeedMs) * 1000; // ms
+    
+    // EXACT SAME LOGIC AS HELICOPTERS - but for ground vehicles
+    const numPoints = Math.max(16, Math.ceil(distanceKm * 10)); // Same as helicopter
+    const coordinates: [number, number][] = [];
+    
+    for (let i = 0; i <= numPoints; i++) {
+      const progress = i / numPoints;
+      const lat = fromPOI.metadata.coordinates.lat + (toPOI.metadata.coordinates.lat - fromPOI.metadata.coordinates.lat) * progress;
+      const lng = fromPOI.metadata.coordinates.long + (toPOI.metadata.coordinates.long - fromPOI.metadata.coordinates.long) * progress;
+      
+      // Vehicles use 2D coordinates [lng, lat] (no altitude like helicopters)
+      coordinates.push([lng, lat]);
+    }
+    
+    routeData = {
+      coordinates,
+      distance: distanceMeters,
+      duration: finalDuration / 1000
+    };
+    
+    console.log('⚠️ NO ROUTE API - USING HELICOPTER-STYLE FALLBACK ROUTE:', coordinates.length, 'points', 'First:', coordinates[0], 'Last:', coordinates[coordinates.length - 1]);
   }
 
   // Create vehicle movement
@@ -466,7 +503,7 @@ export async function sendVehicle(
   };
 
   dataContextRef.addVehicleMovement(movement);
-  console.log(`Vehicle (${vehicleType}) sent from ${fromPOI.title} to ${toPOI.title}${route ? ' via roads' : ' via direct route'}`);
+  console.log(`Vehicle (${vehicleType}) dispatched via ${route ? 'roads' : 'direct line'}: ${(finalDuration/1000).toFixed(1)}s, ${(route?.distance ?? 0/1000).toFixed(2)}km, route points: ${route?.coordinates?.length || 0}`);
 }
 
 /**
@@ -546,14 +583,13 @@ export async function sendHelicopter(
     toPOI.metadata.coordinates.long
   );
 
-  // Helicopters are faster - adjust duration based on distance
-  // Base speed: 100 km/h = 27.78 m/s
-  const helicopterSpeed = 27.78; // meters per second
-  const calculatedDuration = Math.max(10000, (distance * 1000) / helicopterSpeed * 1000); // Convert to milliseconds
-  const finalDuration = Math.min(calculatedDuration, duration);
+  // Helicopters are 3x faster than vehicles
+  const vehicleSpeedMs = 13.89; // ~50 km/h
+  const helicopterSpeed = vehicleSpeedMs * 3; // ~150 km/h
+  const finalDuration = ((distance * 1000) / helicopterSpeed) * 1000; // ms
 
   // Create direct route coordinates for helicopter (straight line in the air)
-  const numPoints = Math.max(3, Math.ceil(distance * 2)); // More points for longer distances
+  const numPoints = Math.max(16, Math.ceil(distance * 10)); // Densify for smoother animation
   const coordinates: [number, number, number][] = [];
 
   for (let i = 0; i <= numPoints; i++) {
@@ -590,7 +626,6 @@ export async function sendHelicopter(
   };
 
   dataContextRef.addVehicleMovement(movement);
-  console.log(`Helicopter sent from ${fromPOI.title} to ${toPOI.title} via direct route (${distance.toFixed(1)}km)`);
 }
 
 /**
