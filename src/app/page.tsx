@@ -25,7 +25,8 @@ import {
 import { blattentPOIs } from "@/data/pois";
 import { useAlert } from "@/lib/alert-context";
 import { setAlertContext, createLandslideAlert, setCrisisManagementCallback } from "@/lib/alert-service";
-import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, setTimelineRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs } from "@/lib/util";
+import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, setTimelineRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs, setMapControlRef } from "@/lib/util";
+import { onLiveModeChange } from "@/lib/live-mode";
 
 function DashboardContent() {
   const { resources, monitoringStations, authorities, isLoading, addVehicleMovement } = useData();
@@ -70,6 +71,23 @@ function DashboardContent() {
   useEffect(() => {
     setDataContextRef({ addVehicleMovement });
   }, [addVehicleMovement]);
+
+  // Provide map control ref for util-driven camera moves
+  useEffect(() => {
+    if (mapRef.current && mapRef.current.flyToLocation) {
+      setMapControlRef({
+        flyToLocation: (coordinates: [number, number], zoom?: number) => {
+          mapRef.current?.flyToLocation(coordinates, zoom ?? 13);
+        }
+      });
+    }
+  }, [mapRef.current]);
+
+  // Sync live mode with central live-mode module (accept plan triggers)
+  useEffect(() => {
+    const unsubscribe = onLiveModeChange((active) => setLiveMode(active));
+    return unsubscribe;
+  }, []);
 
   // Initialize timeline reference for utility functions
   useEffect(() => {
@@ -283,107 +301,107 @@ function DashboardContent() {
 
 
   return (
-      <div className="h-screen w-full bg-background text-foreground overflow-hidden dark">
-        {/* Timeline - Fixed at top */}
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-96">
-          <Timeline />
-        </div>
+    <div className={"h-screen w-full bg-background text-foreground overflow-hidden dark " + (liveMode ? 'outline-2 outline-red-500/70 outline-dashed' : '')}>
+      {/* Timeline - Fixed at top */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-96">
+        <Timeline />
+      </div>
 
-        {/* Main Layout Container */}
-        <div className="relative h-full flex">
-          {/* Main Content Area - Full Width */}
-          <div className="flex-1 relative">
-            {/* Full-screen Map */}
-            <div className="absolute inset-0">
-              <MapContainer
-                ref={mapRef}
-                pois={allPOIs}
-                onPolygonClick={handlePolygonClick}
-              />
+      {/* Main Layout Container */}
+      <div className="relative h-full flex">
+        {/* Main Content Area - Full Width */}
+        <div className="flex-1 relative">
+          {/* Full-screen Map */}
+          <div className="absolute inset-0">
+            <MapContainer
+              ref={mapRef}
+              pois={allPOIs}
+              onPolygonClick={handlePolygonClick}
+            />
 
-              {/* MapSearch Overlay - Centered */}
-              {searchOpen && (
-                <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
-                  <div className="pointer-events-auto">
-                    <MapSearch
-                      onLocationSelect={handleLocationSelect}
-                      className="w-96"
-                    />
-                  </div>
+            {/* MapSearch Overlay - Centered */}
+            {searchOpen && (
+              <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
+                <div className="pointer-events-auto">
+                  <MapSearch
+                    onLocationSelect={handleLocationSelect}
+                    className="w-96"
+                  />
                 </div>
-              )}
-            </div>
-
-            {/* Polygon Editor */}
-            <PolygonEditor
-              onPolygonComplete={handlePolygonComplete}
-              onPolygonUpdate={handlePolygonUpdate}
-              editingPolygon={editingPolygon}
-              mapRef={mapRef}
-              sidebarExpanded={sidebarExpanded}
-            />
-
-            {/* Polygon Popup */}
-            <PolygonPopup
-              polygon={selectedPolygon}
-              position={popupPosition}
-              onClose={handleClosePopup}
-              onUpdateName={handleUpdatePolygonName}
-              onEdit={handleEditPolygon}
-              onDelete={handleDeletePolygon}
-              onActions={handleActionsOpen}
-            />
+              </div>
+            )}
           </div>
 
-          {/* Sidebar */}
-          <Sidebar
-            expanded={sidebarExpanded}
-            onToggle={() => setSidebarExpanded(!sidebarExpanded)}
-            activeView={activeView}
-            onViewChange={handleViewChange}
-            onAIChatOpen={handleAIChatOpen}
-            onDebugPanelOpen={() => setDebugPanelOpen(!debugPanelOpen)}
-            onSearchOpen={handleSearchOpen}
+          {/* Polygon Editor */}
+          <PolygonEditor
+            onPolygonComplete={handlePolygonComplete}
+            onPolygonUpdate={handlePolygonUpdate}
+            editingPolygon={editingPolygon}
+            mapRef={mapRef}
+            sidebarExpanded={sidebarExpanded}
           />
 
-          {/* AI Chat Overlay */}
-          <AIChat
-            isOpen={aiChatOpen}
-            onClose={handleAIChatClose}
-          />
-
-          {/* Crisis Management Overlay */}
-          <CrisisManagement
-            isOpen={crisisManagementOpen}
-            onClose={handleCrisisManagementClose}
-            event={crisisEvent}
-          />
-
-          {/* Debug Agent Panel */}
-          <DebugAgentPanel
-            isOpen={debugPanelOpen}
-            onClose={() => setDebugPanelOpen(false)}
-            liveMode={liveMode}
-            onLiveModeToggle={toggleLiveMode}
-          />
-
-          {/* Actions Side Panel */}
-          <ActionsSidePanel
-            isOpen={actionsPanelOpen}
-            onClose={handleActionsPanelClose}
-            polygon={actionsPanelPolygon}
+          {/* Polygon Popup */}
+          <PolygonPopup
+            polygon={selectedPolygon}
+            position={popupPosition}
+            onClose={handleClosePopup}
+            onUpdateName={handleUpdatePolygonName}
+            onEdit={handleEditPolygon}
+            onDelete={handleDeletePolygon}
+            onActions={handleActionsOpen}
           />
         </div>
 
-        {/* Overlays */}
-        <SettingsOverlay
-          isOpen={activeView === "settings"}
-          onClose={handleCloseOverlay}
+        {/* Sidebar */}
+        <Sidebar
+          expanded={sidebarExpanded}
+          onToggle={() => setSidebarExpanded(!sidebarExpanded)}
+          activeView={activeView}
+          onViewChange={handleViewChange}
+          onAIChatOpen={handleAIChatOpen}
+          onDebugPanelOpen={() => setDebugPanelOpen(!debugPanelOpen)}
+          onSearchOpen={handleSearchOpen}
         />
 
-        {/* Alert Container */}
-        <AlertContainer />
+        {/* AI Chat Overlay */}
+        <AIChat
+          isOpen={aiChatOpen}
+          onClose={handleAIChatClose}
+        />
+
+        {/* Crisis Management Overlay */}
+        <CrisisManagement
+          isOpen={crisisManagementOpen}
+          onClose={handleCrisisManagementClose}
+          event={crisisEvent}
+        />
+
+        {/* Debug Agent Panel */}
+        <DebugAgentPanel
+          isOpen={debugPanelOpen}
+          onClose={() => setDebugPanelOpen(false)}
+          liveMode={liveMode}
+          onLiveModeToggle={toggleLiveMode}
+        />
+
+        {/* Actions Side Panel */}
+        <ActionsSidePanel
+          isOpen={actionsPanelOpen}
+          onClose={handleActionsPanelClose}
+          polygon={actionsPanelPolygon}
+        />
       </div>
+
+      {/* Overlays */}
+      <SettingsOverlay
+        isOpen={activeView === "settings"}
+        onClose={handleCloseOverlay}
+      />
+
+      {/* Alert Container */}
+      <AlertContainer />
+    </div>
   );
 }
 

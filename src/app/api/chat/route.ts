@@ -118,7 +118,7 @@ Provide detailed, actionable responses with specific recommendations and tool us
       model: openai('gpt-4.1'),
       messages: convertedMessages,
       system:
-        "You are an emergency management agent. Workflow: (1) Produce a very short EXECUTIVE SUMMARY with 3-5 bullet points describing what happened and the next steps. (2) Create an authorities-contact graph by calling the 'crisis_graph' tool with nodes (authorities/resources/alerts as needed) and connections that represent who must contact whom. Do not output any other text besides the short summary.",
+        "You are an emergency management agent. Workflow: (1) Produce a very short EXECUTIVE SUMMARY with 3-5 bullet points describing what happened and the next steps. (2) Do not call tools to highlight POIs; these are handled automatically by the system. (3) Create an authorities-contact graph by calling the 'crisis_graph' tool with nodes (authorities/resources/alerts as needed) and connections that represent who must contact whom. Output only the short summary text; avoid any other explanatory text.",
       stopWhen: stepCountIs(3),
       temperature: 0.2,
       tools: {

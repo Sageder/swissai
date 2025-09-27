@@ -3,7 +3,7 @@
 import { useEffect, useRef, forwardRef, useImperativeHandle, useState, useMemo } from "react"
 import { POI, getPOICoordinates, getPOIColor, getPOIIcon, getPOIIconName, blattentPOIs } from "@/data/pois"
 import { useTime } from "@/lib/time-context"
-import { useData } from "@/lib/data-context"
+import { useData, type VehicleMovement } from "@/lib/data-context"
 import { VehicleMarker } from "@/components/vehicle-marker"
 import {
   Microscope, Radio, AlertTriangle, Cross, Shield, Flame,
@@ -75,7 +75,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   const polygonsRef = useRef<any[]>([])
   const onPolygonClickRef = useRef<((polygon: any, clickPosition: { x: number; y: number }) => void) | undefined>(onPolygonClick)
   const globalClickHandlerAdded = useRef(false)
-  
+
   // Track vehicle paths
   const [vehiclePaths, setVehiclePaths] = useState<any[]>([])
   const vehiclePathsRef = useRef<any[]>([])
@@ -84,16 +84,16 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   const pointInPolygon = (point: [number, number], polygon: [number, number][]) => {
     const [x, y] = point
     let inside = false
-    
+
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
       const [xi, yi] = polygon[i]
       const [xj, yj] = polygon[j]
-      
+
       if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
         inside = !inside
       }
     }
-    
+
     return inside
   }
   // State for POI hover info
@@ -103,10 +103,10 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
 
   // Get timeline context
   const { getDisplayTime, timeOffset, isRealTimeEnabled } = useTime()
-  
+
   // Get data context for vehicles
   const { getVehiclesWithCurrentPositions, vehicleMovements } = useData()
-  
+
   // Get current vehicles with positions - memoize to prevent infinite re-renders
   const currentVehicles = useMemo(() => {
     return getVehiclesWithCurrentPositions(getDisplayTime().getTime())
@@ -152,16 +152,16 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
     },
     addPolygon: (polygon: any) => {
       if (!map.current) return
-      
+
       console.log("[MapContainer] Adding polygon:", polygon)
-      
+
       // Add polygon source and layer
       const sourceId = `polygon-${polygon.id}`
       const layerId = `polygon-layer-${polygon.id}`
       const outlineLayerId = `polygon-outline-${polygon.id}`
-      
+
       console.log("[MapContainer] Creating layers:", { sourceId, layerId, outlineLayerId })
-      
+
       // Create GeoJSON for the polygon
       const geojson = {
         type: "Feature" as const,
@@ -176,13 +176,13 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
           fillColor: polygon.fillColor
         }
       }
-      
+
       // Add source
       map.current.addSource(sourceId, {
         type: "geojson",
         data: geojson
       })
-      
+
       // Add fill layer at the very top of the layer stack for maximum click priority
       map.current.addLayer({
         id: layerId,
@@ -195,7 +195,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
           "fill-opacity": 0.3
         }
       }) // No beforeLayer - adds to the very top
-      
+
       // Add outline layer at the very top for maximum click priority
       map.current.addLayer({
         id: outlineLayerId,
@@ -218,7 +218,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
           "line-opacity": 1.0
         }
       }) // No beforeLayer - adds to the very top
-      
+
       // Add a much larger invisible clickable area at the very top for maximum click priority
       const clickableLayerId = `polygon-clickable-${polygon.id}`
       map.current.addLayer({
@@ -232,47 +232,47 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
           "fill-opacity": 0.01
         }
       }) // No beforeLayer - adds to the very top
-      
+
       // Store polygon data for global click handler
       console.log("[MapContainer] Polygon added, will be handled by global click handler:", polygon.id)
-      
+
       // Change cursor on hover for all layers
       const polygonLayers = [layerId, outlineLayerId, clickableLayerId]
       polygonLayers.forEach((layer: string) => {
         map.current.on('mouseenter', layer, () => {
           map.current.getCanvas().style.cursor = 'pointer'
         })
-        
+
         map.current.on('mouseleave', layer, () => {
           map.current.getCanvas().style.cursor = ''
         })
       })
-      
+
       setPolygons(prev => {
         const newPolygons = [...prev, polygon]
         console.log("[MapContainer] Updated polygons state:", newPolygons)
         console.log("[MapContainer] Polygon layers created successfully")
-        
+
         // Verify layers exist
         setTimeout(() => {
           const layerExists = map.current.getLayer(layerId)
           const sourceExists = map.current.getSource(sourceId)
           console.log("[MapContainer] Layer verification:", { layerExists: !!layerExists, sourceExists: !!sourceExists })
         }, 100)
-        
+
         return newPolygons
       })
     },
     removePolygon: (polygonId: string) => {
       if (!map.current) return
-      
+
       console.log("[MapContainer] Removing polygon:", polygonId)
-      
+
       const sourceId = `polygon-${polygonId}`
       const layerId = `polygon-layer-${polygonId}`
       const outlineLayerId = `polygon-outline-${polygonId}`
       const clickableLayerId = `polygon-clickable-${polygonId}`
-      
+
       // Remove event handlers first
       const polygonLayersToRemove = [layerId, outlineLayerId, clickableLayerId]
       polygonLayersToRemove.forEach((layer: string) => {
@@ -280,7 +280,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         map.current.off('mouseenter', layer)
         map.current.off('mouseleave', layer)
       })
-      
+
       // Remove layers and source
       if (map.current.getLayer(layerId)) {
         map.current.removeLayer(layerId)
@@ -294,18 +294,18 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
       if (map.current.getSource(sourceId)) {
         map.current.removeSource(sourceId)
       }
-      
+
       setPolygons(prev => prev.filter(p => p.id !== polygonId))
     },
     updatePolygon: (polygonId: string, updates: Partial<any>) => {
       if (!map.current) return
-      
+
       console.log("[MapContainer] Updating polygon:", polygonId, updates)
-      
-      setPolygons(prev => prev.map(p => 
+
+      setPolygons(prev => prev.map(p =>
         p.id === polygonId ? { ...p, ...updates } : p
       ))
-      
+
       // Update the map source data if needed
       const sourceId = `polygon-${polygonId}`
       if (map.current.getSource(sourceId)) {
@@ -376,6 +376,13 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         // Create dark liquid glass marker element
         const el = document.createElement('div')
         el.className = 'poi-marker-dark-glass'
+        const isMonitoring = (poi as any)?.metadata?.highlight === 'monitoring'
+        const isResource = (poi as any)?.metadata?.highlight === 'resource'
+        const ringColor = isMonitoring ? 'rgba(56, 189, 248, 0.9)' : isResource ? 'rgba(34, 197, 94, 0.95)' : 'rgba(148, 163, 184, 0.35)'
+        const ringGlow = isMonitoring ? '0 0 18px rgba(56, 189, 248, 0.75)' : isResource ? '0 0 18px rgba(34, 197, 94, 0.75)' : '0 0 0 rgba(0,0,0,0)'
+        const ringAnimation = (isMonitoring || isResource) ? 'poiPulse 1.6s ease-in-out infinite' : 'none'
+        const pingColor = isMonitoring ? 'rgba(56, 189, 248, 0.25)' : isResource ? 'rgba(34, 197, 94, 0.25)' : 'rgba(0,0,0,0)'
+
         el.innerHTML = `
           <div class="poi-marker-container" style="
             width: 36px;
@@ -395,6 +402,24 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
             position: relative;
             overflow: hidden;
           ">
+            ${(isMonitoring || isResource) ? `
+            <div style="
+              position: absolute;
+              inset: -10px;
+              border-radius: 9999px;
+              border: 3px solid ${ringColor};
+              box-shadow: ${ringGlow};
+              animation: ${ringAnimation};
+              z-index: 2;
+            "></div>
+            <div style="
+              position: absolute;
+              inset: -16px;
+              border-radius: 9999px;
+              background: radial-gradient(closest-side, ${pingColor}, transparent 70%);
+              animation: poiPing 2s ease-out infinite;
+              z-index: 0;
+            "></div>` : ''}
             <div class="liquid-glass-overlay" style="
               position: absolute;
               top: 0;
@@ -404,6 +429,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
               background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
               border-radius: 50%;
               pointer-events: none;
+              z-index: 1;
             "></div>
             <div style="
               color: ${color === '#ef4444' ? '#ef4444' : '#94a3b8'};
@@ -412,7 +438,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
               display: flex;
               align-items: center;
               justify-content: center;
-              z-index: 1;
+              z-index: 3;
             ">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 ${getIconSVGPath(iconName)}
@@ -456,9 +482,36 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
     setPOIMarkers(newMarkers)
   }
 
+  // Global CSS for pulse animation (injected once per component instance)
+  useEffect(() => {
+    const id = 'poi-pulse-style'
+    if (document.getElementById(id)) return
+    const style = document.createElement('style')
+    style.id = id
+    style.innerHTML = `
+      @keyframes poiPulse {
+        0% { transform: scale(0.95); opacity: 0.7; }
+        50% { transform: scale(1.05); opacity: 1; }
+        100% { transform: scale(0.95); opacity: 0.7; }
+      }
+      @keyframes poiPing {
+        0% { transform: scale(0.8); opacity: 0.0; }
+        10% { opacity: 0.5; }
+        70% { opacity: 0.15; }
+        100% { transform: scale(1.2); opacity: 0.0; }
+      }
+    `
+    document.head.appendChild(style)
+    return () => {
+      const node = document.getElementById(id)
+      if (node) node.remove()
+    }
+  }, [])
 
-
-
+  // Function to create vehicle markers and route lines
+  const createVehicleMarkers = async (mapInstance: any, movements: VehicleMovement[]) => {
+    if (!mapInstance || movements.length === 0) return
+  }
 
   useEffect(() => {
     // Initialize Mapbox when token is provided
@@ -565,10 +618,10 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
                 console.log("[MapContainer] Global click at:", e.lngLat.lng, e.lngLat.lat)
                 console.log("[MapContainer] Available polygons:", polygonsRef.current.length)
                 console.log("[MapContainer] Polygons data:", polygonsRef.current)
-                
+
                 // Check each polygon manually using point-in-polygon
                 const clickPoint: [number, number] = [e.lngLat.lng, e.lngLat.lat]
-                
+
                 for (const polygon of polygonsRef.current) {
                   console.log("[MapContainer] Checking polygon:", polygon.id, "vertices:", polygon.vertices)
                   if (pointInPolygon(clickPoint, polygon.vertices)) {
@@ -579,7 +632,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
                     }
                   }
                 }
-                
+
                 console.log("[MapContainer] No polygon hit at click point")
               })
               globalClickHandlerAdded.current = true
@@ -638,7 +691,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   // Update vehicle paths when vehicles change
   useEffect(() => {
     if (!map.current || !vehicleMovements || vehicleMovements.length === 0) return
-    
+
     // Simple approach: clear all and re-add paths for all active vehicles
     vehicleMovements.forEach(vehicle => {
       if (!vehicle.route || !vehicle.route.coordinates || vehicle.route.coordinates.length === 0) {
@@ -666,20 +719,20 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
           )
         }
       }
-      
+
       console.log(`📍 GEOJSON COORDINATES for ${vehicle.vehicleType}:`, geojson.geometry.coordinates.slice(0, 3), '...', geojson.geometry.coordinates.slice(-2))
-      
+
       // Validate coordinates are in correct format [lng, lat]
       const firstCoord = geojson.geometry.coordinates[0]
       const lastCoord = geojson.geometry.coordinates[geojson.geometry.coordinates.length - 1]
       console.log(`📊 FIRST: [${firstCoord[0]}, ${firstCoord[1]}], LAST: [${lastCoord[0]}, ${lastCoord[1]}]`)
-      
+
       // Check if coordinates are in valid range for Switzerland
       const isValidSwiss = (coord: [number, number]) => {
         const [lng, lat] = coord
         return lng >= 5.9 && lng <= 10.5 && lat >= 45.8 && lat <= 47.8
       }
-      
+
       if (!isValidSwiss(firstCoord) || !isValidSwiss(lastCoord)) {
         console.warn(`⚠️ COORDINATES OUT OF SWISS BOUNDS:`, { first: firstCoord, last: lastCoord })
       }
@@ -712,7 +765,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
       try {
         // Try to add above building layers
         const beforeLayer = map.current.getLayer('buildings-3d') ? 'buildings-3d' : undefined
-        
+
         const unifiedColor = '#60a5fa'
         const paint: any = {
           "line-color": unifiedColor,
@@ -738,17 +791,17 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
           },
           paint
         }, beforeLayer)
-        
+
         // Verify the layer was added and fly to path for visibility
         setTimeout(() => {
           const layerExists = map.current.getLayer(layerId)
           const sourceExists = map.current.getSource(sourceId)
           console.log(`🔍 LAYER VERIFICATION: ${layerId} - Layer exists: ${!!layerExists}, Source exists: ${!!sourceExists}`)
-          
+
           if (layerExists) {
             const layerStyle = map.current.getPaintProperty(layerId, 'line-color')
             console.log(`🎨 LAYER STYLE: ${layerId} color = ${layerStyle}`)
-            
+
             // Fly to the vehicle path to make sure it's visible
             try {
               const mapboxgl = require('mapbox-gl')
@@ -756,13 +809,13 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
               geojson.geometry.coordinates.forEach((coord: [number, number]) => {
                 bounds.extend(coord)
               })
-              
+
               map.current.fitBounds(bounds, {
                 padding: 50,
                 maxZoom: 15,
                 duration: 2000
               })
-              
+
               console.log(`🎯 FLYING TO VEHICLE PATH: ${layerId}`)
             } catch (boundError) {
               console.warn('Could not fly to path bounds:', boundError)
@@ -779,7 +832,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
             }
           }
         }, 100)
-        
+
       } catch (error) {
         console.error(`❌ ERROR adding layer ${layerId}:`, error)
       }
