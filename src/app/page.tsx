@@ -30,9 +30,9 @@ import { setAlertContext, createLandslideAlert, setCrisisManagementCallback } fr
 import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, setTimelineRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs, setMapControlRef } from "@/lib/util";
 
 function DashboardContent() {
-    const { resources, monitoringStations, authorities, isLoading, addVehicleMovement } = useData();
+    const { resources, monitoringStations, authorities, isLoading, addVehicleMovement, vehicleMovements } = useData();
     const alertContext = useAlert();
-    const { getDisplayTime } = useTime();
+    const { getDisplayTime, timeOffset, setTimeOffset, isRealTimeEnabled, toggleRealTime } = useTime();
     const [sidebarExpanded, setSidebarExpanded] = useState(false);
     const [activeView, setActiveView] = useState("map");
     const [selectedPolygon, setSelectedPolygon] = useState<PolygonData | null>(null);
@@ -329,6 +329,38 @@ function DashboardContent() {
     return (
         <div className={`h-screen w-full bg-background text-foreground overflow-hidden dark transition-all duration-300 ${getLiveModeStatus() ? 'border-4 border-red-500 border-dashed' : ''
             }`}>
+            {/* Live Mode Vehicle Time Slider */}
+            {getLiveModeStatus() && (vehicleMovements?.length || 0) > 0 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 w-[560px]">
+                    <div className="bg-black/60 backdrop-blur-md border border-white/15 rounded-xl px-4 py-3 shadow-lg">
+                        <div className="flex items-center gap-3">
+                            <Button
+                                size="sm"
+                                className={`${isRealTimeEnabled ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'} text-white`}
+                                onClick={() => toggleRealTime(!isRealTimeEnabled)}
+                            >
+                                {isRealTimeEnabled ? 'Pause' : 'Play'}
+                            </Button>
+                            <input
+                                type="range"
+                                min={0}
+                                max={12}
+                                step={0.01}
+                                value={timeOffset}
+                                onChange={(e) => {
+                                    if (isRealTimeEnabled) toggleRealTime(false);
+                                    const v = parseFloat(e.target.value);
+                                    setTimeOffset(Number.isNaN(v) ? 0 : v);
+                                }}
+                                className="flex-1 h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <div className="text-xs text-white/80 w-36 text-right tabular-nums">
+                                {getDisplayTime().toLocaleTimeString()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Timeline - Fixed at top */}
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-96">
                 <Timeline />
