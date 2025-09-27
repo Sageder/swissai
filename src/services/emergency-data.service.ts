@@ -25,53 +25,83 @@ import type {
 } from '@/types/emergency';
 
 export class EmergencyDataService {
+  private checkDatabase(): boolean {
+    if (!db) {
+      console.warn('Firebase database not available');
+      return false;
+    }
+    return true;
+  }
+
+  private getDatabase() {
+    if (!db) {
+      throw new Error('Firebase database not available');
+    }
+    return db;
+  }
+
   // Events collection
   async getEvents(): Promise<EmergencyEvent[]> {
-    const eventsRef = collection(db, 'events');
+    if (!this.checkDatabase()) return [];
+    const database = this.getDatabase();
+    const eventsRef = collection(database, 'events');
     const snapshot = await getDocs(eventsRef);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as EmergencyEvent));
   }
 
   async getEvent(eventId: string): Promise<EmergencyEvent | null> {
-    const eventRef = doc(db, 'events', eventId);
+    if (!this.checkDatabase()) return null;
+    const database = this.getDatabase();
+    const eventRef = doc(database, 'events', eventId);
     const snapshot = await getDoc(eventRef);
     return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } as unknown as EmergencyEvent : null;
   }
 
   async createEvent(event: Omit<EmergencyEvent, 'id'>): Promise<string> {
-    const eventsRef = collection(db, 'events');
+    if (!this.checkDatabase()) return '';
+    const database = this.getDatabase();
+    const eventsRef = collection(database, 'events');
     const docRef = await addDoc(eventsRef, event);
     return docRef.id;
   }
 
   async updateEvent(eventId: string, updates: Partial<EmergencyEvent>): Promise<void> {
-    const eventRef = doc(db, 'events', eventId);
+    if (!this.checkDatabase()) return;
+    const database = this.getDatabase();
+    const eventRef = doc(database, 'events', eventId);
     await updateDoc(eventRef, updates);
   }
 
   // Monitoring stations collection
   async getMonitoringStations(): Promise<MonitoringStation[]> {
-    const stationsRef = collection(db, 'monitoring_data');
+    if (!this.checkDatabase()) return [];
+    const database = this.getDatabase();
+    const stationsRef = collection(database, 'monitoring_data');
     const snapshot = await getDocs(stationsRef);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as MonitoringStation));
   }
 
   async getMonitoringStation(sensorId: string): Promise<(MonitoringStation & { id: string }) | null> {
-    const stationsRef = collection(db, 'monitoring_data');
+    if (!this.checkDatabase()) return null;
+    const database = this.getDatabase();
+    const stationsRef = collection(database, 'monitoring_data');
     const q = query(stationsRef, where('sensorId', '==', sensorId));
     const snapshot = await getDocs(q);
     return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as unknown as (MonitoringStation & { id: string });
   }
 
   async updateMonitoringStation(sensorId: string, updates: Partial<MonitoringStation>): Promise<void> {
+    if (!this.checkDatabase()) return;
     const station = await this.getMonitoringStation(sensorId);
     if (station) {
-      const stationRef = doc(db, 'monitoring_data', station.id);
+      const database = this.getDatabase();
+      const stationRef = doc(database, 'monitoring_data', station.id);
       await updateDoc(stationRef, updates);
     }
   }
 
   async addSensorReading(sensorId: string, reading: any): Promise<void> {
+    if (!this.checkDatabase()) return;
     const station = await this.getMonitoringStation(sensorId);
     if (station) {
       const updatedReadings = [...station.readings, reading];
@@ -81,13 +111,17 @@ export class EmergencyDataService {
 
   // Authorities collection
   async getAuthorities(): Promise<Authority[]> {
-    const authoritiesRef = collection(db, 'authorities');
+    if (!this.checkDatabase()) return [];
+    const database = this.getDatabase();
+    const authoritiesRef = collection(database, 'authorities');
     const snapshot = await getDocs(authoritiesRef);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Authority));
   }
 
   async getAuthority(authorityId: string): Promise<(Authority & { id: string }) | null> {
-    const authoritiesRef = collection(db, 'authorities');
+    if (!this.checkDatabase()) return null;
+    const database = this.getDatabase();
+    const authoritiesRef = collection(database, 'authorities');
     const q = query(authoritiesRef, where('authorityId', '==', authorityId));
     const snapshot = await getDocs(q);
     return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as unknown as (Authority & { id: string });
@@ -96,20 +130,23 @@ export class EmergencyDataService {
   async updateAuthorityStatus(authorityId: string, status: string): Promise<void> {
     const authority = await this.getAuthority(authorityId);
     if (authority) {
-      const authorityRef = doc(db, 'authorities', authority.id);
+      const database = this.getDatabase();
+      const authorityRef = doc(database, 'authorities', authority.id);
       await updateDoc(authorityRef, { currentStatus: status });
     }
   }
 
   // Resources collection
   async getResources(): Promise<Resource[]> {
-    const resourcesRef = collection(db, 'resources');
+    const database = this.getDatabase();
+    const resourcesRef = collection(database, 'resources');
     const snapshot = await getDocs(resourcesRef);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Resource));
   }
 
   async getResource(resourceId: string): Promise<(Resource & { id: string }) | null> {
-    const resourcesRef = collection(db, 'resources');
+    const database = this.getDatabase();
+    const resourcesRef = collection(database, 'resources');
     const q = query(resourcesRef, where('resourceId', '==', resourceId));
     const snapshot = await getDocs(q);
     return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as unknown as (Resource & { id: string });
@@ -118,7 +155,8 @@ export class EmergencyDataService {
   async updateResourceStatus(resourceId: string, status: string, assignment?: string): Promise<void> {
     const resource = await this.getResource(resourceId);
     if (resource) {
-      const resourceRef = doc(db, 'resources', resource.id);
+      const database = this.getDatabase();
+      const resourceRef = doc(database, 'resources', resource.id);
       const updates: any = { status };
       if (assignment) {
         updates.currentAssignment = assignment;
@@ -129,72 +167,83 @@ export class EmergencyDataService {
 
   // Evacuees subcollection
   async getEvacuees(eventId: string): Promise<Evacuee[]> {
-    const evacueesRef = collection(db, 'events', eventId, 'evacuees');
+    const database = this.getDatabase();
+    const evacueesRef = collection(database, 'events', eventId, 'evacuees');
     const snapshot = await getDocs(evacueesRef);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Evacuee));
   }
 
   async addEvacuee(eventId: string, evacuee: Omit<Evacuee, 'id'>): Promise<string> {
-    const evacueesRef = collection(db, 'events', eventId, 'evacuees');
+    const database = this.getDatabase();
+    const evacueesRef = collection(database, 'events', eventId, 'evacuees');
     const docRef = await addDoc(evacueesRef, evacuee);
     return docRef.id;
   }
 
   async updateEvacueeStatus(eventId: string, evacueeId: string, status: string): Promise<void> {
-    const evacueeRef = doc(db, 'events', eventId, 'evacuees', evacueeId);
+    const database = this.getDatabase();
+    const evacueeRef = doc(database, 'events', eventId, 'evacuees', evacueeId);
     await updateDoc(evacueeRef, { status });
   }
 
   // Decision log collection
   async getDecisions(): Promise<Decision[]> {
-    const decisionsRef = collection(db, 'decision_log');
+    const database = this.getDatabase();
+    const decisionsRef = collection(database, 'decision_log');
     const q = query(decisionsRef, orderBy('timestamp', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Decision));
   }
 
   async getDecisionsForEvent(eventId: string): Promise<Decision[]> {
-    const decisionsRef = collection(db, 'decision_log');
+    const database = this.getDatabase();
+    const decisionsRef = collection(database, 'decision_log');
     const q = query(decisionsRef, where('eventId', '==', eventId), orderBy('timestamp', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Decision));
   }
 
   async addDecision(decision: Omit<Decision, 'id'>): Promise<string> {
-    const decisionsRef = collection(db, 'decision_log');
+    const database = this.getDatabase();
+    const decisionsRef = collection(database, 'decision_log');
     const docRef = await addDoc(decisionsRef, decision);
     return docRef.id;
   }
 
   async updateDecisionStatus(decisionId: string, status: string): Promise<void> {
-    const decisionRef = doc(db, 'decision_log', decisionId);
+    const database = this.getDatabase();
+    const decisionRef = doc(database, 'decision_log', decisionId);
     await updateDoc(decisionRef, { status });
   }
 
   // Timeline events subcollection
   async getTimelineEvents(eventId: string): Promise<TimelineEvent[]> {
-    const timelineRef = collection(db, 'events', eventId, 'timeline');
+    const database = this.getDatabase();
+    const timelineRef = collection(database, 'events', eventId, 'timeline');
     const q = query(timelineRef, orderBy('timestamp', 'asc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as TimelineEvent));
   }
 
   async addTimelineEvent(eventId: string, event: Omit<TimelineEvent, 'id'>): Promise<string> {
-    const timelineRef = collection(db, 'events', eventId, 'timeline');
+    const database = this.getDatabase();
+    const timelineRef = collection(database, 'events', eventId, 'timeline');
     const docRef = await addDoc(timelineRef, event);
     return docRef.id;
   }
 
   // Real-time listeners
   subscribeToEvent(eventId: string, callback: (event: EmergencyEvent | null) => void): () => void {
-    const eventRef = doc(db, 'events', eventId);
+    const database = this.getDatabase();
+    const eventRef = doc(database, 'events', eventId);
     return onSnapshot(eventRef, (doc) => {
       callback(doc.exists() ? { id: doc.id, ...doc.data() } as unknown as EmergencyEvent : null);
     });
   }
 
   subscribeToMonitoringStations(callback: (stations: MonitoringStation[]) => void): () => void {
-    const stationsRef = collection(db, 'monitoring_data');
+    const database = this.getDatabase();
+    const stationsRef = collection(database, 'monitoring_data');
     return onSnapshot(stationsRef, (snapshot) => {
       const stations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as MonitoringStation));
       callback(stations);
@@ -202,7 +251,8 @@ export class EmergencyDataService {
   }
 
   subscribeToTimelineEvents(eventId: string, callback: (events: TimelineEvent[]) => void): () => void {
-    const timelineRef = collection(db, 'events', eventId, 'timeline');
+    const database = this.getDatabase();
+    const timelineRef = collection(database, 'events', eventId, 'timeline');
     const q = query(timelineRef, orderBy('timestamp', 'asc'));
     return onSnapshot(q, (snapshot) => {
       const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as TimelineEvent));
@@ -224,43 +274,50 @@ export class EmergencyDataService {
 
     // Upload events
     for (const event of data.events) {
-      const eventRef = doc(db, 'events', event.eventId);
+      const database = this.getDatabase();
+      const eventRef = doc(database, 'events', event.eventId);
       batch.push(setDoc(eventRef, event));
     }
 
     // Upload monitoring stations
     for (const station of data.monitoringStations) {
-      const stationRef = doc(db, 'monitoring_data', station.sensorId);
+      const database = this.getDatabase();
+      const stationRef = doc(database, 'monitoring_data', station.sensorId);
       batch.push(setDoc(stationRef, station));
     }
 
     // Upload authorities
     for (const authority of data.authorities) {
-      const authorityRef = doc(db, 'authorities', authority.authorityId);
+      const database = this.getDatabase();
+      const authorityRef = doc(database, 'authorities', authority.authorityId);
       batch.push(setDoc(authorityRef, authority));
     }
 
     // Upload resources
     for (const resource of data.resources) {
-      const resourceRef = doc(db, 'resources', resource.resourceId);
+      const database = this.getDatabase();
+      const resourceRef = doc(database, 'resources', resource.resourceId);
       batch.push(setDoc(resourceRef, resource));
     }
 
     // Upload decisions
     for (const decision of data.decisions) {
-      const decisionRef = doc(db, 'decision_log', decision.decisionId);
+      const database = this.getDatabase();
+      const decisionRef = doc(database, 'decision_log', decision.decisionId);
       batch.push(setDoc(decisionRef, decision));
     }
 
     // Upload evacuees and timeline events for each event
     for (const event of data.events) {
       for (const evacuee of data.evacuees) {
-        const evacueeRef = doc(db, 'events', event.eventId, 'evacuees', evacuee.evacueeId);
+        const database = this.getDatabase();
+        const evacueeRef = doc(database, 'events', event.eventId, 'evacuees', evacuee.evacueeId);
         batch.push(setDoc(evacueeRef, evacuee));
       }
 
       for (const timelineEvent of data.timelineEvents) {
-        const timelineRef = doc(db, 'events', event.eventId, 'timeline', timelineEvent.timestamp);
+        const database = this.getDatabase();
+        const timelineRef = doc(database, 'events', event.eventId, 'timeline', timelineEvent.timestamp);
         batch.push(setDoc(timelineRef, timelineEvent));
       }
     }
