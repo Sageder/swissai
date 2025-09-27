@@ -48,7 +48,12 @@ function DashboardContent() {
   const [actionsPanelOpen, setActionsPanelOpen] = useState(false);
   const [actionsPanelPolygon, setActionsPanelPolygon] = useState<PolygonData | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [liveMode, setLiveMode] = useState(false);
   const mapRef = useRef<MapRef>(null);
+
+  const toggleLiveMode = () => {
+    setLiveMode(!liveMode);
+  };
 
   // Initialize alert context for programmatic use
   useEffect(() => {
@@ -357,6 +362,8 @@ function DashboardContent() {
           <DebugAgentPanel
             isOpen={debugPanelOpen}
             onClose={() => setDebugPanelOpen(false)}
+            liveMode={liveMode}
+            onLiveModeToggle={toggleLiveMode}
           />
 
           {/* Actions Side Panel */}

@@ -132,7 +132,7 @@ export const mockDataTool = tool({
       // Read data from JSON file using Node.js file system
       const filePath = join(process.cwd(), 'public', 'data', fileName);
       console.log("📁 Attempting to read file:", filePath);
-      
+
       let jsonData: any;
       try {
         const fileContent = readFileSync(filePath, 'utf-8');
@@ -143,7 +143,7 @@ export const mockDataTool = tool({
         console.error("📁 File read error:", fileError);
         throw new Error(`Failed to read or parse ${fileName}: ${fileError?.message || 'Unknown error'}`);
       }
-      
+
       let results: any[] = [];
 
       // Handle different JSON structures
@@ -161,14 +161,14 @@ export const mockDataTool = tool({
 
       // Status filter
       if (filters.status) {
-        filteredResults = filteredResults.filter(item => 
+        filteredResults = filteredResults.filter(item =>
           item.status?.toLowerCase() === filters.status?.toLowerCase()
         );
       }
 
       // Type filter
       if (filters.type) {
-        filteredResults = filteredResults.filter(item => 
+        filteredResults = filteredResults.filter(item =>
           item.type?.toLowerCase() === filters.type?.toLowerCase() ||
           item.category?.toLowerCase() === filters.type?.toLowerCase()
         );
@@ -176,7 +176,7 @@ export const mockDataTool = tool({
 
       // Severity filter
       if (filters.severity) {
-        filteredResults = filteredResults.filter(item => 
+        filteredResults = filteredResults.filter(item =>
           item.severity?.toLowerCase() === filters.severity?.toLowerCase() ||
           item.priority?.toLowerCase() === filters.severity?.toLowerCase()
         );
@@ -184,7 +184,7 @@ export const mockDataTool = tool({
 
       // Organization filter
       if (filters.organization) {
-        filteredResults = filteredResults.filter(item => 
+        filteredResults = filteredResults.filter(item =>
           item.organization?.toLowerCase().includes(filters.organization?.toLowerCase() || '') ||
           item.responsibleOrganization?.toLowerCase().includes(filters.organization?.toLowerCase() || '')
         );
@@ -275,9 +275,8 @@ export const mockDataTool = tool({
       return {
         collection: collectionName,
         error: true,
-        message: `Failed to query ${collectionName}: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
+        message: `Failed to query ${collectionName}: ${error instanceof Error ? error.message : "Unknown error"
+          }`,
         timestamp: new Date().toISOString(),
       };
     }
@@ -297,9 +296,9 @@ function calculateDistance(
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) *
+    Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -383,8 +382,8 @@ export const emergencyResourcesTool = tool({
         action: "list",
         resources: resourceType
           ? {
-              [resourceType]: resources[resourceType as keyof typeof resources],
-            }
+            [resourceType]: resources[resourceType as keyof typeof resources],
+          }
           : resources,
         timestamp: new Date().toISOString(),
       };
@@ -521,8 +520,8 @@ export const emergencyCommunicationTool = tool({
         target === "residents"
           ? "95%"
           : target === "emergency_services"
-          ? "100%"
-          : "80%",
+            ? "100%"
+            : "80%",
       channels: ["SMS", "Email", "Radio", "Social Media"],
     };
 
@@ -629,7 +628,7 @@ export const emergencyVehicleDispatchTool = tool({
   }) => {
     // TODO: Integrate with actual vehicle dispatch system
     const dispatchId = `DISPATCH_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const response = {
       dispatchId,
       vehicleType,
@@ -701,7 +700,7 @@ export const evacuationManagementTool = tool({
   }) => {
     // TODO: Integrate with actual evacuation management system
     const evacuationId = `EVAC_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     if (action === "initiate") {
       const response = {
         evacuationId,
@@ -725,11 +724,11 @@ export const evacuationManagementTool = tool({
         initiatedAt: new Date().toISOString(),
         expectedCompletion: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
       };
-      
+
       console.log("🏃 Evacuation Initiated:", response);
       return response;
     }
-    
+
     // Handle other evacuation actions
     return {
       evacuationId,
@@ -775,7 +774,7 @@ export const communicationInfrastructureTool = tool({
   execute: async ({ action, location, coverage, priority }) => {
     // TODO: Integrate with actual communication infrastructure systems
     const deploymentId = `COMM_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const response = {
       deploymentId,
       action,
@@ -795,12 +794,12 @@ export const communicationInfrastructureTool = tool({
       }[action],
       deployedAt: new Date().toISOString(),
       expectedOnline: new Date(
-        Date.now() + 
-        (action === "deploy_tower" ? 3 * 60 * 60 * 1000 : 
-         action === "setup_satellite" ? 45 * 60 * 1000 : 15 * 60 * 1000)
+        Date.now() +
+        (action === "deploy_tower" ? 3 * 60 * 60 * 1000 :
+          action === "setup_satellite" ? 45 * 60 * 1000 : 15 * 60 * 1000)
       ).toISOString(),
     };
-    
+
     console.log("📡 Communication Infrastructure Deployed:", response);
     return response;
   },
@@ -859,14 +858,14 @@ export const massNotificationTool = tool({
   }) => {
     // TODO: Integrate with actual mass notification systems (Emergency Alert System, Wireless Emergency Alerts, etc.)
     const notificationId = `NOTIFY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const defaultChannels = {
       CRITICAL: ["sms", "push_notification", "radio", "tv", "sirens"],
       HIGH: ["sms", "push_notification", "radio", "email"],
       MEDIUM: ["push_notification", "email", "social_media"],
       LOW: ["email", "social_media"],
     };
-    
+
     const estimatedReach = {
       residents: area ? Math.floor(Math.random() * 10000) + 5000 : 25000,
       emergency_services: 150,
@@ -874,7 +873,7 @@ export const massNotificationTool = tool({
       media: 25,
       all: area ? Math.floor(Math.random() * 15000) + 10000 : 35000,
     };
-    
+
     const response = {
       notificationId,
       notificationType,
@@ -898,7 +897,7 @@ export const massNotificationTool = tool({
       sentAt: new Date().toISOString(),
       estimatedDeliveryTime: "2-5 minutes",
     };
-    
+
     console.log("📢 Mass Notification Sent:", response);
     return response;
   },
@@ -959,7 +958,7 @@ export async function generateTextWithPrompt(
     prompt: prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""),
     systemPrompt: systemPrompt
       ? systemPrompt.substring(0, 100) +
-        (systemPrompt.length > 100 ? "..." : "")
+      (systemPrompt.length > 100 ? "..." : "")
       : "None",
     promptLength: prompt.length,
     systemPromptLength: systemPrompt?.length || 0,
@@ -1000,7 +999,7 @@ export async function generateTextWithTools(
     prompt: prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""),
     systemPrompt: systemPrompt
       ? systemPrompt.substring(0, 100) +
-        (systemPrompt.length > 100 ? "..." : "")
+      (systemPrompt.length > 100 ? "..." : "")
       : "None",
     tools: Object.keys(tools || {}),
     toolCount: Object.keys(tools || {}).length,
@@ -1036,7 +1035,7 @@ export async function generateTextWithWebSearch(
     prompt: prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""),
     systemPrompt: systemPrompt
       ? systemPrompt.substring(0, 100) +
-        (systemPrompt.length > 100 ? "..." : "")
+      (systemPrompt.length > 100 ? "..." : "")
       : "None",
     tools: ["web_search"],
     toolCount: 1,
@@ -1096,7 +1095,7 @@ export async function generateTextWithMockData(
     prompt: prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""),
     systemPrompt: systemPrompt
       ? systemPrompt.substring(0, 100) +
-        (systemPrompt.length > 100 ? "..." : "")
+      (systemPrompt.length > 100 ? "..." : "")
       : "None",
     tools: Object.keys(tools),
     toolCount: Object.keys(tools).length,
