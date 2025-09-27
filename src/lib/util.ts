@@ -614,26 +614,26 @@ export async function sendVehicle(
     );
     const distanceMeters = distanceKm * 1000;
     finalDuration = (distanceMeters / vehicleSpeedMs) * 1000; // ms
-    
+
     // EXACT SAME LOGIC AS HELICOPTERS - but for ground vehicles
     const numPoints = Math.max(16, Math.ceil(distanceKm * 10)); // Same as helicopter
     const coordinates: [number, number][] = [];
-    
+
     for (let i = 0; i <= numPoints; i++) {
       const progress = i / numPoints;
       const lat = fromPOI.metadata.coordinates.lat + (toPOI.metadata.coordinates.lat - fromPOI.metadata.coordinates.lat) * progress;
       const lng = fromPOI.metadata.coordinates.long + (toPOI.metadata.coordinates.long - fromPOI.metadata.coordinates.long) * progress;
-      
+
       // Vehicles use 2D coordinates [lng, lat] (no altitude like helicopters)
       coordinates.push([lng, lat]);
     }
-    
+
     routeData = {
       coordinates,
       distance: distanceMeters,
       duration: finalDuration / 1000
     };
-    
+
     console.log('⚠️ NO ROUTE API - USING HELICOPTER-STYLE FALLBACK ROUTE:', coordinates.length, 'points', 'First:', coordinates[0], 'Last:', coordinates[coordinates.length - 1]);
   }
 
@@ -656,7 +656,7 @@ export async function sendVehicle(
   };
 
   dataContextRef.addVehicleMovement(movement);
-  console.log(`Vehicle (${vehicleType}) dispatched via ${route ? 'roads' : 'direct line'}: ${(finalDuration/1000).toFixed(1)}s, ${(route?.distance ?? 0/1000).toFixed(2)}km, route points: ${route?.coordinates?.length || 0}`);
+  console.log(`Vehicle (${vehicleType}) dispatched via ${route ? 'roads' : 'direct line'}: ${(finalDuration / 1000).toFixed(1)}s, ${(route?.distance ?? 0 / 1000).toFixed(2)}km, route points: ${route?.coordinates?.length || 0}`);
 }
 
 /**

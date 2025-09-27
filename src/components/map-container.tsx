@@ -3,7 +3,7 @@
 import { useEffect, useRef, forwardRef, useImperativeHandle, useState, useMemo } from "react"
 import { POI, getPOICoordinates, getPOIColor, getPOIIcon, getPOIIconName, blattentPOIs } from "@/data/pois"
 import { useTime } from "@/lib/time-context"
-import { useData } from "@/lib/data-context"
+import { useData, type VehicleMovement } from "@/lib/data-context"
 import { VehicleMarker } from "@/components/vehicle-marker"
 import {
   Microscope, Radio, AlertTriangle, Cross, Shield, Flame,
@@ -75,7 +75,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   const polygonsRef = useRef<any[]>([])
   const onPolygonClickRef = useRef<((polygon: any, clickPosition: { x: number; y: number }) => void) | undefined>(onPolygonClick)
   const globalClickHandlerAdded = useRef(false)
-  
+
   // Track vehicle paths
   const [vehiclePaths, setVehiclePaths] = useState<any[]>([])
   const vehiclePathsRef = useRef<any[]>([])
@@ -103,10 +103,10 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
 
   // Get timeline context
   const { getDisplayTime, timeOffset, isRealTimeEnabled } = useTime()
-  
+
   // Get data context for vehicles
   const { getVehiclesWithCurrentPositions, vehicleMovements } = useData()
-  
+
   // Get current vehicles with positions - memoize to prevent infinite re-renders
   const currentVehicles = useMemo(() => {
     return getVehiclesWithCurrentPositions(getDisplayTime().getTime())
@@ -511,9 +511,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   // Function to create vehicle markers and route lines
   const createVehicleMarkers = async (mapInstance: any, movements: VehicleMovement[]) => {
     if (!mapInstance || movements.length === 0) return
-
-
-
+  }
 
   useEffect(() => {
     // Initialize Mapbox when token is provided
@@ -693,7 +691,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   // Update vehicle paths when vehicles change
   useEffect(() => {
     if (!map.current || !vehicleMovements || vehicleMovements.length === 0) return
-    
+
     // Simple approach: clear all and re-add paths for all active vehicles
     vehicleMovements.forEach(vehicle => {
       if (!vehicle.route || !vehicle.route.coordinates || vehicle.route.coordinates.length === 0) {
@@ -721,20 +719,20 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
           )
         }
       }
-      
+
       console.log(`📍 GEOJSON COORDINATES for ${vehicle.vehicleType}:`, geojson.geometry.coordinates.slice(0, 3), '...', geojson.geometry.coordinates.slice(-2))
-      
+
       // Validate coordinates are in correct format [lng, lat]
       const firstCoord = geojson.geometry.coordinates[0]
       const lastCoord = geojson.geometry.coordinates[geojson.geometry.coordinates.length - 1]
       console.log(`📊 FIRST: [${firstCoord[0]}, ${firstCoord[1]}], LAST: [${lastCoord[0]}, ${lastCoord[1]}]`)
-      
+
       // Check if coordinates are in valid range for Switzerland
       const isValidSwiss = (coord: [number, number]) => {
         const [lng, lat] = coord
         return lng >= 5.9 && lng <= 10.5 && lat >= 45.8 && lat <= 47.8
       }
-      
+
       if (!isValidSwiss(firstCoord) || !isValidSwiss(lastCoord)) {
         console.warn(`⚠️ COORDINATES OUT OF SWISS BOUNDS:`, { first: firstCoord, last: lastCoord })
       }
@@ -767,7 +765,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
       try {
         // Try to add above building layers
         const beforeLayer = map.current.getLayer('buildings-3d') ? 'buildings-3d' : undefined
-        
+
         const unifiedColor = '#60a5fa'
         const paint: any = {
           "line-color": unifiedColor,
@@ -793,17 +791,17 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
           },
           paint
         }, beforeLayer)
-        
+
         // Verify the layer was added and fly to path for visibility
         setTimeout(() => {
           const layerExists = map.current.getLayer(layerId)
           const sourceExists = map.current.getSource(sourceId)
           console.log(`🔍 LAYER VERIFICATION: ${layerId} - Layer exists: ${!!layerExists}, Source exists: ${!!sourceExists}`)
-          
+
           if (layerExists) {
             const layerStyle = map.current.getPaintProperty(layerId, 'line-color')
             console.log(`🎨 LAYER STYLE: ${layerId} color = ${layerStyle}`)
-            
+
             // Fly to the vehicle path to make sure it's visible
             try {
               const mapboxgl = require('mapbox-gl')
@@ -811,13 +809,13 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
               geojson.geometry.coordinates.forEach((coord: [number, number]) => {
                 bounds.extend(coord)
               })
-              
+
               map.current.fitBounds(bounds, {
                 padding: 50,
                 maxZoom: 15,
                 duration: 2000
               })
-              
+
               console.log(`🎯 FLYING TO VEHICLE PATH: ${layerId}`)
             } catch (boundError) {
               console.warn('Could not fly to path bounds:', boundError)
@@ -834,7 +832,7 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
             }
           }
         }, 100)
-        
+
       } catch (error) {
         console.error(`❌ ERROR adding layer ${layerId}:`, error)
       }
