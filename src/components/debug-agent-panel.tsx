@@ -33,7 +33,14 @@ import {
   createCrisisGraphFromLLM,
   createCrisisWorkflow,
   createCrisisHierarchy,
-  validateLLMGraphData
+  validateLLMGraphData,
+  getPOIsWithContext,
+  getMonitoringPOIs,
+  getResourcePOIs,
+  getAuthorityPOIs,
+  getActivePOIs,
+  getHighSeverityPOIs,
+  getPOIsNearLocation
 } from '@/lib/util';
 import { useData } from '@/lib/data-context';
 import {
@@ -620,6 +627,105 @@ export function DebugAgentPanel({ isOpen, onClose, liveMode, onLiveModeToggle }:
               >
                 <Network className="w-4 h-4 mr-1" />
                 Crisis Hierarchy
+              </Button>
+            </div>
+          </div>
+
+          {/* POI Context Functions */}
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-gray-300">POI Context for LLM:</div>
+            <div className="grid grid-cols-1 gap-2">
+              <Button
+                onClick={() => {
+                  const allPOIs = getPOIsWithContext(monitoringStations, authorities, resources);
+                  console.log('All POIs:', allPOIs);
+                  console.log(`Total POIs: ${allPOIs.length}`);
+                }}
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white h-7 px-3 text-xs"
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                Get All POIs
+              </Button>
+
+              <Button
+                onClick={() => {
+                  const monitoringPOIs = getMonitoringPOIs(monitoringStations);
+                  console.log('Monitoring POIs:', monitoringPOIs);
+                  console.log(`Monitoring POIs: ${monitoringPOIs.length}`);
+                }}
+                size="sm"
+                className="bg-cyan-600 hover:bg-cyan-700 text-white h-7 px-3 text-xs"
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                Get Monitoring POIs
+              </Button>
+
+              <Button
+                onClick={() => {
+                  const resourcePOIs = getResourcePOIs(resources);
+                  console.log('Resource POIs:', resourcePOIs);
+                  console.log(`Resource POIs: ${resourcePOIs.length}`);
+                }}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white h-7 px-3 text-xs"
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                Get Resource POIs
+              </Button>
+
+              <Button
+                onClick={() => {
+                  const authorityPOIs = getAuthorityPOIs(authorities);
+                  console.log('Authority POIs:', authorityPOIs);
+                  console.log(`Authority POIs: ${authorityPOIs.length}`);
+                }}
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700 text-white h-7 px-3 text-xs"
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                Get Authority POIs
+              </Button>
+
+              <Button
+                onClick={() => {
+                  const activePOIs = getActivePOIs(monitoringStations, authorities, resources);
+                  console.log('Active POIs:', activePOIs);
+                  console.log(`Active POIs: ${activePOIs.length}`);
+                }}
+                size="sm"
+                className="bg-yellow-600 hover:bg-yellow-700 text-white h-7 px-3 text-xs"
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                Get Active POIs
+              </Button>
+
+              <Button
+                onClick={() => {
+                  const highSeverityPOIs = getHighSeverityPOIs(monitoringStations, authorities, resources);
+                  console.log('High Severity POIs:', highSeverityPOIs);
+                  console.log(`High Severity POIs: ${highSeverityPOIs.length}`);
+                }}
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 text-white h-7 px-3 text-xs"
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                Get High Severity POIs
+              </Button>
+
+              <Button
+                onClick={() => {
+                  // Test location-based filtering (around Zurich)
+                  const zurichCenter = { lat: 47.3769, lng: 8.5417 };
+                  const nearbyPOIs = getPOIsNearLocation(zurichCenter, 50, monitoringStations, authorities, resources);
+                  console.log('POIs near Zurich (50km radius):', nearbyPOIs);
+                  console.log(`Nearby POIs: ${nearbyPOIs.length}`);
+                }}
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white h-7 px-3 text-xs"
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                Get POIs Near Zurich
               </Button>
             </div>
           </div>

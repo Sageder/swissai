@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     console.log("🚀 Starting simple streamText test...");
 
     const result = streamText({
-      model: openai('gpt-4o-mini'),
+      model: openai('gpt-4.1'),
       messages: [
         {
           role: 'user',
@@ -45,8 +45,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("❌ Test Chat API Error:", error);
     return new Response(
-      `Server error: ${
-        error instanceof Error ? error.message : "Unknown error"
+      `Server error: ${error instanceof Error ? error.message : "Unknown error"
       }`,
       {
         status: 500,
