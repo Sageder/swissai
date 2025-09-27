@@ -20,9 +20,14 @@ let dataContextRef: {
   addVehicleMovement: (movement: Omit<VehicleMovement, 'id' | 'currentPosition' | 'progress' | 'status'>) => void;
 } | null = null;
 
-// Global reference to timeline function (will be set by the app)
+// Global reference to timeline function (simulation time)
 let timelineRef: {
   getCurrentTime: () => Date;
+} | null = null;
+
+// Global reference to map controls for programmatic camera moves
+let mapControlRef: {
+  flyToLocation: (coordinates: [number, number], zoom?: number) => void;
 } | null = null;
 
 /**
@@ -35,10 +40,35 @@ export function setDataContextRef(ref: typeof dataContextRef): void {
 
 /**
  * Set the timeline reference for getting current simulation time
- * This should be called by the app to provide access to timeline functions
  */
 export function setTimelineRef(ref: typeof timelineRef): void {
   timelineRef = ref;
+}
+
+/**
+ * Set the map control reference for camera moves
+ */
+export function setMapControlRef(ref: typeof mapControlRef): void {
+  mapControlRef = ref;
+}
+
+// Compute center (lng,lat) of a set of POIs with metadata.coordinates {lat,long}
+function computePOICenter(pois: Array<{ metadata?: { coordinates?: { lat: number; long: number } } }>): [number, number] | null {
+  if (!pois || pois.length === 0) return null;
+  let sumLat = 0;
+  let sumLng = 0;
+  let count = 0;
+  pois.forEach(p => {
+    const lat = p?.metadata?.coordinates?.lat;
+    const lng = p?.metadata?.coordinates?.long;
+    if (typeof lat === 'number' && typeof lng === 'number') {
+      sumLat += lat;
+      sumLng += lng;
+      count += 1;
+    }
+  });
+  if (count === 0) return null;
+  return [sumLng / count, sumLat / count];
 }
 
 /**
@@ -92,6 +122,41 @@ export function addMonitoringSources(monitoringStations: MonitoringStation[]): v
   showPOIFlag = true;
   poiCallbacks.forEach(callback => callback());
   console.log(`Added ${monitoringPOIs.length} monitoring sources to POI display`);
+}
+
+/**
+ * Show only monitoring sources (hide all other POIs)
+ */
+export function showOnlyMonitoringSources(monitoringStations: MonitoringStation[]): void {
+  const monitoringPOIs = monitoringStations.map(station => ({
+    id: station.sensorId,
+    title: station.location.name || `${station.sensorType} Sensor - ${station.sensorId}`,
+    description: `${station.sensorType.replace('_', ' ')} sensor - Battery: ${station.batteryStatus}% - ${station.responsibleOrganization}`,
+    type: 'sensor' as const,
+    severity: station.connectivity === 'online' ? 'low' as const : 'high' as const,
+    metadata: {
+      coordinates: {
+        lat: station.location.lat,
+        long: station.location.lng,
+      },
+      highlight: 'monitoring' as const,
+    },
+    contact: station.location.address || undefined,
+    status: station.connectivity === 'online' ? 'active' as const : 'inactive' as const,
+  }));
+
+  currentPOIs = monitoringPOIs;
+  showPOIFlag = true;
+  poiCallbacks.forEach(callback => callback());
+  console.log(`Showing only monitoring sources: ${monitoringPOIs.length}`);
+
+  // Slight zoom-out overview to center of monitoring sources
+  const center = computePOICenter(monitoringPOIs as any);
+  if (mapControlRef && center) {
+    try {
+      mapControlRef.flyToLocation(center, 10);
+    } catch { }
+  }
 }
 
 /**
@@ -163,6 +228,95 @@ export function addResources(resources: Resource[]): void {
   showPOIFlag = true;
   poiCallbacks.forEach(callback => callback());
   console.log(`Added ${resourcePOIs.length} resources to POI display`);
+}
+
+/**
+ * Show only resource POIs and programmatically fly to each one to highlight them.
+ * This is hardcoded behavior and not exposed as a tool.
+ */
+export async function showResourcesAndTour(resources: Resource[], zoom: number = 11, delayMs: number = 1000): Promise<void> {
+  const resourcePOIs = resources.map(resource => {
+    const getPOIType = (resourceType: Resource['type']): 'hospital' | 'helicopter' | 'fire_station' | 'shelter' | 'infrastructure' | 'other' => {
+      switch (resourceType) {
+        case 'hospital':
+        case 'medical_center':
+          return 'hospital';
+        case 'helicopter':
+          return 'helicopter';
+        case 'fire_station':
+          return 'fire_station';
+        case 'emergency_shelter':
+          return 'shelter';
+        case 'power_grid':
+        case 'water_system':
+        case 'communication':
+          return 'infrastructure';
+        default:
+          return 'other';
+      }
+    };
+
+    const getSeverity = (status: Resource['status']): 'high' | 'medium' | 'low' => {
+      switch (status) {
+        case 'deployed':
+        case 'emergency_mode':
+          return 'high';
+        case 'activated':
+        case 'en_route':
+          return 'medium';
+        case 'available':
+        case 'standby':
+        case 'normal_operations':
+        case 'operational':
+          return 'low';
+        default:
+          return 'low';
+      }
+    };
+
+    return {
+      id: resource.resourceId,
+      title: resource.location.name || `${resource.type} - ${resource.resourceId}`,
+      description: `${resource.type} resource - Status: ${resource.status}${resource.personnel ? ` - Personnel: ${resource.personnel}` : ''}${resource.currentAssignment ? ` - Assignment: ${resource.currentAssignment}` : ''}`,
+      type: getPOIType(resource.type),
+      severity: getSeverity(resource.status),
+      metadata: {
+        coordinates: {
+          lat: resource.location.lat,
+          long: resource.location.lng,
+        },
+      },
+      highlight: 'resource' as const,
+      contact: resource.location.address || undefined,
+      status:
+        resource.status === 'available' || resource.status === 'operational'
+          ? ('active' as const)
+          : resource.status === 'deployed' || resource.status === 'emergency_mode'
+            ? ('active' as const)
+            : ('inactive' as const),
+    };
+  });
+
+  // Replace all POIs with resources only
+  currentPOIs = resourcePOIs;
+  showPOIFlag = true;
+  poiCallbacks.forEach(callback => callback());
+  console.log(`Showing only resources: ${resourcePOIs.length}`);
+
+  // Overview: single slight zoom-out to center of resources (no per-resource zoom)
+  const center = computePOICenter(resourcePOIs as any);
+  if (mapControlRef && center) {
+    try {
+      mapControlRef.flyToLocation(center, 10);
+    } catch { }
+  }
+}
+
+/**
+ * Highlight only resources without any zoom animations (alias for current design)
+ */
+export function showOnlyResources(resources: Resource[]): void {
+  void showResourcesAndTour(resources, 10, 0);
 }
 
 /**
@@ -497,6 +651,66 @@ export function addBlatten(): void {
 
 
 /**
+ * Cinematic fly-to for Blatten close-up POV
+ * Starts from a wide, flat POV and then flies into the close cinematic POV
+ */
+export function blattenClose(): void {
+  try {
+    if (typeof window === 'undefined') return;
+    const mapInstance = (window as any).debugMapInstance;
+    if (!mapInstance || typeof mapInstance.flyTo !== 'function') {
+      console.warn('Map instance not available for blattenClose()');
+      return;
+    }
+
+    const start = {
+      center: [7.822202, 46.422625] as [number, number],
+      zoom: 10.9,
+      pitch: 0,
+      bearing: -113.7
+    };
+
+    const final = {
+      center: [7.816784, 46.41891] as [number, number],
+      zoom: 15.26,
+      pitch: 78.2,
+      bearing: -112.9
+    };
+
+    // Step 1: Set the starting wide POV (shorter duration)
+    mapInstance.flyTo({
+      center: start.center,
+      zoom: start.zoom,
+      pitch: start.pitch,
+      bearing: start.bearing,
+      duration: 1500,
+      essential: true
+    });
+
+    // Step 2: After the first move ends, perform a long cinematic fly to final POV
+    const handler = () => {
+      try {
+        mapInstance.off('moveend', handler);
+        mapInstance.flyTo({
+          center: final.center,
+          zoom: final.zoom,
+          pitch: final.pitch,
+          bearing: final.bearing,
+          duration: 5000,
+          essential: true
+        });
+      } catch (e) {
+        // no-op
+      }
+    };
+    mapInstance.on('moveend', handler);
+  } catch (err) {
+    console.error('Failed to execute blattenClose():', err);
+  }
+}
+
+
+/**
  * Send a helicopter from one POI to another POI
  * Helicopters move in a straight line (no road routing)
  * @param fromPOIId - ID of the source POI
@@ -643,6 +857,69 @@ export const onNodeEditorChange = (callback: () => void) => {
 const notifyNodeEditorChange = () => {
   nodeEditorCallbacks.forEach(callback => callback());
 };
+
+// -------------------------------
+// Layout Helpers (no external deps)
+// -------------------------------
+const NODE_WIDTH = 240;   // approximate visual width (tighter)
+const NODE_HEIGHT = 110;  // approximate visual height
+const COL_GAP = 48;       // reduced column gap to bring columns closer, esp. alert -> next
+const ROW_GAP = 56;
+
+function gridPosition(col: number, row: number): { x: number; y: number } {
+  return { x: col * (NODE_WIDTH + COL_GAP), y: row * (NODE_HEIGHT + ROW_GAP) };
+}
+
+function resolveOverlaps(spacingX = 24, spacingY = 16): void {
+  // Naive O(n^2) collision resolution; shifts nodes down if overlapping
+  for (let i = 0; i < crisisNodes.length; i++) {
+    const a = crisisNodes[i];
+    for (let j = 0; j < crisisNodes.length; j++) {
+      if (i === j) continue;
+      const b = crisisNodes[j];
+      const ax1 = a.position.x, ay1 = a.position.y;
+      const ax2 = ax1 + NODE_WIDTH, ay2 = ay1 + NODE_HEIGHT;
+      const bx1 = b.position.x, by1 = b.position.y;
+      const bx2 = bx1 + NODE_WIDTH, by2 = by1 + NODE_HEIGHT;
+      const overlapX = Math.max(0, Math.min(ax2, bx2) - Math.max(ax1, bx1));
+      const overlapY = Math.max(0, Math.min(ay2, by2) - Math.max(ay1, by1));
+      if (overlapX > 0 && overlapY > 0) {
+        // Shift the lower-priority node (later index) downward and to the right slightly
+        b.position = { x: b.position.x + spacingX, y: b.position.y + overlapY + spacingY };
+      }
+    }
+  }
+}
+
+export function autoLayoutCrisisGraph(): void {
+  // Group nodes by type for a simple, readable plan layout
+  const groups: Record<string, CrisisNode[]> = {
+    alert: [], monitoring: [], response: [], authority: [], resource: [], custom: []
+  } as any;
+  crisisNodes.forEach(n => {
+    (groups[n.type] ?? groups.custom).push(n);
+  });
+
+  // Column order: Alert -> Monitoring -> Response -> Authority -> Resource
+  const columns: Array<[keyof typeof groups, CrisisNode[]]> = [
+    ['alert', groups.alert],
+    ['monitoring', groups.monitoring],
+    ['response', groups.response],
+    ['authority', groups.authority],
+    ['resource', groups.resource],
+  ];
+
+  let col = 0;
+  columns.forEach(([, nodes], idx) => {
+    nodes.forEach((node, row) => {
+      node.position = gridPosition(col, row);
+    });
+    col += 1;
+  });
+
+  // Pass 2: resolve any overlaps due to varying group sizes/content
+  resolveOverlaps();
+}
 
 // Initialize empty crisis nodes (clear all)
 export const initializeCrisisNodes = () => {
@@ -948,6 +1225,15 @@ export const createCrisisGraphFromLLM = (graphData: LLMGraphData) => {
       connectionIds.push(connectionId);
     }
   });
+
+  // If positions are missing or appear defaulted, apply auto layout
+  const missingPositions = crisisNodes.some(n => !n.position || (n.position.x === 0 && n.position.y === 0));
+  if (missingPositions) {
+    autoLayoutCrisisGraph();
+  } else {
+    // Even if positions provided, ensure no overlaps
+    resolveOverlaps();
+  }
 
   // Notify UI of changes
   notifyNodeEditorChange();

@@ -16,7 +16,10 @@ import { AlertContainer } from "@/components/alerts/alert-container";
 import { CrisisManagement } from "@/components/crisis-management";
 import { DebugAgentPanel } from "@/components/debug-agent-panel";
 import { ActionsSidePanel } from "@/components/actions-side-panel";
+import { LiveModeIndicator } from "@/components/live-mode-indicator";
 import { Button } from "@/components/ui/button";
+import { onPlanChange, isLiveModeActive as getLiveModeStatus } from "@/lib/plan-store";
+import { showTimeline } from "@/lib/util";
 import {
   convertResourcesToPOIs,
   convertMonitoringStationsToPOIs,
@@ -25,12 +28,12 @@ import {
 import { blattentPOIs } from "@/data/pois";
 import { useAlert } from "@/lib/alert-context";
 import { setAlertContext, createLandslideAlert, setCrisisManagementCallback } from "@/lib/alert-service";
-import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, setTimelineRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs } from "@/lib/util";
+import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs, setMapControlRef, setTimelineRef } from "@/lib/util";
 
 function DashboardContent() {
   const { resources, monitoringStations, authorities, isLoading, addVehicleMovement } = useData();
-  const alertContext = useAlert();
   const { getDisplayTime } = useTime();
+  const alertContext = useAlert();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [activeView, setActiveView] = useState("map");
   const [selectedPolygon, setSelectedPolygon] = useState<PolygonData | null>(null);
@@ -50,6 +53,7 @@ function DashboardContent() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [liveMode, setLiveMode] = useState(false);
   const [weatherState, setWeatherState] = useState({ enabled: false, loading: false });
+  const [isLiveModeActive, setIsLiveModeActive] = useState(false);
   const mapRef = useRef<MapRef>(null);
 
   const toggleLiveMode = () => {
@@ -72,10 +76,38 @@ function DashboardContent() {
     setDataContextRef({ addVehicleMovement });
   }, [addVehicleMovement]);
 
-  // Initialize timeline reference for utility functions
+  // Provide simulation time to util.ts for consistent movement timing
   useEffect(() => {
-    setTimelineRef({ getCurrentTime: getDisplayTime });
+    setTimelineRef({
+      getCurrentTime: () => getDisplayTime()
+    });
   }, [getDisplayTime]);
+
+  // Listen for plan changes and live mode
+  useEffect(() => {
+    const unsubscribe = onPlanChange(() => {
+      const liveMode = getLiveModeStatus();
+      setIsLiveModeActive(liveMode);
+
+      // Start timeline when live mode is activated
+      if (liveMode) {
+        showTimeline();
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // Provide map control ref for util-driven camera moves
+  useEffect(() => {
+    if (mapRef.current && mapRef.current.flyToLocation) {
+      setMapControlRef({
+        flyToLocation: (coordinates: [number, number], zoom?: number) => {
+          mapRef.current?.flyToLocation(coordinates, zoom ?? 13);
+        }
+      });
+    }
+  }, [mapRef.current]);
 
   // Demo alert for Blatten landslide
   useEffect(() => {
@@ -307,7 +339,8 @@ function DashboardContent() {
 
 
   return (
-      <div className="h-screen w-full bg-background text-foreground overflow-hidden dark">
+    <div className={`h-screen w-full bg-background text-foreground overflow-hidden dark transition-all duration-300 ${isLiveModeActive ? 'border-4 border-red-500 border-dashed' : ''
+        }`}>
         {/* Timeline - Fixed at top */}
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-96">
           <Timeline />
@@ -408,16 +441,19 @@ function DashboardContent() {
 
         {/* Alert Container */}
         <AlertContainer />
+
+        {/* Live Mode Indicator */}
+        <LiveModeIndicator />
       </div>
   );
 }
 
 export default function Dashboard() {
   return (
-    <DataProvider>
-      <TimeProvider>
+    <TimeProvider>
+      <DataProvider>
         <DashboardContent />
-      </TimeProvider>
-    </DataProvider>
+      </DataProvider>
+    </TimeProvider>
   );
 }

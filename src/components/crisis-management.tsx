@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ZoomIn, ZoomOut, RotateCcw, Network } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Network, Search, Phone, Users, PhoneCall, Check, CircleDot } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import {
     getCrisisNodes,
@@ -21,6 +21,9 @@ import {
 } from '@/lib/util';
 import { createCrisisGraphFromLLM } from '@/lib/util';
 import { useData } from '@/lib/data-context';
+import { useTime } from '@/lib/time-context';
+import { showOnlyMonitoringSources, showResourcesAndTour, sendVehicle, sendHelicopter, getCurrentPOIs } from '@/lib/util';
+import { setCurrentPlanExport, setLiveMode, CrisisPlan } from '@/lib/plan-store';
 import {
     ReactFlow,
     MiniMap,
@@ -40,6 +43,7 @@ import {
     ConnectionLineType,
     Handle,
     Position,
+    BaseEdge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -113,12 +117,12 @@ interface CrisisManagementProps {
 const CrisisNode = ({ data }: { data: any }) => {
     const getNodeColor = (type: string) => {
         switch (type) {
-            case 'alert': return 'border-orange-400 bg-orange-500/20';
-            case 'monitoring': return 'border-blue-400 bg-blue-500/20';
-            case 'response': return 'border-red-400 bg-red-500/20';
-            case 'resource': return 'border-green-400 bg-green-500/20';
-            case 'authority': return 'border-purple-400 bg-purple-500/20';
-            default: return 'border-white/30 bg-white/10';
+            case 'alert': return 'border-orange-500 bg-orange-700';
+            case 'monitoring': return 'border-blue-500 bg-blue-700';
+            case 'response': return 'border-red-500 bg-red-700';
+            case 'resource': return 'border-green-500 bg-green-700';
+            case 'authority': return 'border-purple-500 bg-purple-700';
+            default: return 'border-slate-500 bg-slate-700';
         }
     };
 
@@ -238,8 +242,32 @@ const CrisisNode = ({ data }: { data: any }) => {
     );
 };
 
+// Header node for column labels (non-interactive)
+const HeaderNode = ({ data }: { data: any }) => {
+    return (
+        <div className="px-3 py-1 rounded-md border border-white/10 bg-white/5 text-[11px] tracking-wider uppercase text-white/70 shadow-sm backdrop-blur-sm">
+            {data.label}
+        </div>
+    );
+};
+
 const nodeTypes: NodeTypes = {
     crisis: CrisisNode,
+    header: HeaderNode,
+};
+
+// Custom orthogonal "highway" edge to route between columns without crossing nodes
+const HighwayEdge = (props: any) => {
+    const { id, sourceX, sourceY, targetX, targetY, markerEnd, style } = props;
+    const midX = sourceX + (targetX - sourceX) / 2;
+    const path = `M ${sourceX} ${sourceY} L ${midX} ${sourceY} L ${midX} ${targetY} L ${targetX} ${targetY}`;
+    return (
+        <BaseEdge id={id} path={path} markerEnd={markerEnd} style={style} />
+    );
+};
+
+const edgeTypes: EdgeTypes = {
+    highway: HighwayEdge,
 };
 
 
@@ -253,11 +281,53 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
     const [hasInitialized, setHasInitialized] = useState(false);
     const [showGraphEditor, setShowGraphEditor] = useState(false);
     const [showGraphPopout, setShowGraphPopout] = useState(false);
+    const [isPlanMinimized, setIsPlanMinimized] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const appliedToolMessageIds = useRef<Set<string>>(new Set());
+    const appliedDispatchMessageIds = useRef<Set<string>>(new Set());
+    const [opSteps, setOpSteps] = useState<{
+        gatherMonitoring: 'pending' | 'in_progress' | 'done';
+        contactMonitoring: 'pending' | 'in_progress' | 'done';
+        gatherAuthorities: 'pending' | 'in_progress' | 'done';
+        contactAuthorities: 'pending' | 'in_progress' | 'done';
+    }>({
+        gatherMonitoring: 'pending',
+        contactMonitoring: 'pending',
+        gatherAuthorities: 'pending',
+        contactAuthorities: 'pending'
+    });
 
     // Get data context for POI information
     const { monitoringStations, authorities, resources } = useData();
+    const { getDisplayTime } = useTime();
+
+    // Placeholder AI call for accepted plan
+    const callAIWithPlan = useCallback((plan: CrisisPlan) => {
+        console.log('AI plan submission (stub):', plan);
+    }, []);
+
+    // Predicted vehicle dispatches extracted from AI responses
+    const [predictedDispatches, setPredictedDispatches] = useState<Array<{
+        vehicle: 'ambulance' | 'fire_truck' | 'police' | 'helicopter' | 'evacuation_bus';
+        from: string; // POI id
+        to: string;   // POI id
+    }>>([]);
+
+    // Resolve a POI identifier that may be an id or human name to a concrete POI id
+    const resolvePoiId = useCallback((input: string): string | null => {
+        const pois = getCurrentPOIs();
+        if (!Array.isArray(pois)) return null;
+        // Exact id match
+        const byId = pois.find((p: any) => p?.id === input);
+        if (byId) return byId.id;
+        // Case-insensitive title match
+        const normalized = input.trim().toLowerCase();
+        const byTitle = pois.find((p: any) => typeof p?.title === 'string' && p.title.trim().toLowerCase() === normalized);
+        if (byTitle) return byTitle.id;
+        // StartsWith or includes match as last resort
+        const byLoose = pois.find((p: any) => typeof p?.title === 'string' && (p.title.toLowerCase().includes(normalized) || normalized.includes(p.title.toLowerCase())));
+        return byLoose ? byLoose.id : null;
+    }, []);
 
     // Use the same chat hook as AI Chat component
     const { messages, sendMessage } = useChat();
@@ -277,7 +347,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
 
     // Convert crisis nodes to React Flow format
     const convertToReactFlowNodes = useMemo(() => {
-        return crisisNodes.map((node) => ({
+        const baseNodes = crisisNodes.map((node) => ({
             id: node.id,
             type: 'crisis',
             position: { x: node.position.x, y: node.position.y },
@@ -289,6 +359,29 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
                 status: node.status,
             },
         }));
+
+        // Compute header nodes for categories: alert -> monitoring -> response
+        const categories: Array<'alert' | 'monitoring' | 'response'> = ['alert', 'monitoring', 'response'];
+        const headerNodes: any[] = [];
+        categories.forEach((cat) => {
+            const group = crisisNodes.filter((n: any) => n.type === cat);
+            if (group.length === 0) return;
+            const minX = Math.min(...group.map((n: any) => n.position.x));
+            const minY = Math.min(...group.map((n: any) => n.position.y));
+            const headerY = Math.max(-20, minY - 60);
+            headerNodes.push({
+                id: `header-${cat}`,
+                type: 'header',
+                position: { x: minX, y: headerY },
+                data: { label: cat === 'alert' ? 'Alert' : cat === 'monitoring' ? 'Monitoring' : 'Response' },
+                draggable: false,
+                selectable: false,
+                connectable: false,
+                focusable: false,
+            });
+        });
+
+        return [...headerNodes, ...baseNodes];
     }, [crisisNodes]);
 
     // Convert crisis connections to React Flow format
@@ -297,7 +390,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
             id: connection.id,
             source: connection.from,
             target: connection.to,
-            type: 'smoothstep',
+            type: 'highway',
             animated: connection.status === 'active',
             style: {
                 stroke: connection.type === 'data_flow' ? '#3b82f6' :
@@ -383,6 +476,42 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
         scrollToBottom();
     }, [messages]);
 
+    // Parse vehicle dispatch predictions from assistant messages
+    useEffect(() => {
+        messages.forEach((m) => {
+            if (m.role !== 'assistant') return;
+            if (appliedDispatchMessageIds.current.has(m.id)) return;
+            const fullText = m.parts.map((part: any) => part?.type === 'text' ? part.text : '').join('');
+            const marker = 'VEHICLE_PREDICTIONS_JSON:';
+            const idx = fullText.indexOf(marker);
+            if (idx === -1) return;
+            try {
+                const after = fullText.slice(idx + marker.length);
+                const jsonMatch = after.match(/\[[\s\S]*?\]/);
+                if (!jsonMatch) return;
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (Array.isArray(parsed)) {
+                    const allowed = new Set(['ambulance', 'fire_truck', 'police', 'helicopter', 'evacuation_bus']);
+                    const sanitized = parsed
+                        .filter((d: any) => d && typeof d === 'object')
+                        .map((d: any) => ({
+                            vehicle: (typeof d.vehicle === 'string' && allowed.has(d.vehicle)) ? d.vehicle : undefined,
+                            from: typeof d.from === 'string' ? d.from : undefined,
+                            to: typeof d.to === 'string' ? d.to : undefined,
+                        }))
+                        .filter((d: any) => d.vehicle && d.from && d.to) as Array<{ vehicle: 'ambulance' | 'fire_truck' | 'police' | 'helicopter' | 'evacuation_bus'; from: string; to: string; }>;
+                    if (sanitized.length > 0) {
+                        setPredictedDispatches(sanitized);
+                        appliedDispatchMessageIds.current.add(m.id);
+                        console.log('Parsed VEHICLE_PREDICTIONS_JSON:', sanitized);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to parse VEHICLE_PREDICTIONS_JSON:', err);
+            }
+        });
+    }, [messages]);
+
     // Apply graph updates from tool results (tool-crisis_graph)
     useEffect(() => {
         messages.forEach((m) => {
@@ -399,6 +528,8 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
                         appliedToolMessageIds.current.add(m.id);
                         // Auto-open the graph editor when a graph is created/updated
                         setShowGraphPopout(true);
+                        // Mark contacting authorities as done when graph is applied
+                        setOpSteps(s => ({ ...s, contactAuthorities: 'done' }));
                     }
                 } catch (err) {
                     console.error('Failed to apply crisis graph from tool result:', err);
@@ -423,6 +554,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
             monitoring: {
                 count: monitoringPOIs.length,
                 stations: monitoringPOIs.map(poi => ({
+                    id: poi.id,
                     name: poi.title,
                     type: poi.metadata.specializations?.[0] || 'unknown',
                     status: poi.status,
@@ -435,6 +567,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
             resources: {
                 count: resourcePOIs.length,
                 facilities: resourcePOIs.map(poi => ({
+                    id: poi.id,
                     name: poi.title,
                     type: poi.type,
                     status: poi.status,
@@ -448,6 +581,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
             authorities: {
                 count: authorityPOIs.length,
                 agencies: authorityPOIs.map(poi => ({
+                    id: poi.id,
                     name: poi.title,
                     type: poi.metadata.organization,
                     level: poi.metadata.level,
@@ -537,6 +671,8 @@ Provide a comprehensive analysis including:
 5. CRISIS RESPONSE PLAN: Step-by-step action plan using available assets
 6. COMMUNICATION STRATEGY: How to coordinate between different agencies and resources
 
+Vehicle dispatch capability: You can propose vehicle movements using only these vehicle types: [ambulance, fire_truck, police, helicopter, evacuation_bus]. Use EXACT POI ids when specifying origins and destinations (POI ids are included below in the infrastructure lists).
+
 Format your response as:
 EXECUTIVE SUMMARY:
 [Your bullet points here]
@@ -544,16 +680,33 @@ EXECUTIVE SUMMARY:
 DETAILED ANALYSIS:
 [Your comprehensive analysis here]
 
+VEHICLE_PREDICTIONS_JSON:
+[{"vehicle":"ambulance","from":"<poi-id>","to":"<poi-id>"}]
+
 Focus on practical, actionable recommendations based on the actual available infrastructure.`;
 
         try {
+            // 1) Immediately highlight monitoring sources (system-controlled)
+            setOpSteps(s => ({ ...s, gatherMonitoring: 'in_progress' }));
+            showOnlyMonitoringSources(monitoringStations);
+            setOpSteps(s => ({ ...s, gatherMonitoring: 'done', contactMonitoring: 'in_progress' }));
+
+            // 2) Immediately show key resources and briefly tour them (system-controlled)
+            //    This tours available resources; adjust zoom/delay as needed
+            showResourcesAndTour(resources, 11, 800);
+            setOpSteps(s => ({ ...s, contactMonitoring: 'done', gatherAuthorities: 'in_progress' }));
+
+            // 3) Send the LLM prompt to produce executive summary and plan graph via tool call
             await sendMessage({ text: crisisPrompt });
+            setOpSteps(s => ({ ...s, gatherAuthorities: 'done', contactAuthorities: 'in_progress' }));
         } catch (error) {
             console.error('Error sending initial crisis analysis:', error);
         } finally {
             setIsLoading(false);
+            // Finalize if not already moved to done by tool callback
+            setTimeout(() => setOpSteps(s => ({ ...s, contactAuthorities: s.contactAuthorities === 'in_progress' ? 'done' : s.contactAuthorities })), 500);
         }
-    }, [event, sendMessage, createPOIContext]);
+    }, [event, sendMessage, createPOIContext, monitoringStations, resources]);
 
     // Initialize crisis analysis when opened with an event
     useEffect(() => {
@@ -648,14 +801,66 @@ Please provide specific recommendations based on the available infrastructure.`;
                                     {messages.length > 0 && (
                                         <div className="space-y-6">
                                             {/* Main Header */}
-                                            <header className="border-b border-white/20 pb-4">
-                                                <h1 className="text-2xl font-bold text-white mb-2">
+                                            <header className="border-b border-white/20 pb-3 pt-3">
+                                                <h1 className="text-2xl font-bold text-white">
                                                     Crisis Management Report
                                                 </h1>
                                                 <p className="text-sm text-white/70">
                                                     {event?.location} • {event?.timestamp ? new Date(event.timestamp).toLocaleString() : 'Active'}
                                                 </p>
                                             </header>
+
+
+                                            {/* Operational Steps - prominent, below header, neutral colors, animated like LLM thinking */}
+                                            <div className="border-b border-white/10 pb-4">
+                                                <div className="flex flex-wrap items-center gap-6 text-sm">
+                                                    {[
+                                                        { key: 'gatherMonitoring', label: 'Gathering monitoring sources', icon: Search },
+                                                        { key: 'contactMonitoring', label: 'Contacting monitoring sources', icon: Phone },
+                                                        { key: 'gatherAuthorities', label: 'Gathering authorities', icon: Users },
+                                                        { key: 'contactAuthorities', label: 'Contacting authorities', icon: PhoneCall },
+                                                    ].map((step: any, idx: number) => {
+                                                        const state = (opSteps as any)[step.key];
+                                                        const Icon = step.icon;
+                                                        const isDone = state === 'done';
+                                                        const isRunning = state === 'in_progress';
+                                                        return (
+                                                            <div key={step.key} className="flex items-center gap-3 text-white/80">
+                                                                <div className="relative flex items-center justify-center">
+                                                                    {/* icon capsule */}
+                                                                    <div className={`w-8 h-8 rounded-full border border-white/25 bg-white/5 flex items-center justify-center ${isDone ? 'animate-pop-in' : ''}`}>
+                                                                        {isDone ? (
+                                                                            <Check className="w-4 h-4 text-white/80" />
+                                                                        ) : (
+                                                                            <Icon className="w-4 h-4 text-white/70" />
+                                                                        )}
+                                                                    </div>
+                                                                    {/* spinner ring for in-progress */}
+                                                                    {isRunning && (
+                                                                        <div className="pointer-events-none absolute w-8 h-8 rounded-full animate-think-spin" style={{ boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.15)', borderTop: '2px solid rgba(255,255,255,0.7)' }} />
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="leading-tight whitespace-nowrap">{step.label}</span>
+                                                                    {isRunning && (
+                                                                        <span className="inline-flex items-center ml-1">
+                                                                            <span className="w-1 h-1 rounded-full bg-white/70 mr-1 animate-dots"></span>
+                                                                            <span className="w-1 h-1 rounded-full bg-white/60 mr-1 animate-dots" style={{ animationDelay: '0.2s' }}></span>
+                                                                            <span className="w-1 h-1 rounded-full bg-white/50 animate-dots" style={{ animationDelay: '0.4s' }}></span>
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                {/* connector shimmer */}
+                                                                {idx < 3 && (
+                                                                    <div className="hidden md:block w-10 h-[2px] bg-white/10 rounded overflow-hidden">
+                                                                        {(isRunning || isDone) && <div className="h-full w-1/2 bg-white/25 animate-shimmer" />}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
 
                                             {/* AI Analysis Section */}
                                             <section>
@@ -665,26 +870,44 @@ Please provide specific recommendations based on the available infrastructure.`;
                                                 </h2>
 
                                                 {messages.filter(m => m.role === 'assistant').map((message, index) => {
-                                                    // Parse the message to extract executive summary and detailed analysis
                                                     const fullText = message.parts.map(part => part.type === 'text' ? part.text : '').join('');
                                                     const { executiveSummary } = parseLLMResponse(fullText);
 
+                                                    // Extract bullet points: lines starting with -, •, *, or numbered 1.
+                                                    const lines = executiveSummary.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                                                    const bullets = lines.filter(l => /^[-•*]\s+/.test(l) || /^\d+\.\s+/.test(l))
+                                                        .map(l => l.replace(/^([-•*]|\d+\.)\s+/, ''))
+                                                        .slice(0, 8);
+
                                                     return (
                                                         <div key={`analysis-${message.id}-${index}`} className="mb-6">
-                                                            <div className="text-sm text-white/90 leading-relaxed">
-                                                                <div
-                                                                    dangerouslySetInnerHTML={{
-                                                                        __html: executiveSummary
-                                                                            .replace(/---/g, '') // Remove ---
-                                                                            .replace(/^#{1,} (.*?)$/gm, '<strong class="text-orange-400 font-semibold">$1</strong>') // Convert any # headers to bold
-                                                                            .replace(/\*\*(.*?)\*\*/g, '<strong class="text-orange-400">$1</strong>')
-                                                                            .replace(/\n\n/g, '</p><p class="mt-3">')
-                                                                            .replace(/\n/g, '<br>')
-                                                                            .replace(/^/, '<p>')
-                                                                            .replace(/$/, '</p>')
-                                                                    }}
-                                                                />
-                                                            </div>
+                                                            {bullets.length > 0 ? (
+                                                                <div className="space-y-2">
+                                                                    <div className="text-xs uppercase tracking-wider text-white/50">Executive Summary</div>
+                                                                    <ul className="space-y-2">
+                                                                        {bullets.map((b, i) => (
+                                                                            <li key={`bullet-${i}`} className="list-disc list-inside text-white/90 text-sm leading-relaxed">
+                                                                                {b}
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-sm text-white/90 leading-relaxed">
+                                                                    <div
+                                                                        dangerouslySetInnerHTML={{
+                                                                            __html: executiveSummary
+                                                                                .replace(/---/g, '')
+                                                                                .replace(/^#{1,} (.*?)$/gm, '<strong class="text-orange-400 font-semibold">$1</strong>')
+                                                                                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-orange-400">$1</strong>')
+                                                                                .replace(/\n\n/g, '</p><p class="mt-3">')
+                                                                                .replace(/\n/g, '<br>')
+                                                                                .replace(/^/, '<p>')
+                                                                                .replace(/$/, '</p>')
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
@@ -829,10 +1052,60 @@ Please provide specific recommendations based on the available infrastructure.`;
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed top-4 right-[400px] w-[600px] h-[500px] bg-slate-900 border border-slate-700 rounded-lg shadow-2xl z-50 resize overflow-hidden"
+                        className={`fixed bg-slate-900 border border-slate-700 rounded-lg shadow-2xl z-50 resize overflow-hidden transition-all duration-300 ${isPlanMinimized
+                            ? 'bottom-4 right-4 w-[400px] h-[200px]'
+                            : 'top-4 w-[780px] h-[600px]'
+                            }`}
+                        style={!isPlanMinimized ? { right: 'calc(24rem + 16px)' } : {}}
                     >
                         <div className="flex items-center justify-between p-4 border-b border-slate-700">
-                            <h3 className="text-lg font-semibold text-white">Crisis Response Graph Editor</h3>
+                            <div className="flex items-center gap-3">
+                                <h3 className="text-lg font-semibold text-white">Suggested plan</h3>
+                                <Button
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700 text-white h-8 px-3"
+                                    onClick={async () => {
+                                        // Export current plan
+                                        const plan = {
+                                            nodes: getCrisisNodes(),
+                                            connections: getCrisisConnections(),
+                                            acceptedAt: getDisplayTime().getTime(),
+                                            title: 'Crisis Response Plan',
+                                            description: 'AI-generated crisis response plan'
+                                        };
+                                        setCurrentPlanExport(plan);
+                                        // Call AI with the accepted plan (stubbed)
+                                        callAIWithPlan(plan);
+                                        // Send predicted vehicle movements if available
+                                        if (predictedDispatches.length > 0) {
+                                            for (const d of predictedDispatches) {
+                                                try {
+                                                    const fromId = resolvePoiId(d.from);
+                                                    const toId = resolvePoiId(d.to);
+                                                    if (!fromId || !toId) {
+                                                        console.warn('Skipping dispatch due to unresolved POI:', d);
+                                                        continue;
+                                                    }
+                                                    if (d.vehicle === 'helicopter') {
+                                                        await sendHelicopter(fromId, toId);
+                                                    } else {
+                                                        await sendVehicle(fromId, toId, d.vehicle);
+                                                    }
+                                                } catch (err) {
+                                                    console.error('Failed to send predicted dispatch:', d, err);
+                                                }
+                                            }
+                                        }
+                                        // Minimize and enable live mode
+                                        setIsPlanMinimized(true);
+                                        // Close graph editor
+                                        setShowGraphPopout(false);
+                                        setLiveMode(true);
+                                    }}
+                                >
+                                    Accept plan
+                                </Button>
+                            </div>
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -842,7 +1115,7 @@ Please provide specific recommendations based on the available infrastructure.`;
                                 ✕
                             </Button>
                         </div>
-                        <div className="h-[calc(100%-60px)]">
+                        <div className={`transition-all duration-300 ${isPlanMinimized ? 'h-[calc(100%-60px)] opacity-60' : 'h-[calc(100%-60px)]'}`}>
                             <style dangerouslySetInnerHTML={{ __html: reactFlowStyles }} />
                             <ReactFlow
                                 nodes={nodes}
@@ -854,7 +1127,9 @@ Please provide specific recommendations based on the available infrastructure.`;
                                 onConnectEnd={onConnectEnd}
                                 isValidConnection={isValidConnection}
                                 nodeTypes={nodeTypes}
+                                edgeTypes={edgeTypes}
                                 fitView
+                                fitViewOptions={{ padding: 0.04 }}
                                 className="bg-slate-900"
                                 connectionLineType={ConnectionLineType.SmoothStep}
                                 connectionLineStyle={{
@@ -873,6 +1148,38 @@ Please provide specific recommendations based on the available infrastructure.`;
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Local styles for thinking animations */}
+            <style>{`
+              @keyframes thinkRing {
+                0% { transform: scale(0.95); opacity: 0.5; }
+                50% { transform: scale(1.05); opacity: 0.9; }
+                100% { transform: scale(0.95); opacity: 0.5; }
+              }
+              .animate-think-ring { animation: thinkRing 1.6s ease-in-out infinite; }
+              .animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
+              @keyframes thinkSpin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+              .animate-think-spin { animation: thinkSpin 1.2s linear infinite; border-radius: 9999px; }
+              @keyframes dots {
+                0%, 80%, 100% { transform: translateY(0); opacity: .5; }
+                40% { transform: translateY(-2px); opacity: 1; }
+              }
+              .animate-dots { animation: dots 1.2s infinite ease-in-out; }
+              @keyframes shimmer {
+                0% { transform: translateX(-100%); }
+                100% { transform: translateX(100%); }
+              }
+              .animate-shimmer { animation: shimmer 1.6s linear infinite; }
+              @keyframes popIn {
+                0% { transform: scale(0.9); opacity: 0.6; }
+                60% { transform: scale(1.05); opacity: 1; }
+                100% { transform: scale(1); opacity: 1; }
+              }
+              .animate-pop-in { animation: popIn .3s ease-out; }
+            `}</style>
         </>
     );
 };
