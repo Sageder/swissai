@@ -16,6 +16,8 @@ export interface MapRef {
   removePolygon: (polygonId: string) => void
   updatePolygon: (polygonId: string, updates: Partial<any>) => void
   getMapInstance: () => any
+  toggleWeatherOverlay: () => void
+  getWeatherState: () => { enabled: boolean; loading: boolean }
 }
 
 interface MapContainerProps {
@@ -97,6 +99,123 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   // Get timeline context
   const { getDisplayTime, timeOffset, isRealTimeEnabled } = useTime()
 
+  // Weather overlay state
+  const [weatherEnabled, setWeatherEnabled] = useState(false)
+  const [weatherLoading, setWeatherLoading] = useState(false)
+  const weatherTimeOffsetRef = useRef<number>(0)
+
+  // Internal: add or remove weather layer
+  const toggleWeatherOverlayInternal = () => {
+    if (!map.current) return
+
+    const sourceId = 'weather-tiles'
+    const layerId = 'weather-layer'
+
+    if (weatherEnabled) {
+      // Remove weather layer
+      if (map.current.getLayer(layerId)) {
+        map.current.removeLayer(layerId)
+      }
+      if (map.current.getSource(sourceId)) {
+        map.current.removeSource(sourceId)
+      }
+      setWeatherEnabled(false)
+      setWeatherLoading(false)
+      return
+    }
+
+    // Start loading and add layer
+    addWeatherLayer()
+  }
+
+  // Function to add weather layer with current time
+  const addWeatherLayer = () => {
+    if (!map.current) return
+
+    const sourceId = 'weather-tiles'
+    const layerId = 'weather-layer'
+
+    setWeatherLoading(true)
+    try {
+      // Ensure clean state
+      if (map.current.getLayer(layerId)) {
+        map.current.removeLayer(layerId)
+      }
+      if (map.current.getSource(sourceId)) {
+        map.current.removeSource(sourceId)
+      }
+
+      // Compute lead_time as whole/half-hour decimal, min 0.5
+      const clampedOffset = Math.max(0, timeOffset)
+      const leadTimeHalfSteps = Math.ceil(clampedOffset * 2)
+      const leadTimeHours = Math.max(0.5, leadTimeHalfSteps / 2)
+      const timeParam = leadTimeHours.toFixed(1)
+      
+      // Store current time offset for comparison
+      weatherTimeOffsetRef.current = timeOffset
+
+      // Only within supported zoom
+      const currentZoom = map.current.getZoom()
+      if (currentZoom < 5 || currentZoom > 12) {
+        setWeatherLoading(false)
+        // Still add but it will show only in supported zooms
+      }
+
+      const weatherTileUrl = `http://localhost:80/tile/{z}/{x}/{y}.png?lead_time=${timeParam}`
+
+      map.current.addSource(sourceId, {
+        type: 'raster',
+        tiles: [weatherTileUrl],
+        tileSize: 256,
+        minzoom: 5,
+        maxzoom: 12,
+        scheme: 'xyz'
+      })
+
+      map.current.addLayer({
+        id: layerId,
+        type: 'raster',
+        source: sourceId,
+        minzoom: 5,
+        maxzoom: 22,
+        paint: {
+          'raster-opacity': 0.85,
+          'raster-fade-duration': 0,
+          'raster-resampling': 'nearest'
+        }
+      })
+
+      setWeatherEnabled(true)
+
+      const handleSourceData = (e: any) => {
+        if (e.sourceId === sourceId && e.isSourceLoaded) {
+          setWeatherLoading(false)
+          map.current?.off('sourcedata', handleSourceData)
+          map.current?.off('error', handleError)
+        }
+      }
+      const handleError = (e: any) => {
+        if (e.sourceId === sourceId) {
+          setWeatherLoading(false)
+          map.current?.off('sourcedata', handleSourceData)
+          map.current?.off('error', handleError)
+        }
+      }
+      map.current.on('sourcedata', handleSourceData)
+      map.current.on('error', handleError)
+
+      // Safety timeout
+      setTimeout(() => {
+        setWeatherLoading(false)
+        map.current?.off('sourcedata', handleSourceData)
+        map.current?.off('error', handleError)
+      }, 25000)
+    } catch (err) {
+      setWeatherLoading(false)
+      setWeatherEnabled(false)
+    }
+  }
+
   useImperativeHandle(ref, () => ({
     toggleTerrain: (enabled: boolean, exaggeration = 1.2) => {
       if (map.current) {
@@ -107,6 +226,12 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
         }
         terrainEnabled.current = enabled
       }
+    },
+    toggleWeatherOverlay: () => {
+      toggleWeatherOverlayInternal()
+    },
+    getWeatherState: () => {
+      return { enabled: weatherEnabled, loading: weatherLoading }
     },
     flyToLocation: (coordinates: [number, number], zoom = 14, boundingBox) => {
       if (!map.current) {
@@ -597,6 +722,17 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
 
     createPOIMarkers(map.current, pois).catch(() => { })
   }, [pois])
+
+  // Update weather overlay when time changes
+  useEffect(() => {
+    if (!weatherEnabled || !map.current) return
+    
+    // Only update if time has actually changed
+    if (Math.abs(weatherTimeOffsetRef.current - timeOffset) < 0.1) return
+    
+    console.log('[Weather] Time changed, updating weather overlay:', timeOffset)
+    addWeatherLayer()
+  }, [timeOffset, weatherEnabled])
 
 
 

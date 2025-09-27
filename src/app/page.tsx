@@ -49,6 +49,7 @@ function DashboardContent() {
   const [actionsPanelPolygon, setActionsPanelPolygon] = useState<PolygonData | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [liveMode, setLiveMode] = useState(false);
+  const [weatherState, setWeatherState] = useState({ enabled: false, loading: false });
   const mapRef = useRef<MapRef>(null);
 
   const toggleLiveMode = () => {
@@ -280,6 +281,29 @@ function DashboardContent() {
     setActionsPanelPolygon(null);
   };
 
+  // Weather overlay toggle, triggers MapContainer via ref
+  const handleWeatherToggle = () => {
+    if (mapRef.current) {
+      mapRef.current.toggleWeatherOverlay();
+      // Update weather state after toggle
+      setTimeout(() => {
+        if (mapRef.current) {
+          setWeatherState(mapRef.current.getWeatherState());
+        }
+      }, 100);
+    }
+  };
+
+  // Update weather state periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (mapRef.current) {
+        setWeatherState(mapRef.current.getWeatherState());
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
 
 
   return (
@@ -343,6 +367,8 @@ function DashboardContent() {
             onAIChatOpen={handleAIChatOpen}
             onDebugPanelOpen={() => setDebugPanelOpen(!debugPanelOpen)}
             onSearchOpen={handleSearchOpen}
+            onWeatherToggle={handleWeatherToggle}
+            weatherState={weatherState}
           />
 
           {/* AI Chat Overlay */}

@@ -10,6 +10,7 @@ import {
   Bot,
   Activity,
   Search,
+  CloudRain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,6 +24,8 @@ interface SidebarProps {
   onAIChatOpen?: () => void;
   onDebugPanelOpen?: () => void;
   onSearchOpen?: () => void;
+  onWeatherToggle?: () => void;
+  weatherState?: { enabled: boolean; loading: boolean };
 }
 
 const places = [
@@ -48,6 +51,8 @@ export function Sidebar({
   onAIChatOpen,
   onDebugPanelOpen,
   onSearchOpen,
+  onWeatherToggle,
+  weatherState = { enabled: false, loading: false },
 }: SidebarProps) {
   const menuItems = [
     { id: "map", icon: Map, label: "Map View" },
@@ -70,6 +75,12 @@ export function Sidebar({
   const handleSearchClick = () => {
     if (onSearchOpen) {
       onSearchOpen();
+    }
+  };
+
+  const handleWeatherClick = () => {
+    if (onWeatherToggle) {
+      onWeatherToggle();
     }
   };
 
@@ -279,6 +290,49 @@ export function Sidebar({
                   transition={{ duration: 0.2 }}
                 >
                   Search
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Button>
+        </div>
+
+        {/* Weather Overlay Button */}
+        <div className="mt-2">
+          <Button
+            variant="ghost"
+            className={cn(
+              "w-full justify-start gap-3 border-0",
+              !expanded && "px-2",
+              weatherState.enabled
+                ? "bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200"
+                : "text-white/80 hover:text-white hover:bg-white/10"
+            )}
+            onClick={handleWeatherClick}
+            disabled={weatherState.loading}
+          >
+            <CloudRain 
+              size={18} 
+              className={cn(
+                weatherState.loading && "animate-pulse",
+                weatherState.enabled && "text-blue-400"
+              )} 
+            />
+            <AnimatePresence mode="wait">
+              {expanded && (
+                <motion.span
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center gap-2"
+                >
+                  Weather Overlay
+                  {weatherState.loading && (
+                    <div className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {weatherState.enabled && !weatherState.loading && (
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                  )}
                 </motion.span>
               )}
             </AnimatePresence>
