@@ -42,8 +42,11 @@ export function TimeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isRealTimeEnabled])
 
-  // Auto-progression: 1 hour per minute (1 hour = 60 seconds) - always enabled
+  // Auto-progression: 60x speed (1 hour per minute) - always enabled
   useEffect(() => {
+    // Reset time offset to 0 when component mounts
+    setTimeOffset(0)
+    
     autoProgressionRef.current = setInterval(() => {
       // Only auto-progress when real-time is disabled
       if (!isRealTimeEnabled) {

@@ -20,12 +20,25 @@ let dataContextRef: {
   addVehicleMovement: (movement: Omit<VehicleMovement, 'id' | 'currentPosition' | 'progress' | 'status'>) => void;
 } | null = null;
 
+// Global reference to timeline function (will be set by the app)
+let timelineRef: {
+  getCurrentTime: () => Date;
+} | null = null;
+
 /**
  * Set the data context reference for vehicle movements
  * This should be called by the app to provide access to data context functions
  */
 export function setDataContextRef(ref: typeof dataContextRef): void {
   dataContextRef = ref;
+}
+
+/**
+ * Set the timeline reference for getting current simulation time
+ * This should be called by the app to provide access to timeline functions
+ */
+export function setTimelineRef(ref: typeof timelineRef): void {
+  timelineRef = ref;
 }
 
 /**
@@ -446,7 +459,7 @@ export async function sendVehicle(
       lng: toPOI.metadata.coordinates.long,
       name: toPOI.title
     },
-    startTime: Date.now(),
+    startTime: timelineRef?.getCurrentTime().getTime() || Date.now(),
     duration: finalDuration,
     vehicleType,
     route: routeData
@@ -570,7 +583,7 @@ export async function sendHelicopter(
       lng: toPOI.metadata.coordinates.long,
       name: toPOI.title
     },
-    startTime: Date.now(),
+    startTime: timelineRef?.getCurrentTime().getTime() || Date.now(),
     duration: finalDuration,
     vehicleType: 'helicopter',
     route: directRoute

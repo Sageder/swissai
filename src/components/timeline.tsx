@@ -2,26 +2,17 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useTime } from "@/lib/time-context";
-// import { useData } from "@/lib/data-context";
 import { isTimelineVisible, onTimelineVisibilityChange } from "@/lib/util";
-import { motion } from "framer-motion";
 
 interface TimelineProps {
   className?: string;
 }
 
 export function Timeline({ className = "" }: TimelineProps) {
-  const { timeOffset, setTimeOffset, getDisplayTime, isRealTimeEnabled, currentTime } = useTime();
-  // Temporarily disabled data context
-  const monitoringStations: any[] = [];
-  const authorities: any[] = [];
-  const resources: any[] = [];
-  const isLoading = false;
+  const { timeOffset, setTimeOffset, getDisplayTime, isRealTimeEnabled } = useTime();
   const [isDragging, setIsDragging] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [baseTime] = useState(new Date('2025-05-17T06:23:00Z')); // Blatten simulation start time
   const timelineRef = useRef<HTMLDivElement>(null);
-  const sliderRef = useRef<HTMLDivElement>(null);
 
   // Listen for timeline visibility changes
   useEffect(() => {
@@ -35,10 +26,6 @@ export function Timeline({ className = "" }: TimelineProps) {
     return unsubscribe;
   }, []);
 
-  // Debug logging
-  useEffect(() => {
-    // Timeline data state tracking
-  }, [isLoading, monitoringStations.length, authorities.length, resources.length])
 
   // Convert time offset (0-12 hours) to position percentage (0-100%)
   const getSliderPosition = () => {
@@ -113,107 +100,6 @@ export function Timeline({ className = "" }: TimelineProps) {
     });
   };
 
-  // Helper function to get time at any offset (for debugging alignment)
-  const getTimeAtOffset = (offsetHours: number) => {
-    const baseTimeToUse = isRealTimeEnabled ? currentTime : baseTime;
-    return new Date(baseTimeToUse.getTime() + offsetHours * 60 * 60 * 1000);
-  };
-
-  // Get all events that should be visible on the timeline
-  const getAllEventsForTimeline = () => {
-    const currentDisplayTime = getDisplayTime()
-    const allEvents: Array<{
-      type: 'monitoring' | 'authority' | 'resource'
-      time: Date
-      title: string
-      description: string
-      severity: 'normal' | 'warning' | 'alert' | 'critical'
-      [key: string]: any
-    }> = []
-
-    // Create mock events based on available data for demonstration
-    // In a real implementation, these would come from the actual data
-    
-    // Add monitoring station events (mock)
-    if (monitoringStations.length > 0) {
-      const mockMonitoringEvents = [
-        {
-          type: 'monitoring' as const,
-          time: new Date(baseTime.getTime() + 2 * 60 * 60 * 1000), // 2 hours after start
-          title: 'Sensor Alert',
-          description: 'Glacier movement detected',
-          severity: 'warning' as const
-        },
-        {
-          type: 'monitoring' as const,
-          time: new Date(baseTime.getTime() + 6 * 60 * 60 * 1000), // 6 hours after start
-          title: 'Critical Reading',
-          description: 'Accelerated movement detected',
-          severity: 'critical' as const
-        }
-      ]
-      
-      mockMonitoringEvents.forEach(event => {
-        if (event.time <= currentDisplayTime) {
-          allEvents.push(event)
-        }
-      })
-    }
-
-    // Add authority events (mock)
-    if (authorities.length > 0) {
-      const mockAuthorityEvents = [
-        {
-          type: 'authority' as const,
-          time: new Date(baseTime.getTime() + 3 * 60 * 60 * 1000), // 3 hours after start
-          title: 'Authority Activated',
-          description: 'Emergency response initiated',
-          severity: 'alert' as const
-        }
-      ]
-      
-      mockAuthorityEvents.forEach(event => {
-        if (event.time <= currentDisplayTime) {
-          allEvents.push(event)
-        }
-      })
-    }
-
-    // Add resource events (mock)
-    if (resources.length > 0) {
-      const mockResourceEvents = [
-        {
-          type: 'resource' as const,
-          time: new Date(baseTime.getTime() + 4 * 60 * 60 * 1000), // 4 hours after start
-          title: 'Resource Deployed',
-          description: 'Emergency teams mobilized',
-          severity: 'normal' as const
-        }
-      ]
-      
-      mockResourceEvents.forEach(event => {
-        if (event.time <= currentDisplayTime) {
-          allEvents.push(event)
-        }
-      })
-    }
-
-    // Sort by timestamp
-    return allEvents.sort((a, b) => a.time.getTime() - b.time.getTime())
-  }
-
-  // Get event position on timeline (0-100%)
-  const getEventPosition = (eventTime: Date) => {
-    const startTime = baseTime.getTime()
-    const endTime = startTime + (12 * 60 * 60 * 1000) // 12 hours from start
-    const eventTimeMs = eventTime.getTime()
-    
-    if (eventTimeMs < startTime) return 0
-    if (eventTimeMs > endTime) return 100
-    
-    return ((eventTimeMs - startTime) / (endTime - startTime)) * 100
-  }
-
   // Don't render if not visible
   if (!isVisible) {
     return null;
@@ -231,11 +117,6 @@ export function Timeline({ className = "" }: TimelineProps) {
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
           Auto-progression active (1h/min)
         </div>
-        {isLoading && (
-          <div className="text-xs text-blue-400 mt-1">
-            Loading simulation data...
-          </div>
-        )}
       </div>
 
       {/* Timeline Track */}
@@ -287,53 +168,6 @@ export function Timeline({ className = "" }: TimelineProps) {
             </div>
           ))}
 
-          {/* Event Markers */}
-          {!isLoading && getAllEventsForTimeline().map((event, index) => {
-            const position = getEventPosition(event.time)
-            const getEventColor = () => {
-              switch (event.type) {
-                case 'monitoring':
-                  return event.severity === 'critical' ? '#ef4444' : 
-                         event.severity === 'warning' ? '#f59e0b' : '#3b82f6'
-                case 'authority':
-                  return '#8b5cf6'
-                case 'resource':
-                  return event.severity === 'critical' ? '#dc2626' :
-                         event.severity === 'warning' ? '#d97706' : '#059669'
-                default:
-                  return '#6b7280'
-              }
-            }
-
-            return (
-              <div
-                key={`${event.type}-${index}`}
-                className="absolute top-0 bottom-0 flex flex-col justify-center"
-                style={{ left: `${position}%` }}
-              >
-                {/* Event Marker */}
-                <div
-                  className="w-2 h-2 rounded-full shadow-lg border border-white/20"
-                  style={{ 
-                    backgroundColor: getEventColor(),
-                    marginLeft: "-4px"
-                  }}
-                />
-                
-                {/* Event Tooltip on hover */}
-                <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                  <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap max-w-xs">
-                    <div className="font-semibold">
-                      {event.title}
-                    </div>
-                    <div className="text-gray-300">
-                      {formatTime(event.time)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
         </div>
 
         {/* Progress Fill */}
@@ -344,7 +178,6 @@ export function Timeline({ className = "" }: TimelineProps) {
 
         {/* Time Slider */}
         <div
-          ref={sliderRef}
           className={`absolute w-5 h-5 bg-green-500 rounded-full shadow-lg cursor-grab select-none transition-transform duration-150 z-10 ${
             isDragging ? "cursor-grabbing scale-110" : "hover:scale-105"
           }`}

@@ -27,7 +27,7 @@ export interface VehicleMovement {
     lng: number;
   };
   progress: number; // 0 to 1
-  status: 'traveling' | 'arrived' | 'cancelled';
+  status: 'traveling' | 'arrived';
   vehicleType: 'ambulance' | 'fire_truck' | 'police' | 'helicopter' | 'evacuation_bus';
   route?: {
     coordinates: [number, number][] | [number, number, number][]; // Route coordinates from Mapbox Directions API (2D or 3D)

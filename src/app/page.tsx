@@ -5,7 +5,7 @@ import { MapContainer, type MapRef } from "@/components/map-container";
 import { Sidebar } from "@/components/sidebar";
 import { SettingsOverlay } from "@/components/overlays/settings-overlay";
 import { Timeline } from "@/components/timeline";
-import { TimeProvider } from "@/lib/time-context";
+import { TimeProvider, useTime } from "@/lib/time-context";
 import { DataProvider, useData } from "@/lib/data-context";
 import { MapSearch } from "@/components/map-search";
 import { PolygonEditor, type PolygonData } from "@/components/polygon-editor";
@@ -25,11 +25,12 @@ import {
 import { blattentPOIs } from "@/data/pois";
 import { useAlert } from "@/lib/alert-context";
 import { setAlertContext, createLandslideAlert, setCrisisManagementCallback } from "@/lib/alert-service";
-import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs } from "@/lib/util";
+import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, setTimelineRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs } from "@/lib/util";
 
 function DashboardContent() {
   const { resources, monitoringStations, authorities, isLoading, addVehicleMovement } = useData();
   const alertContext = useAlert();
+  const { getDisplayTime } = useTime();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [activeView, setActiveView] = useState("map");
   const [selectedPolygon, setSelectedPolygon] = useState<PolygonData | null>(null);
@@ -64,6 +65,11 @@ function DashboardContent() {
   useEffect(() => {
     setDataContextRef({ addVehicleMovement });
   }, [addVehicleMovement]);
+
+  // Initialize timeline reference for utility functions
+  useEffect(() => {
+    setTimelineRef({ getCurrentTime: getDisplayTime });
+  }, [getDisplayTime]);
 
   // Demo alert for Blatten landslide
   useEffect(() => {
@@ -272,7 +278,6 @@ function DashboardContent() {
 
 
   return (
-    <TimeProvider>
       <div className="h-screen w-full bg-background text-foreground overflow-hidden dark">
         {/* Timeline - Fixed at top */}
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-96">
@@ -371,14 +376,15 @@ function DashboardContent() {
         {/* Alert Container */}
         <AlertContainer />
       </div>
-    </TimeProvider>
   );
 }
 
 export default function Dashboard() {
   return (
     <DataProvider>
-      <DashboardContent />
+      <TimeProvider>
+        <DashboardContent />
+      </TimeProvider>
     </DataProvider>
   );
 }
