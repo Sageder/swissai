@@ -25,7 +25,8 @@ import {
 import { blattentPOIs } from "@/data/pois";
 import { useAlert } from "@/lib/alert-context";
 import { setAlertContext, createLandslideAlert, setCrisisManagementCallback } from "@/lib/alert-service";
-import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs } from "@/lib/util";
+import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs, setMapControlRef } from "@/lib/util";
+import { onLiveModeChange } from "@/lib/live-mode";
 
 function DashboardContent() {
   const { resources, monitoringStations, authorities, isLoading, addVehicleMovement } = useData();
@@ -69,6 +70,23 @@ function DashboardContent() {
   useEffect(() => {
     setDataContextRef({ addVehicleMovement });
   }, [addVehicleMovement]);
+
+  // Provide map control ref for util-driven camera moves
+  useEffect(() => {
+    if (mapRef.current && mapRef.current.flyToLocation) {
+      setMapControlRef({
+        flyToLocation: (coordinates: [number, number], zoom?: number) => {
+          mapRef.current?.flyToLocation(coordinates, zoom ?? 13);
+        }
+      });
+    }
+  }, [mapRef.current]);
+
+  // Sync live mode with central live-mode module (accept plan triggers)
+  useEffect(() => {
+    const unsubscribe = onLiveModeChange((active) => setLiveMode(active));
+    return unsubscribe;
+  }, []);
 
   // Demo alert for Blatten landslide
   useEffect(() => {
@@ -278,7 +296,7 @@ function DashboardContent() {
 
   return (
     <TimeProvider>
-      <div className="h-screen w-full bg-background text-foreground overflow-hidden dark">
+      <div className={"h-screen w-full bg-background text-foreground overflow-hidden dark " + (liveMode ? 'outline outline-2 outline-red-500/70 outline-dashed' : '')}>
         {/* Timeline - Fixed at top */}
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-96">
           <Timeline />
