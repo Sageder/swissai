@@ -445,7 +445,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
         scrollToBottom();
     }, [messages]);
 
-    // Apply graph updates from tool results (tool-crisis_graph)
+    // Apply graph updates from tool results (tool-crisis_graph) and capture VEHICLE_PREDICTIONS_JSON
     useEffect(() => {
         messages.forEach((m) => {
             if (m.role !== 'assistant') return;
@@ -471,6 +471,25 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
         });
     }, [messages]);
 
+    // Capture VEHICLE_PREDICTIONS_JSON blocks from assistant text and store centrally
+    useEffect(() => {
+        try {
+            const latest = [...messages].reverse().find(m => m.role === 'assistant');
+            if (!latest) return;
+            const text = latest.parts.map((p: any) => (p.type === 'text' ? p.text : '')).join('');
+            const match = text.match(/VEHICLE_PREDICTIONS_JSON:\s*([\s\S]*?)$/i);
+            if (!match) return;
+            const jsonStr = match[1].trim();
+            const parsed = JSON.parse(jsonStr);
+            if (Array.isArray(parsed)) {
+                const valid = parsed.filter((p: any) => p && p.vehicle && p.from && p.to);
+                import('@/lib/plan-store').then(({ setVehiclePredictions }) => setVehiclePredictions(valid as any)).catch(() => { });
+            }
+        } catch (e) {
+            console.warn('Failed to parse VEHICLE_PREDICTIONS_JSON:', e);
+        }
+    }, [messages]);
+
     // Create POI context for LLM
     const createPOIContext = useCallback(() => {
         const allPOIs = getPOIsWithContext(monitoringStations, authorities, resources);
@@ -487,6 +506,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
             monitoring: {
                 count: monitoringPOIs.length,
                 stations: monitoringPOIs.map(poi => ({
+                    id: poi.id,
                     name: poi.title,
                     type: poi.metadata.specializations?.[0] || 'unknown',
                     status: poi.status,
@@ -499,6 +519,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
             resources: {
                 count: resourcePOIs.length,
                 facilities: resourcePOIs.map(poi => ({
+                    id: poi.id,
                     name: poi.title,
                     type: poi.type,
                     status: poi.status,
@@ -512,6 +533,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
             authorities: {
                 count: authorityPOIs.length,
                 agencies: authorityPOIs.map(poi => ({
+                    id: poi.id,
                     name: poi.title,
                     type: poi.metadata.organization,
                     level: poi.metadata.level,

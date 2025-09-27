@@ -10,10 +10,18 @@ export interface CrisisPlan {
     description?: string;
 }
 
+export interface VehiclePrediction {
+    vehicle: 'ambulance' | 'fire_truck' | 'police' | 'helicopter' | 'evacuation_bus';
+    from: string; // POI id
+    to: string;   // POI id
+}
+
 // Global state for plan management
 let currentPlan: CrisisPlan | null = null;
 let isLiveMode = false;
 let planCallbacks: Array<() => void> = [];
+let liveModeCallbacks: Array<(active: boolean) => void> = [];
+let vehiclePredictions: VehiclePrediction[] = [];
 
 /**
  * Set the current plan export
@@ -46,6 +54,9 @@ export function clearCurrentPlan(): void {
 export function setLiveMode(active: boolean): void {
     isLiveMode = active;
     planCallbacks.forEach(callback => callback());
+    liveModeCallbacks.forEach(cb => {
+        try { cb(active); } catch { }
+    });
     console.log('Live mode:', active ? 'activated' : 'deactivated');
 }
 
@@ -64,6 +75,29 @@ export function onPlanChange(callback: () => void): () => void {
     return () => {
         planCallbacks = planCallbacks.filter(cb => cb !== callback);
     };
+}
+
+/**
+ * Subscribe to live mode changes
+ */
+export function onLiveModeChange(callback: (active: boolean) => void): () => void {
+    liveModeCallbacks.push(callback);
+    return () => {
+        liveModeCallbacks = liveModeCallbacks.filter(cb => cb !== callback);
+    };
+}
+
+/**
+ * Store vehicle predictions parsed from LLM output
+ */
+export function setVehiclePredictions(preds: VehiclePrediction[]): void {
+    vehiclePredictions = Array.isArray(preds) ? preds : [];
+    console.log('Stored vehicle predictions:', vehiclePredictions.length);
+    planCallbacks.forEach(callback => callback());
+}
+
+export function getVehiclePredictions(): VehiclePrediction[] {
+    return [...vehiclePredictions];
 }
 
 /**

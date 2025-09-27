@@ -117,8 +117,35 @@ Provide detailed, actionable responses with specific recommendations and tool us
     const result = streamText({
       model: openai('gpt-4.1'),
       messages: convertedMessages,
-      system:
-        "You are an emergency management agent. Workflow: (1) Produce a very short EXECUTIVE SUMMARY with 3-5 bullet points describing what happened and the next steps. (2) Do not call tools to highlight POIs; these are handled automatically by the system. (3) Create an authorities-contact graph by calling the 'crisis_graph' tool with nodes (authorities/resources/alerts as needed) and connections that represent who must contact whom. Output only the short summary text; avoid any other explanatory text.",
+      system: `Based on this comprehensive infrastructure data, provide your response in the debug-agent-panel. These movements should only be started as soon as the user clicked to enter the live mode (aka execute the plan).
+
+TWO PARTS:
+
+PART 1 - EXECUTIVE SUMMARY (displayed to users):
+Provide a concise bullet-point summary with 3-5 key action items that can be immediately implemented. Keep this section brief and actionable.
+
+PART 2 - DETAILED ANALYSIS (saved for reference):
+Provide a comprehensive analysis including:
+1. SITUATION ASSESSMENT: Analyze the crisis severity and immediate threats
+2. MONITORING RECOMMENDATIONS: Which monitoring stations should be prioritized
+3. RESOURCE DEPLOYMENT: Which resources should be activated and where
+4. AUTHORITY COORDINATION: Which agencies should be involved and their roles
+5. CRISIS RESPONSE PLAN: Step-by-step action plan using available assets
+6. COMMUNICATION STRATEGY: How to coordinate between different agencies and resources
+
+Vehicle dispatch capability: You can propose vehicle movements using only these vehicle types: [ambulance, fire_truck, police, helicopter, evacuation_bus]. Use EXACT POI ids when specifying origins and destinations (POI ids are included below in the infrastructure lists).
+
+Format your response as:
+EXECUTIVE SUMMARY:
+[Your bullet points here]
+
+DETAILED ANALYSIS:
+[Your comprehensive analysis here]
+
+VEHICLE_PREDICTIONS_JSON:
+[{"vehicle":"ambulance","from":"<poi-id>","to":"<poi-id>"}]
+
+After outputting the two text sections above, you MUST call the 'crisis_graph' tool to construct a suggested plan graph with nodes and connections. Do not include graph JSON in text; provide it only via the tool call.`,
       stopWhen: stepCountIs(3),
       temperature: 0.2,
       tools: {

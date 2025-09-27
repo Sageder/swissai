@@ -72,6 +72,41 @@ function computePOICenter(pois: Array<{ metadata?: { coordinates?: { lat: number
   return [sumLng / count, sumLat / count];
 }
 
+// Helper: robust POI lookup by id or human title (case/format-insensitive)
+function normalizeIdentifier(value: string | undefined): string {
+  return (value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function findPOIByIdOrTitle(identifier: string): any | undefined {
+  if (!identifier) return undefined;
+  // 1) Exact id
+  let poi = currentPOIs.find(p => p.id === identifier);
+  if (poi) return poi;
+
+  // 2) Exact title match (normalized)
+  const norm = normalizeIdentifier(identifier);
+  poi = currentPOIs.find(p => normalizeIdentifier(p.title) === norm);
+  if (poi) return poi;
+
+  // 3) Contains match either way
+  poi = currentPOIs.find(p => {
+    const t = normalizeIdentifier(p.title);
+    return t.includes(norm) || norm.includes(t);
+  });
+  if (poi) return poi;
+
+  // 4) Special-case: plain "blatten" -> city center if available
+  if (norm === 'blatten') {
+    poi = currentPOIs.find(p => p.id === 'blatten-city-center' || normalizeIdentifier(p.title) === 'blatten city center');
+    if (poi) return poi;
+  }
+
+  return undefined;
+}
+
 /**
  * Show the timeline component
  */
@@ -580,9 +615,9 @@ export async function sendVehicle(
     return;
   }
 
-  // Find the source and destination POIs
-  const fromPOI = currentPOIs.find(poi => poi.id === fromPOIId);
-  const toPOI = currentPOIs.find(poi => poi.id === toPOIId);
+  // Find the source and destination POIs (by id or title)
+  const fromPOI = findPOIByIdOrTitle(fromPOIId);
+  const toPOI = findPOIByIdOrTitle(toPOIId);
 
   if (!fromPOI || !toPOI) {
     console.error(`POI not found: from=${fromPOIId}, to=${toPOIId}`);
@@ -765,9 +800,9 @@ export async function sendHelicopter(
     return;
   }
 
-  // Find the source and destination POIs
-  const fromPOI = currentPOIs.find(poi => poi.id === fromPOIId);
-  const toPOI = currentPOIs.find(poi => poi.id === toPOIId);
+  // Find the source and destination POIs (by id or title)
+  const fromPOI = findPOIByIdOrTitle(fromPOIId);
+  const toPOI = findPOIByIdOrTitle(toPOIId);
 
   if (!fromPOI || !toPOI) {
     console.error(`POI not found: from=${fromPOIId}, to=${toPOIId}`);
