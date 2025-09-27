@@ -452,12 +452,10 @@ export async function sendVehicle(
     finalDuration = (distanceMeters / vehicleSpeedMs) * 1000; // ms
     console.log('✅ VEHICLE ROUTE FOUND:', route.coordinates.length, 'points');
   } else {
-    // Create a fallback route using the SAME approach as helicopters
+    // Fallback to direct distance calculation; build a straight-line route (helicopter-style) for vehicles
     const distanceKm = calculateDistance(
-      fromPOI.metadata.coordinates.lat,
-      fromPOI.metadata.coordinates.long,
-      toPOI.metadata.coordinates.lat,
-      toPOI.metadata.coordinates.long
+      { lat: fromPOI.metadata.coordinates.lat, lng: fromPOI.metadata.coordinates.long },
+      { lat: toPOI.metadata.coordinates.lat, lng: toPOI.metadata.coordinates.long }
     );
     const distanceMeters = distanceKm * 1000;
     finalDuration = (distanceMeters / vehicleSpeedMs) * 1000; // ms
@@ -534,20 +532,6 @@ export function addBlatten(): void {
   console.log('Added Blatten city center to POI display');
 }
 
-/**
- * Calculate distance between two coordinates using Haversine formula
- */
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371; // Radius of the Earth in kilometers
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // Distance in kilometers
-}
 
 /**
  * Send a helicopter from one POI to another POI
@@ -577,10 +561,8 @@ export async function sendHelicopter(
 
   // Calculate direct distance for helicopter
   const distance = calculateDistance(
-    fromPOI.metadata.coordinates.lat,
-    fromPOI.metadata.coordinates.long,
-    toPOI.metadata.coordinates.lat,
-    toPOI.metadata.coordinates.long
+    { lat: fromPOI.metadata.coordinates.lat, lng: fromPOI.metadata.coordinates.long },
+    { lat: toPOI.metadata.coordinates.lat, lng: toPOI.metadata.coordinates.long }
   );
 
   // Helicopters are 3x faster than vehicles
@@ -965,31 +947,37 @@ export const createCrisisGraphFromLLM = (graphData: LLMGraphData) => {
   crisisNodes = [];
   crisisConnections = [];
 
-  // Add all nodes
+  // Add all nodes and keep a map from provided ids -> generated ids
+  const providedIdToGeneratedId: Record<string, string> = {};
   const nodeIds: string[] = [];
-  graphData.nodes.forEach(nodeData => {
-    const nodeId = addCrisisNode({
+  graphData.nodes.forEach((nodeData) => {
+    const generatedId = addCrisisNode({
       type: nodeData.type,
       title: nodeData.title,
       description: nodeData.description,
       status: nodeData.status as 'active' | 'inactive' | 'pending' | 'completed',
       position: nodeData.position,
-      severity: nodeData.severity
+      severity: nodeData.severity,
     });
-    if (nodeId) {
-      nodeIds.push(nodeId);
+    if (generatedId) {
+      nodeIds.push(generatedId);
+      if (nodeData.id) {
+        providedIdToGeneratedId[nodeData.id] = generatedId;
+      }
     }
   });
 
   // Add all connections
   const connectionIds: string[] = [];
-  graphData.connections.forEach(connectionData => {
+  graphData.connections.forEach((connectionData) => {
+    const mappedFrom = providedIdToGeneratedId[connectionData.from] || connectionData.from;
+    const mappedTo = providedIdToGeneratedId[connectionData.to] || connectionData.to;
     const connectionId = addCrisisConnection({
-      from: connectionData.from,
-      to: connectionData.to,
+      from: mappedFrom,
+      to: mappedTo,
       type: connectionData.type,
       status: (connectionData.status as 'active' | 'inactive' | 'pending') || 'active',
-      label: connectionData.label || connectionData.type.replace('_', ' ').toUpperCase()
+      label: connectionData.label || connectionData.type.replace('_', ' ').toUpperCase(),
     });
     if (connectionId) {
       connectionIds.push(connectionId);
@@ -1274,3 +1262,289 @@ export const validateLLMGraphData = (graphData: LLMGraphData): { valid: boolean;
     errors
   };
 };
+
+// POI Context Functions for LLM Integration
+export interface POIContext {
+  id: string;
+  title: string;
+  description: string;
+  type: 'monitoring' | 'resource' | 'authority' | 'alert' | 'other';
+  category: 'monitoring' | 'resource' | 'authority';
+  severity: 'low' | 'medium' | 'high';
+  status: 'active' | 'inactive' | 'pending' | 'completed';
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  location: {
+    name: string;
+    address?: string;
+  };
+  metadata: {
+    organization?: string;
+    personnel?: number;
+    equipment?: string[];
+    specializations?: string[];
+    responseTime?: string;
+    capacity?: any;
+    currentAssignment?: string;
+    batteryStatus?: number;
+    connectivity?: string;
+    jurisdiction?: string;
+    level?: string;
+  };
+  contact?: {
+    phone?: string;
+    email?: string;
+    radio?: string;
+    emergency?: string;
+  };
+}
+
+export interface POIFilterOptions {
+  categories?: ('monitoring' | 'resource' | 'authority')[];
+  types?: string[];
+  status?: ('active' | 'inactive' | 'pending' | 'completed')[];
+  severity?: ('low' | 'medium' | 'high')[];
+  location?: {
+    center: { lat: number; lng: number };
+    radius: number; // in kilometers
+  };
+  organization?: string[];
+  specialization?: string[];
+}
+
+/**
+ * Get all Points of Interest with optional filtering
+ * This function provides comprehensive POI data for LLM context
+ */
+export const getPOIsWithContext = (
+  monitoringStations: MonitoringStation[] = [],
+  authorities: Authority[] = [],
+  resources: Resource[] = [],
+  filterOptions?: POIFilterOptions
+): POIContext[] => {
+  const allPOIs: POIContext[] = [];
+
+  // Convert monitoring stations to POI context
+  monitoringStations.forEach(station => {
+    // Add null checks for all properties
+    const poi: POIContext = {
+      id: station?.sensorId || 'unknown',
+      title: station?.location?.name || 'Unknown Station',
+      description: `${station?.sensorType || 'unknown'} monitoring station - ${station?.responsibleOrganization || 'unknown'}`,
+      type: 'monitoring',
+      category: 'monitoring',
+      severity: station?.readings?.some(r => ['alert', 'critical', 'emergency'].includes(r?.status)) ? 'high' :
+        station?.readings?.some(r => ['warning'].includes(r?.status)) ? 'medium' : 'low',
+      status: station?.connectivity === 'online' ? 'active' : 'inactive',
+      coordinates: {
+        lat: station?.location?.lat || 0,
+        lng: station?.location?.lng || 0
+      },
+      location: {
+        name: station?.location?.name || 'Unknown Station',
+        address: station?.location?.address || 'No address'
+      },
+      metadata: {
+        organization: station?.responsibleOrganization || 'unknown',
+        batteryStatus: station?.batteryStatus || 0,
+        connectivity: station?.connectivity || 'offline',
+        specializations: [station?.sensorType || 'unknown']
+      }
+    };
+    allPOIs.push(poi);
+  });
+
+  // Convert authorities to POI context
+  authorities.forEach(authority => {
+    // Add null checks for all properties
+    const poi: POIContext = {
+      id: authority?.authorityId || 'unknown',
+      title: authority?.name || 'Unknown Authority',
+      description: `${authority?.type || 'unknown'} authority - ${authority?.level || 'unknown'} level - ${authority?.specialization?.join(', ') || 'no specializations'}`,
+      type: 'authority',
+      category: 'authority',
+      severity: authority?.currentStatus === 'activated' || authority?.currentStatus === 'deployed' ? 'high' :
+        authority?.currentStatus === 'coordinating' ? 'medium' : 'low',
+      status: authority?.currentStatus === 'available' ? 'active' :
+        authority?.currentStatus === 'activated' || authority?.currentStatus === 'coordinating' ? 'pending' : 'inactive',
+      coordinates: {
+        lat: authority?.headquarters?.lat || 0,
+        lng: authority?.headquarters?.lng || 0
+      },
+      location: {
+        name: authority?.name || 'Unknown Authority',
+        address: authority?.contact?.phone || 'No contact'
+      },
+      metadata: {
+        organization: authority?.type || 'unknown',
+        personnel: authority?.personnelCount || 0,
+        specializations: authority?.specialization || [],
+        jurisdiction: authority?.jurisdiction || 'unknown',
+        level: authority?.level || 'unknown',
+        responseTime: authority?.responseTime || 'unknown',
+        equipment: authority?.equipmentInventory || []
+      },
+      contact: {
+        phone: authority?.contact?.phone || 'No phone',
+        email: authority?.contact?.email || 'No email',
+        radio: authority?.contact?.radio || 'No radio',
+        emergency: authority?.contact?.emergency || 'No emergency contact'
+      }
+    };
+    allPOIs.push(poi);
+  });
+
+  // Convert resources to POI context
+  resources.forEach(resource => {
+    // Add null checks for all properties
+    const poi: POIContext = {
+      id: resource?.resourceId || 'unknown',
+      title: resource?.location?.name || `${resource?.type || 'unknown'} - ${resource?.resourceId || 'unknown'}`,
+      description: `${resource?.type || 'unknown'} resource - Status: ${resource?.status || 'unknown'}${resource?.personnel ? ` - Personnel: ${resource.personnel}` : ''}${resource?.currentAssignment ? ` - Assignment: ${resource.currentAssignment}` : ''}`,
+      type: 'resource',
+      category: 'resource',
+      severity: resource?.status === 'emergency_mode' || resource?.status === 'deployed' ? 'high' :
+        resource?.status === 'activated' || resource?.status === 'standby' ? 'medium' : 'low',
+      status: resource?.status === 'available' || resource?.status === 'operational' ? 'active' :
+        resource?.status === 'deployed' || resource?.status === 'emergency_mode' ? 'pending' : 'inactive',
+      coordinates: {
+        lat: resource?.location?.lat || 0,
+        lng: resource?.location?.lng || 0
+      },
+      location: {
+        name: resource?.location?.name || 'Unknown Location',
+        address: resource?.location?.address || 'No address'
+      },
+      metadata: {
+        organization: resource?.type || 'unknown',
+        personnel: resource?.personnel || 0,
+        equipment: resource?.equipment || [],
+        specializations: resource?.specializations || [],
+        responseTime: resource?.responseTime || 'unknown',
+        capacity: resource?.capacity || null,
+        currentAssignment: resource?.currentAssignment || 'None'
+      }
+    };
+    allPOIs.push(poi);
+  });
+
+  // Apply filters if provided
+  let filteredPOIs = allPOIs;
+
+  if (filterOptions) {
+    // Filter by categories
+    if (filterOptions.categories && filterOptions.categories.length > 0) {
+      filteredPOIs = filteredPOIs.filter(poi => filterOptions.categories!.includes(poi.category));
+    }
+
+    // Filter by types
+    if (filterOptions.types && filterOptions.types.length > 0) {
+      filteredPOIs = filteredPOIs.filter(poi => filterOptions.types!.includes(poi.type));
+    }
+
+    // Filter by status
+    if (filterOptions.status && filterOptions.status.length > 0) {
+      filteredPOIs = filteredPOIs.filter(poi => filterOptions.status!.includes(poi.status));
+    }
+
+    // Filter by severity
+    if (filterOptions.severity && filterOptions.severity.length > 0) {
+      filteredPOIs = filteredPOIs.filter(poi => filterOptions.severity!.includes(poi.severity));
+    }
+
+    // Filter by location (radius)
+    if (filterOptions.location) {
+      const { center, radius } = filterOptions.location;
+      filteredPOIs = filteredPOIs.filter(poi => {
+        const distance = calculateDistance(center, poi.coordinates);
+        return distance <= radius;
+      });
+    }
+
+    // Filter by organization
+    if (filterOptions.organization && filterOptions.organization.length > 0) {
+      filteredPOIs = filteredPOIs.filter(poi =>
+        poi.metadata.organization && filterOptions.organization!.includes(poi.metadata.organization)
+      );
+    }
+
+    // Filter by specialization
+    if (filterOptions.specialization && filterOptions.specialization.length > 0) {
+      filteredPOIs = filteredPOIs.filter(poi =>
+        poi.metadata.specializations &&
+        poi.metadata.specializations.some(spec => filterOptions.specialization!.includes(spec))
+      );
+    }
+  }
+
+  console.log(`Retrieved ${filteredPOIs.length} POIs (${allPOIs.length} total available)`);
+  return filteredPOIs;
+};
+
+/**
+ * Get POIs by specific category (convenience functions)
+ */
+export const getMonitoringPOIs = (monitoringStations: MonitoringStation[] = []): POIContext[] => {
+  return getPOIsWithContext(monitoringStations, [], [], { categories: ['monitoring'] });
+};
+
+export const getResourcePOIs = (resources: Resource[] = []): POIContext[] => {
+  return getPOIsWithContext([], [], resources, { categories: ['resource'] });
+};
+
+export const getAuthorityPOIs = (authorities: Authority[] = []): POIContext[] => {
+  return getPOIsWithContext([], authorities, [], { categories: ['authority'] });
+};
+
+/**
+ * Get active POIs only (status: 'active')
+ */
+export const getActivePOIs = (
+  monitoringStations: MonitoringStation[] = [],
+  authorities: Authority[] = [],
+  resources: Resource[] = []
+): POIContext[] => {
+  return getPOIsWithContext(monitoringStations, authorities, resources, { status: ['active'] });
+};
+
+/**
+ * Get high severity POIs only
+ */
+export const getHighSeverityPOIs = (
+  monitoringStations: MonitoringStation[] = [],
+  authorities: Authority[] = [],
+  resources: Resource[] = []
+): POIContext[] => {
+  return getPOIsWithContext(monitoringStations, authorities, resources, { severity: ['high'] });
+};
+
+/**
+ * Get POIs within a specific radius of a location
+ */
+export const getPOIsNearLocation = (
+  center: { lat: number; lng: number },
+  radiusKm: number,
+  monitoringStations: MonitoringStation[] = [],
+  authorities: Authority[] = [],
+  resources: Resource[] = []
+): POIContext[] => {
+  return getPOIsWithContext(monitoringStations, authorities, resources, {
+    location: { center, radius: radiusKm }
+  });
+};
+
+/**
+ * Calculate distance between two coordinates in kilometers
+ */
+function calculateDistance(coord1: { lat: number; lng: number }, coord2: { lat: number; lng: number }): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (coord2.lat - coord1.lat) * Math.PI / 180;
+  const dLng = (coord2.lng - coord1.lng) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(coord1.lat * Math.PI / 180) * Math.cos(coord2.lat * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}

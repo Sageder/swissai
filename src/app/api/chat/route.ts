@@ -1,5 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText, UIMessage, convertToModelMessages } from "ai";
+import { streamText, UIMessage, convertToModelMessages, tool, stepCountIs } from "ai";
+import { z } from "zod";
+import { type LLMGraphData } from "@/lib/util";
 import {
   mockDataTool,
   weatherTool,
@@ -113,18 +115,63 @@ Provide detailed, actionable responses with specific recommendations and tool us
     const convertedMessages = convertToModelMessages(messages);
 
     const result = streamText({
-        model: openai('gpt-4o-mini'),
-        messages: convertedMessages,
-        system: "You are a helpful AI assistant for emergency management. Provide clear, actionable emergency response recommendations.",
-        temperature: 0.7,
+      model: openai('gpt-4.1'),
+      messages: convertedMessages,
+      system:
+        "You are an emergency management agent. Workflow: (1) Produce a very short EXECUTIVE SUMMARY with 3-5 bullet points describing what happened and the next steps. (2) Create an authorities-contact graph by calling the 'crisis_graph' tool with nodes (authorities/resources/alerts as needed) and connections that represent who must contact whom. Do not output any other text besides the short summary.",
+      stopWhen: stepCountIs(3),
+      temperature: 0.2,
+      tools: {
+        crisis_graph: tool({
+          description:
+            'Create or update a crisis response graph. Use for building an authorities contact workflow. Return the exact graph data used.',
+          inputSchema: z.object({
+            nodes: z
+              .array(
+                z.object({
+                  id: z.string().describe('Stable id for the node'),
+                  type: z
+                    .enum(['alert', 'monitoring', 'response', 'resource', 'authority'])
+                    .describe('Node type'),
+                  title: z.string(),
+                  description: z.string().default(''),
+                  status: z.string().default('active'),
+                  severity: z.enum(['low', 'medium', 'high']).optional(),
+                  position: z.object({ x: z.number(), y: z.number() }),
+                })
+              )
+              .describe('List of nodes to create'),
+            connections: z
+              .array(
+                z.object({
+                  from: z.string().describe('Source node id'),
+                  to: z.string().describe('Target node id'),
+                  type: z
+                    .enum(['data_flow', 'response', 'coordination', 'dependency'])
+                    .default('coordination'),
+                  label: z.string().optional(),
+                  status: z.string().optional(),
+                })
+              )
+              .describe('Edges between nodes'),
+          }),
+          execute: async (args) => {
+            // Echo back graph data so the client can apply it with util.ts on the UI
+            const graphData: LLMGraphData = {
+              nodes: args.nodes as any,
+              connections: args.connections as any,
+            };
+            return { applied: false, graphData };
+          },
+        }),
+      },
     });
 
     return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error("Chat API Error:", error);
     return new Response(
-      `Server error: ${
-        error instanceof Error ? error.message : "Unknown error"
+      `Server error: ${error instanceof Error ? error.message : "Unknown error"
       }`,
       {
         status: 500,

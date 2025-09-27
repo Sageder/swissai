@@ -16,8 +16,11 @@ import {
     addCrisisConnection,
     addCrisisNode,
     removeCrisisNode,
-    removeCrisisConnection
+    removeCrisisConnection,
+    getPOIsWithContext
 } from '@/lib/util';
+import { createCrisisGraphFromLLM } from '@/lib/util';
+import { useData } from '@/lib/data-context';
 import {
     ReactFlow,
     MiniMap,
@@ -251,6 +254,10 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
     const [showGraphEditor, setShowGraphEditor] = useState(false);
     const [showGraphPopout, setShowGraphPopout] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const appliedToolMessageIds = useRef<Set<string>>(new Set());
+
+    // Get data context for POI information
+    const { monitoringStations, authorities, resources } = useData();
 
     // Use the same chat hook as AI Chat component
     const { messages, sendMessage } = useChat();
@@ -361,15 +368,183 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
     }, []);
 
 
+    // Parse LLM response to extract executive summary and detailed analysis
+    const parseLLMResponse = useCallback((response: string) => {
+        const executiveSummaryMatch = response.match(/EXECUTIVE SUMMARY:\s*([\s\S]*?)(?=DETAILED ANALYSIS:|$)/i);
+        const detailedAnalysisMatch = response.match(/DETAILED ANALYSIS:\s*([\s\S]*?)$/i);
+
+        const executiveSummary = executiveSummaryMatch ? executiveSummaryMatch[1].trim() : response;
+        const detailedAnalysis = detailedAnalysisMatch ? detailedAnalysisMatch[1].trim() : '';
+
+        return { executiveSummary, detailedAnalysis };
+    }, []);
+
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
 
+    // Apply graph updates from tool results (tool-crisis_graph)
+    useEffect(() => {
+        messages.forEach((m) => {
+            if (m.role !== 'assistant') return;
+            if (appliedToolMessageIds.current.has(m.id)) return;
+            const toolParts = m.parts.filter((p: any) => p?.type === 'tool-crisis_graph');
+            if (toolParts.length === 0) return;
+            toolParts.forEach((part: any) => {
+                try {
+                    const result = part?.result || part?.output || part?.data;
+                    const graphData = result?.graphData || result;
+                    if (graphData?.nodes && graphData?.connections) {
+                        createCrisisGraphFromLLM(graphData);
+                        appliedToolMessageIds.current.add(m.id);
+                        // Auto-open the graph editor when a graph is created/updated
+                        setShowGraphPopout(true);
+                    }
+                } catch (err) {
+                    console.error('Failed to apply crisis graph from tool result:', err);
+                }
+            });
+        });
+    }, [messages]);
+
+    // Create POI context for LLM
+    const createPOIContext = useCallback(() => {
+        const allPOIs = getPOIsWithContext(monitoringStations, authorities, resources);
+
+        // Group POIs by category for better organization
+        const monitoringPOIs = allPOIs.filter(poi => poi.category === 'monitoring');
+        const resourcePOIs = allPOIs.filter(poi => poi.category === 'resource');
+        const authorityPOIs = allPOIs.filter(poi => poi.category === 'authority');
+        const activePOIs = allPOIs.filter(poi => poi.status === 'active');
+        const highSeverityPOIs = allPOIs.filter(poi => poi.severity === 'high');
+
+        return {
+            totalPOIs: allPOIs.length,
+            monitoring: {
+                count: monitoringPOIs.length,
+                stations: monitoringPOIs.map(poi => ({
+                    name: poi.title,
+                    type: poi.metadata.specializations?.[0] || 'unknown',
+                    status: poi.status,
+                    severity: poi.severity,
+                    location: poi.location.name,
+                    organization: poi.metadata.organization,
+                    connectivity: poi.metadata.connectivity
+                }))
+            },
+            resources: {
+                count: resourcePOIs.length,
+                facilities: resourcePOIs.map(poi => ({
+                    name: poi.title,
+                    type: poi.type,
+                    status: poi.status,
+                    severity: poi.severity,
+                    location: poi.location.name,
+                    personnel: poi.metadata.personnel,
+                    equipment: poi.metadata.equipment,
+                    currentAssignment: poi.metadata.currentAssignment
+                }))
+            },
+            authorities: {
+                count: authorityPOIs.length,
+                agencies: authorityPOIs.map(poi => ({
+                    name: poi.title,
+                    type: poi.metadata.organization,
+                    level: poi.metadata.level,
+                    status: poi.status,
+                    severity: poi.severity,
+                    jurisdiction: poi.metadata.jurisdiction,
+                    specializations: poi.metadata.specializations,
+                    contact: poi.contact
+                }))
+            },
+            activeInfrastructure: {
+                count: activePOIs.length,
+                facilities: activePOIs.map(poi => ({
+                    name: poi.title,
+                    category: poi.category,
+                    type: poi.type,
+                    location: poi.location.name,
+                    coordinates: poi.coordinates
+                }))
+            },
+            criticalAssets: {
+                count: highSeverityPOIs.length,
+                facilities: highSeverityPOIs.map(poi => ({
+                    name: poi.title,
+                    category: poi.category,
+                    severity: poi.severity,
+                    status: poi.status,
+                    location: poi.location.name
+                }))
+            }
+        };
+    }, [monitoringStations, authorities, resources]);
+
     const initializeCrisisAnalysis = useCallback(async () => {
         setIsLoading(true);
 
-        // Send initial crisis analysis request
-        const crisisPrompt = `Analyze this crisis: ${event?.type || 'Emergency'} in ${event?.location || 'Unknown location'} (${event?.severity || 'Unknown'} severity). Provide situation summary, monitoring sources, and recommended actions.`;
+        // Get POI context for the LLM
+        const poiContext = createPOIContext();
+
+        // Create comprehensive crisis analysis prompt with POI context
+        const crisisPrompt = `You are a crisis management AI assistant with access to the following infrastructure and resources:
+
+CRISIS SITUATION:
+- Type: ${event?.type || 'Emergency'}
+- Location: ${event?.location || 'Unknown location'}
+- Severity: ${event?.severity || 'Unknown'}
+- Description: ${event?.description || 'No additional details provided'}
+
+AVAILABLE INFRASTRUCTURE (${poiContext.totalPOIs} total assets):
+
+MONITORING CAPABILITIES (${poiContext.monitoring.count} stations):
+${poiContext.monitoring.stations.map(station =>
+            `- ${station.name} (${station.type}) - Status: ${station.status}, Severity: ${station.severity}, Location: ${station.location}, Organization: ${station.organization}, Connectivity: ${station.connectivity}`
+        ).join('\n')}
+
+RESOURCE ASSETS (${poiContext.resources.count} facilities):
+${poiContext.resources.facilities.map(resource =>
+            `- ${resource.name} (${resource.type}) - Status: ${resource.status}, Personnel: ${resource.personnel || 'N/A'}, Equipment: ${resource.equipment?.join(', ') || 'N/A'}, Assignment: ${resource.currentAssignment || 'None'}`
+        ).join('\n')}
+
+AUTHORITY AGENCIES (${poiContext.authorities.count} agencies):
+${poiContext.authorities.agencies.map(authority =>
+            `- ${authority.name} (${authority.type}) - Level: ${authority.level}, Status: ${authority.status}, Jurisdiction: ${authority.jurisdiction}, Specializations: ${authority.specializations?.join(', ') || 'N/A'}`
+        ).join('\n')}
+
+ACTIVE INFRASTRUCTURE (${poiContext.activeInfrastructure.count} facilities):
+${poiContext.activeInfrastructure.facilities.map(facility =>
+            `- ${facility.name} (${facility.category}/${facility.type}) - Location: ${facility.location}`
+        ).join('\n')}
+
+CRITICAL ASSETS (${poiContext.criticalAssets.count} high-priority facilities):
+${poiContext.criticalAssets.facilities.map(asset =>
+            `- ${asset.name} (${asset.category}) - Severity: ${asset.severity}, Status: ${asset.status}, Location: ${asset.location}`
+        ).join('\n')}
+
+Based on this comprehensive infrastructure data, provide your response in TWO PARTS:
+
+PART 1 - EXECUTIVE SUMMARY (displayed to users):
+Provide a concise bullet-point summary with 3-5 key action items that can be immediately implemented. Keep this section brief and actionable.
+
+PART 2 - DETAILED ANALYSIS (saved for reference):
+Provide a comprehensive analysis including:
+1. SITUATION ASSESSMENT: Analyze the crisis severity and immediate threats
+2. MONITORING RECOMMENDATIONS: Which monitoring stations should be prioritized
+3. RESOURCE DEPLOYMENT: Which resources should be activated and where
+4. AUTHORITY COORDINATION: Which agencies should be involved and their roles
+5. CRISIS RESPONSE PLAN: Step-by-step action plan using available assets
+6. COMMUNICATION STRATEGY: How to coordinate between different agencies and resources
+
+Format your response as:
+EXECUTIVE SUMMARY:
+[Your bullet points here]
+
+DETAILED ANALYSIS:
+[Your comprehensive analysis here]
+
+Focus on practical, actionable recommendations based on the actual available infrastructure.`;
 
         try {
             await sendMessage({ text: crisisPrompt });
@@ -378,7 +553,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
         } finally {
             setIsLoading(false);
         }
-    }, [event, sendMessage]);
+    }, [event, sendMessage, createPOIContext]);
 
     // Initialize crisis analysis when opened with an event
     useEffect(() => {
@@ -395,7 +570,23 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
         if (input.trim() && !isLoading) {
             setIsLoading(true);
             try {
-                await sendMessage({ text: input });
+                // Get current POI context for enhanced responses
+                const poiContext = createPOIContext();
+
+                // Enhance user message with POI context
+                const enhancedMessage = `${input}
+
+CURRENT INFRASTRUCTURE CONTEXT:
+- Total Assets: ${poiContext.totalPOIs}
+- Active Monitoring: ${poiContext.monitoring.count} stations
+- Available Resources: ${poiContext.resources.count} facilities  
+- Authority Agencies: ${poiContext.authorities.count} agencies
+- Active Infrastructure: ${poiContext.activeInfrastructure.count} facilities
+- Critical Assets: ${poiContext.criticalAssets.count} high-priority facilities
+
+Please provide specific recommendations based on the available infrastructure.`;
+
+                await sendMessage({ text: enhancedMessage });
                 setInput('');
             } finally {
                 setIsLoading(false);
@@ -473,32 +664,30 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
                                                     AI Situation Analysis
                                                 </h2>
 
-                                                {messages.filter(m => m.role === 'assistant').map((message, index) => (
-                                                    <div key={`analysis-${message.id}-${index}`} className="mb-6">
-                                                        <div className="text-sm text-white/90 leading-relaxed">
-                                                            {message.parts.map((part, i) => {
-                                                                if (part.type === 'text') {
-                                                                    return (
-                                                                        <div
-                                                                            key={`analysis-part-${message.id}-${i}`}
-                                                                            dangerouslySetInnerHTML={{
-                                                                                __html: part.text
-                                                                                    .replace(/---/g, '') // Remove ---
-                                                                                    .replace(/^#{1,} (.*?)$/gm, '<strong class="text-orange-400 font-semibold">$1</strong>') // Convert any # headers to bold
-                                                                                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-orange-400">$1</strong>')
-                                                                                    .replace(/\n\n/g, '</p><p class="mt-3">')
-                                                                                    .replace(/\n/g, '<br>')
-                                                                                    .replace(/^/, '<p>')
-                                                                                    .replace(/$/, '</p>')
-                                                                            }}
-                                                                        />
-                                                                    );
-                                                                }
-                                                                return null;
-                                                            })}
+                                                {messages.filter(m => m.role === 'assistant').map((message, index) => {
+                                                    // Parse the message to extract executive summary and detailed analysis
+                                                    const fullText = message.parts.map(part => part.type === 'text' ? part.text : '').join('');
+                                                    const { executiveSummary } = parseLLMResponse(fullText);
+
+                                                    return (
+                                                        <div key={`analysis-${message.id}-${index}`} className="mb-6">
+                                                            <div className="text-sm text-white/90 leading-relaxed">
+                                                                <div
+                                                                    dangerouslySetInnerHTML={{
+                                                                        __html: executiveSummary
+                                                                            .replace(/---/g, '') // Remove ---
+                                                                            .replace(/^#{1,} (.*?)$/gm, '<strong class="text-orange-400 font-semibold">$1</strong>') // Convert any # headers to bold
+                                                                            .replace(/\*\*(.*?)\*\*/g, '<strong class="text-orange-400">$1</strong>')
+                                                                            .replace(/\n\n/g, '</p><p class="mt-3">')
+                                                                            .replace(/\n/g, '<br>')
+                                                                            .replace(/^/, '<p>')
+                                                                            .replace(/$/, '</p>')
+                                                                    }}
+                                                                />
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
 
                                                 {isLoading && (
                                                     <div className="flex items-center gap-2 text-white/60 mb-4">
@@ -508,9 +697,19 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
                                                 )}
                                             </section>
 
+                                            {/* Detailed analysis is not rendered; only short summary is shown */}
+
                                             {/* User Questions Section - Only show actual user questions, not system prompts */}
                                             {messages.filter(m => m.role === 'user' && !m.parts.some(part =>
-                                                part.type === 'text' && part.text.includes('Analyze this crisis:')
+                                                part.type === 'text' && (
+                                                    part.text.includes('Analyze this crisis:') ||
+                                                    part.text.includes('You are a crisis management AI assistant') ||
+                                                    part.text.includes('AVAILABLE INFRASTRUCTURE') ||
+                                                    part.text.includes('MONITORING CAPABILITIES') ||
+                                                    part.text.includes('RESOURCE ASSETS') ||
+                                                    part.text.includes('AUTHORITY AGENCIES') ||
+                                                    part.text.includes('CURRENT INFRASTRUCTURE CONTEXT')
+                                                )
                                             )).length > 0 && (
                                                     <section>
                                                         <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
@@ -520,7 +719,15 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
 
                                                         <div className="space-y-4">
                                                             {messages.filter(m => m.role === 'user' && !m.parts.some(part =>
-                                                                part.type === 'text' && part.text.includes('Analyze this crisis:')
+                                                                part.type === 'text' && (
+                                                                    part.text.includes('Analyze this crisis:') ||
+                                                                    part.text.includes('You are a crisis management AI assistant') ||
+                                                                    part.text.includes('AVAILABLE INFRASTRUCTURE') ||
+                                                                    part.text.includes('MONITORING CAPABILITIES') ||
+                                                                    part.text.includes('RESOURCE ASSETS') ||
+                                                                    part.text.includes('AUTHORITY AGENCIES') ||
+                                                                    part.text.includes('CURRENT INFRASTRUCTURE CONTEXT')
+                                                                )
                                                             )).map((message, index) => (
                                                                 <div key={`question-${message.id}-${index}`} className="border-l-2 border-white/30 pl-4">
                                                                     <h3 className="text-sm font-medium text-white/90 mb-2">
@@ -540,30 +747,26 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
                                                                         const userIndex = messages.findIndex(m => m.id === message.id);
                                                                         const aiResponse = messages[userIndex + 1];
                                                                         if (aiResponse && aiResponse.role === 'assistant') {
+                                                                            // Parse the AI response to extract executive summary
+                                                                            const fullText = aiResponse.parts.map(part => part.type === 'text' ? part.text : '').join('');
+                                                                            const { executiveSummary } = parseLLMResponse(fullText);
+
                                                                             return (
                                                                                 <div className="bg-white/5 rounded-lg p-3">
                                                                                     <p className="text-xs text-white/60 mb-2">AI Response:</p>
                                                                                     <div className="text-sm text-white/90">
-                                                                                        {aiResponse.parts.map((part, i) => {
-                                                                                            if (part.type === 'text') {
-                                                                                                return (
-                                                                                                    <div
-                                                                                                        key={`response-${aiResponse.id}-${i}`}
-                                                                                                        dangerouslySetInnerHTML={{
-                                                                                                            __html: part.text
-                                                                                                                .replace(/---/g, '') // Remove ---
-                                                                                                                .replace(/^#{1,} (.*?)$/gm, '<strong class="text-orange-400 font-semibold">$1</strong>') // Convert any # headers to bold
-                                                                                                                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-orange-400">$1</strong>')
-                                                                                                                .replace(/\n\n/g, '</p><p class="mt-2">')
-                                                                                                                .replace(/\n/g, '<br>')
-                                                                                                                .replace(/^/, '<p>')
-                                                                                                                .replace(/$/, '</p>')
-                                                                                                        }}
-                                                                                                    />
-                                                                                                );
-                                                                                            }
-                                                                                            return null;
-                                                                                        })}
+                                                                                        <div
+                                                                                            dangerouslySetInnerHTML={{
+                                                                                                __html: executiveSummary
+                                                                                                    .replace(/---/g, '') // Remove ---
+                                                                                                    .replace(/^#{1,} (.*?)$/gm, '<strong class="text-orange-400 font-semibold">$1</strong>') // Convert any # headers to bold
+                                                                                                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-orange-400">$1</strong>')
+                                                                                                    .replace(/\n\n/g, '</p><p class="mt-2">')
+                                                                                                    .replace(/\n/g, '<br>')
+                                                                                                    .replace(/^/, '<p>')
+                                                                                                    .replace(/$/, '</p>')
+                                                                                            }}
+                                                                                        />
                                                                                     </div>
                                                                                 </div>
                                                                             );
