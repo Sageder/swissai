@@ -21,8 +21,9 @@ import {
 } from '@/lib/util';
 import { createCrisisGraphFromLLM } from '@/lib/util';
 import { useData } from '@/lib/data-context';
-import { showOnlyMonitoringSources, showResourcesAndTour } from '@/lib/util';
-import { setCurrentPlanExport, setLiveMode } from '@/lib/plan-store';
+import { useTime } from '@/lib/time-context';
+import { showOnlyMonitoringSources, showResourcesAndTour, sendVehicle, sendHelicopter, getCurrentPOIs } from '@/lib/util';
+import { setCurrentPlanExport, setLiveMode, CrisisPlan } from '@/lib/plan-store';
 import {
     ReactFlow,
     MiniMap,
@@ -283,6 +284,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
     const [isPlanMinimized, setIsPlanMinimized] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const appliedToolMessageIds = useRef<Set<string>>(new Set());
+    const appliedDispatchMessageIds = useRef<Set<string>>(new Set());
     const [opSteps, setOpSteps] = useState<{
         gatherMonitoring: 'pending' | 'in_progress' | 'done';
         contactMonitoring: 'pending' | 'in_progress' | 'done';
@@ -297,6 +299,35 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
 
     // Get data context for POI information
     const { monitoringStations, authorities, resources } = useData();
+    const { getDisplayTime } = useTime();
+
+    // Placeholder AI call for accepted plan
+    const callAIWithPlan = useCallback((plan: CrisisPlan) => {
+        console.log('AI plan submission (stub):', plan);
+    }, []);
+
+    // Predicted vehicle dispatches extracted from AI responses
+    const [predictedDispatches, setPredictedDispatches] = useState<Array<{
+        vehicle: 'ambulance' | 'fire_truck' | 'police' | 'helicopter' | 'evacuation_bus';
+        from: string; // POI id
+        to: string;   // POI id
+    }>>([]);
+
+    // Resolve a POI identifier that may be an id or human name to a concrete POI id
+    const resolvePoiId = useCallback((input: string): string | null => {
+        const pois = getCurrentPOIs();
+        if (!Array.isArray(pois)) return null;
+        // Exact id match
+        const byId = pois.find((p: any) => p?.id === input);
+        if (byId) return byId.id;
+        // Case-insensitive title match
+        const normalized = input.trim().toLowerCase();
+        const byTitle = pois.find((p: any) => typeof p?.title === 'string' && p.title.trim().toLowerCase() === normalized);
+        if (byTitle) return byTitle.id;
+        // StartsWith or includes match as last resort
+        const byLoose = pois.find((p: any) => typeof p?.title === 'string' && (p.title.toLowerCase().includes(normalized) || normalized.includes(p.title.toLowerCase())));
+        return byLoose ? byLoose.id : null;
+    }, []);
 
     // Use the same chat hook as AI Chat component
     const { messages, sendMessage } = useChat();
@@ -445,6 +476,42 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
         scrollToBottom();
     }, [messages]);
 
+    // Parse vehicle dispatch predictions from assistant messages
+    useEffect(() => {
+        messages.forEach((m) => {
+            if (m.role !== 'assistant') return;
+            if (appliedDispatchMessageIds.current.has(m.id)) return;
+            const fullText = m.parts.map((part: any) => part?.type === 'text' ? part.text : '').join('');
+            const marker = 'VEHICLE_PREDICTIONS_JSON:';
+            const idx = fullText.indexOf(marker);
+            if (idx === -1) return;
+            try {
+                const after = fullText.slice(idx + marker.length);
+                const jsonMatch = after.match(/\[[\s\S]*?\]/);
+                if (!jsonMatch) return;
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (Array.isArray(parsed)) {
+                    const allowed = new Set(['ambulance', 'fire_truck', 'police', 'helicopter', 'evacuation_bus']);
+                    const sanitized = parsed
+                        .filter((d: any) => d && typeof d === 'object')
+                        .map((d: any) => ({
+                            vehicle: (typeof d.vehicle === 'string' && allowed.has(d.vehicle)) ? d.vehicle : undefined,
+                            from: typeof d.from === 'string' ? d.from : undefined,
+                            to: typeof d.to === 'string' ? d.to : undefined,
+                        }))
+                        .filter((d: any) => d.vehicle && d.from && d.to) as Array<{ vehicle: 'ambulance' | 'fire_truck' | 'police' | 'helicopter' | 'evacuation_bus'; from: string; to: string; }>;
+                    if (sanitized.length > 0) {
+                        setPredictedDispatches(sanitized);
+                        appliedDispatchMessageIds.current.add(m.id);
+                        console.log('Parsed VEHICLE_PREDICTIONS_JSON:', sanitized);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to parse VEHICLE_PREDICTIONS_JSON:', err);
+            }
+        });
+    }, [messages]);
+
     // Apply graph updates from tool results (tool-crisis_graph)
     useEffect(() => {
         messages.forEach((m) => {
@@ -487,6 +554,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
             monitoring: {
                 count: monitoringPOIs.length,
                 stations: monitoringPOIs.map(poi => ({
+                    id: poi.id,
                     name: poi.title,
                     type: poi.metadata.specializations?.[0] || 'unknown',
                     status: poi.status,
@@ -499,6 +567,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
             resources: {
                 count: resourcePOIs.length,
                 facilities: resourcePOIs.map(poi => ({
+                    id: poi.id,
                     name: poi.title,
                     type: poi.type,
                     status: poi.status,
@@ -512,6 +581,7 @@ export const CrisisManagement: React.FC<CrisisManagementProps> = ({
             authorities: {
                 count: authorityPOIs.length,
                 agencies: authorityPOIs.map(poi => ({
+                    id: poi.id,
                     name: poi.title,
                     type: poi.metadata.organization,
                     level: poi.metadata.level,
@@ -601,12 +671,17 @@ Provide a comprehensive analysis including:
 5. CRISIS RESPONSE PLAN: Step-by-step action plan using available assets
 6. COMMUNICATION STRATEGY: How to coordinate between different agencies and resources
 
+Vehicle dispatch capability: You can propose vehicle movements using only these vehicle types: [ambulance, fire_truck, police, helicopter, evacuation_bus]. Use EXACT POI ids when specifying origins and destinations (POI ids are included below in the infrastructure lists).
+
 Format your response as:
 EXECUTIVE SUMMARY:
 [Your bullet points here]
 
 DETAILED ANALYSIS:
 [Your comprehensive analysis here]
+
+VEHICLE_PREDICTIONS_JSON:
+[{"vehicle":"ambulance","from":"<poi-id>","to":"<poi-id>"}]
 
 Focus on practical, actionable recommendations based on the actual available infrastructure.`;
 
@@ -989,18 +1064,42 @@ Please provide specific recommendations based on the available infrastructure.`;
                                 <Button
                                     size="sm"
                                     className="bg-green-600 hover:bg-green-700 text-white h-8 px-3"
-                                    onClick={() => {
+                                    onClick={async () => {
                                         // Export current plan
                                         const plan = {
                                             nodes: getCrisisNodes(),
                                             connections: getCrisisConnections(),
-                                            acceptedAt: Date.now(),
+                                            acceptedAt: getDisplayTime().getTime(),
                                             title: 'Crisis Response Plan',
                                             description: 'AI-generated crisis response plan'
                                         };
                                         setCurrentPlanExport(plan);
+                                        // Call AI with the accepted plan (stubbed)
+                                        callAIWithPlan(plan);
+                                        // Send predicted vehicle movements if available
+                                        if (predictedDispatches.length > 0) {
+                                            for (const d of predictedDispatches) {
+                                                try {
+                                                    const fromId = resolvePoiId(d.from);
+                                                    const toId = resolvePoiId(d.to);
+                                                    if (!fromId || !toId) {
+                                                        console.warn('Skipping dispatch due to unresolved POI:', d);
+                                                        continue;
+                                                    }
+                                                    if (d.vehicle === 'helicopter') {
+                                                        await sendHelicopter(fromId, toId);
+                                                    } else {
+                                                        await sendVehicle(fromId, toId, d.vehicle);
+                                                    }
+                                                } catch (err) {
+                                                    console.error('Failed to send predicted dispatch:', d, err);
+                                                }
+                                            }
+                                        }
                                         // Minimize and enable live mode
                                         setIsPlanMinimized(true);
+                                        // Close graph editor
+                                        setShowGraphPopout(false);
                                         setLiveMode(true);
                                     }}
                                 >

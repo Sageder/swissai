@@ -3,6 +3,7 @@
 import { useEffect, useRef, forwardRef, useImperativeHandle, useState } from "react"
 import { POI, getPOICoordinates, getPOIColor, getPOIIcon, getPOIIconName, blattentPOIs } from "@/data/pois"
 import { useData } from "@/lib/data-context"
+import { useTime } from "@/lib/time-context"
 import type { VehicleMovement } from "@/lib/data-context"
 import { VehicleTrackingService } from "@/services/vehicle-tracking.service"
 import {
@@ -106,7 +107,9 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
   const [vehicleHoverPosition, setVehicleHoverPosition] = useState<{ x: number; y: number } | null>(null)
 
   // Get vehicle movements from data context
-  const { vehicleMovements, updateVehicleMovement } = useData()
+  const { vehicleMovements, updateVehicleMovement, getVehiclesWithCurrentPositions } = useData()
+  // Time context to drive movement progression
+  const { timeOffset, isRealTimeEnabled, currentTime, getDisplayTime } = useTime()
 
   useImperativeHandle(ref, () => ({
     toggleTerrain: (enabled: boolean, exaggeration = 1.2) => {
@@ -934,6 +937,20 @@ export const MapContainer = forwardRef<MapRef, MapContainerProps>(({ onMapLoad, 
 
     updateVehicleMarkerPositions(map.current, vehicleMovements)
   }, [vehicleMovements])
+
+  // Recompute vehicle positions based on simulation time progression
+  useEffect(() => {
+    if (vehicleMovements.length === 0) return
+    const now = getDisplayTime().getTime()
+    const updated = getVehiclesWithCurrentPositions(now)
+    updated.forEach((m) => {
+      updateVehicleMovement(m.id, {
+        currentPosition: m.currentPosition,
+        progress: m.progress,
+        status: m.status
+      })
+    })
+  }, [timeOffset, isRealTimeEnabled, currentTime, vehicleMovements.length])
 
   // Function to update vehicle marker positions without recreating them
   const updateVehicleMarkerPositions = (mapInstance: any, movements: VehicleMovement[]) => {

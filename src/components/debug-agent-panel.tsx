@@ -202,7 +202,7 @@ export function DebugAgentPanel({ isOpen, onClose, liveMode, onLiveModeToggle }:
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 w-80">
+    <div className="fixed bottom-4 left-4 z-50 w-80 max-h-[80vh] overflow-y-auto">
       <Card className="bg-gray-900/95 backdrop-blur-sm border-gray-700 text-white">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">

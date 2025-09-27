@@ -20,6 +20,11 @@ let dataContextRef: {
   addVehicleMovement: (movement: Omit<VehicleMovement, 'id' | 'currentPosition' | 'progress' | 'status'>) => void;
 } | null = null;
 
+// Global reference to timeline function (simulation time)
+let timelineRef: {
+  getCurrentTime: () => Date;
+} | null = null;
+
 // Global reference to map controls for programmatic camera moves
 let mapControlRef: {
   flyToLocation: (coordinates: [number, number], zoom?: number) => void;
@@ -31,6 +36,13 @@ let mapControlRef: {
  */
 export function setDataContextRef(ref: typeof dataContextRef): void {
   dataContextRef = ref;
+}
+
+/**
+ * Set the timeline reference for getting current simulation time
+ */
+export function setTimelineRef(ref: typeof timelineRef): void {
+  timelineRef = ref;
 }
 
 /**
@@ -599,7 +611,7 @@ export async function sendVehicle(
       lng: toPOI.metadata.coordinates.long,
       name: toPOI.title
     },
-    startTime: Date.now(),
+    startTime: timelineRef?.getCurrentTime().getTime() || Date.now(),
     duration: finalDuration,
     vehicleType,
     route: routeData
@@ -767,7 +779,7 @@ export async function sendHelicopter(
       lng: toPOI.metadata.coordinates.long,
       name: toPOI.title
     },
-    startTime: Date.now(),
+    startTime: timelineRef?.getCurrentTime().getTime() || Date.now(),
     duration: finalDuration,
     vehicleType: 'helicopter',
     route: directRoute

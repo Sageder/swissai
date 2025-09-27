@@ -5,7 +5,7 @@ import { MapContainer, type MapRef } from "@/components/map-container";
 import { Sidebar } from "@/components/sidebar";
 import { SettingsOverlay } from "@/components/overlays/settings-overlay";
 import { Timeline } from "@/components/timeline";
-import { TimeProvider } from "@/lib/time-context";
+import { TimeProvider, useTime } from "@/lib/time-context";
 import { DataProvider, useData } from "@/lib/data-context";
 import { MapSearch } from "@/components/map-search";
 import { PolygonEditor, type PolygonData } from "@/components/polygon-editor";
@@ -28,10 +28,11 @@ import {
 import { blattentPOIs } from "@/data/pois";
 import { useAlert } from "@/lib/alert-context";
 import { setAlertContext, createLandslideAlert, setCrisisManagementCallback } from "@/lib/alert-service";
-import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs, setMapControlRef } from "@/lib/util";
+import { shouldShowPOIs, getCurrentPOIs, onPOIVisibilityChange, setDataContextRef, addBlatten, sendVehicle, sendHelicopter, addAllPOIs, setMapControlRef, setTimelineRef } from "@/lib/util";
 
 function DashboardContent() {
   const { resources, monitoringStations, authorities, isLoading, addVehicleMovement } = useData();
+  const { getDisplayTime } = useTime();
   const alertContext = useAlert();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [activeView, setActiveView] = useState("map");
@@ -73,6 +74,13 @@ function DashboardContent() {
   useEffect(() => {
     setDataContextRef({ addVehicleMovement });
   }, [addVehicleMovement]);
+
+  // Provide simulation time to util.ts for consistent movement timing
+  useEffect(() => {
+    setTimelineRef({
+      getCurrentTime: () => getDisplayTime()
+    });
+  }, [getDisplayTime]);
 
   // Listen for plan changes and live mode
   useEffect(() => {
@@ -307,8 +315,7 @@ function DashboardContent() {
 
 
   return (
-    <TimeProvider>
-      <div className={`h-screen w-full bg-background text-foreground overflow-hidden dark transition-all duration-300 ${isLiveModeActive ? 'border-4 border-red-500 border-dashed' : ''
+    <div className={`h-screen w-full bg-background text-foreground overflow-hidden dark transition-all duration-300 ${isLiveModeActive ? 'border-4 border-red-500 border-dashed' : ''
         }`}>
         {/* Timeline - Fixed at top */}
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-96">
@@ -412,14 +419,15 @@ function DashboardContent() {
         {/* Live Mode Indicator */}
         <LiveModeIndicator />
       </div>
-    </TimeProvider>
   );
 }
 
 export default function Dashboard() {
   return (
-    <DataProvider>
-      <DashboardContent />
-    </DataProvider>
+    <TimeProvider>
+      <DataProvider>
+        <DashboardContent />
+      </DataProvider>
+    </TimeProvider>
   );
 }

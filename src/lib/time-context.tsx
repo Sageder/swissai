@@ -19,8 +19,8 @@ export function TimeProvider({ children }: { children: React.ReactNode }) {
   const [timeOffset, setTimeOffset] = useState(0) // Hours offset from base time
   const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date('2025-05-17T06:23:00Z'))
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
-  const autoProgressionRef = useRef<NodeJS.Timeout | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const autoProgressionRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Update current time when real-time is enabled
   useEffect(() => {
