@@ -320,6 +320,7 @@ function DashboardContent() {
               onPolygonUpdate={handlePolygonUpdate}
               editingPolygon={editingPolygon}
               mapRef={mapRef}
+              sidebarExpanded={sidebarExpanded}
             />
 
             {/* Polygon Popup */}

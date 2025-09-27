@@ -26,9 +26,10 @@ interface PolygonEditorProps {
   onPolygonUpdate?: (polygonId: string, polygon: PolygonData) => void
   mapRef?: React.RefObject<any>
   editingPolygon?: PolygonData | null
+  sidebarExpanded?: boolean
 }
 
-export function PolygonEditor({ onPolygonComplete, onPolygonUpdate, mapRef, editingPolygon }: PolygonEditorProps) {
+export function PolygonEditor({ onPolygonComplete, onPolygonUpdate, mapRef, editingPolygon, sidebarExpanded = false }: PolygonEditorProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [currentPoints, setCurrentPoints] = useState<PolygonPoint[]>([])
   const [draggedPointId, setDraggedPointId] = useState<string | null>(null)
@@ -314,7 +315,8 @@ export function PolygonEditor({ onPolygonComplete, onPolygonUpdate, mapRef, edit
     <>
       {/* Floating Action Button */}
       <motion.div
-        className="absolute bottom-6 left-6 z-40"
+        className="absolute bottom-6 z-40"
+        style={{ left: sidebarExpanded ? 336 : 76 }}
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 20 }}
