@@ -22,7 +22,7 @@ import {
 import { createCrisisGraphFromLLM } from '@/lib/util';
 import { useData } from '@/lib/data-context';
 import { showOnlyMonitoringSources, showResourcesAndTour } from '@/lib/util';
-import { setCurrentPlanExport } from '@/lib/plan-store';
+import { setCurrentPlanExport, setLiveMode } from '@/lib/plan-store';
 import {
     ReactFlow,
     MiniMap,
@@ -977,41 +977,46 @@ Please provide specific recommendations based on the available infrastructure.`;
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed top-4 w-[780px] h-[600px] bg-slate-900 border border-slate-700 rounded-lg shadow-2xl z-50 resize overflow-hidden"
-                        style={{ right: 'calc(24rem + 16px)' }}
+                        className={`fixed bg-slate-900 border border-slate-700 rounded-lg shadow-2xl z-50 resize overflow-hidden transition-all duration-300 ${isPlanMinimized
+                            ? 'bottom-4 right-4 w-[400px] h-[200px]'
+                            : 'top-4 w-[780px] h-[600px]'
+                            }`}
+                        style={!isPlanMinimized ? { right: 'calc(24rem + 16px)' } : {}}
                     >
                         <div className="flex items-center justify-between p-4 border-b border-slate-700">
-                            <h3 className="text-lg font-semibold text-white">Suggested plan</h3>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
+                                <h3 className="text-lg font-semibold text-white">Suggested plan</h3>
                                 <Button
                                     size="sm"
-                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                    className="bg-green-600 hover:bg-green-700 text-white h-8 px-3"
                                     onClick={() => {
                                         // Export current plan
                                         const plan = {
                                             nodes: getCrisisNodes(),
                                             connections: getCrisisConnections(),
                                             acceptedAt: Date.now(),
+                                            title: 'Crisis Response Plan',
+                                            description: 'AI-generated crisis response plan'
                                         };
-                                        setCurrentPlanExport(plan as any);
+                                        setCurrentPlanExport(plan);
                                         // Minimize and enable live mode
                                         setIsPlanMinimized(true);
-                                        document.dispatchEvent(new CustomEvent('live-mode:toggled', { detail: { active: true } }));
+                                        setLiveMode(true);
                                     }}
                                 >
                                     Accept plan
                                 </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setShowGraphPopout(false)}
-                                    className="text-white/60 hover:text-white/80"
-                                >
-                                    ✕
-                                </Button>
                             </div>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowGraphPopout(false)}
+                                className="text-white/60 hover:text-white/80"
+                            >
+                                ✕
+                            </Button>
                         </div>
-                        <div className={"h-[calc(100%-60px)] transition-all duration-200 " + (isPlanMinimized ? 'opacity-70 pointer-events-none scale-[0.96]' : '')}>
+                        <div className={`transition-all duration-300 ${isPlanMinimized ? 'h-[calc(100%-60px)] opacity-60' : 'h-[calc(100%-60px)]'}`}>
                             <style dangerouslySetInnerHTML={{ __html: reactFlowStyles }} />
                             <ReactFlow
                                 nodes={nodes}

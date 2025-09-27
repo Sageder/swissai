@@ -16,7 +16,9 @@ import { AlertContainer } from "@/components/alerts/alert-container";
 import { CrisisManagement } from "@/components/crisis-management";
 import { DebugAgentPanel } from "@/components/debug-agent-panel";
 import { ActionsSidePanel } from "@/components/actions-side-panel";
+import { LiveModeIndicator } from "@/components/live-mode-indicator";
 import { Button } from "@/components/ui/button";
+import { onPlanChange, isLiveModeActive as getLiveModeStatus } from "@/lib/plan-store";
 import {
   convertResourcesToPOIs,
   convertMonitoringStationsToPOIs,
@@ -301,7 +303,8 @@ function DashboardContent() {
 
 
   return (
-    <div className={"h-screen w-full bg-background text-foreground overflow-hidden dark " + (liveMode ? 'outline-2 outline-red-500/70 outline-dashed' : '')}>
+    <div className={`h-screen w-full bg-background text-foreground overflow-hidden dark transition-all duration-300 ${getLiveModeStatus() ? 'border-4 border-red-500 border-dashed' : ''
+      }`}>
       {/* Timeline - Fixed at top */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-96">
         <Timeline />
@@ -338,7 +341,6 @@ function DashboardContent() {
             onPolygonUpdate={handlePolygonUpdate}
             editingPolygon={editingPolygon}
             mapRef={mapRef}
-            sidebarExpanded={sidebarExpanded}
           />
 
           {/* Polygon Popup */}
@@ -351,6 +353,7 @@ function DashboardContent() {
             onDelete={handleDeletePolygon}
             onActions={handleActionsOpen}
           />
+
         </div>
 
         {/* Sidebar */}
@@ -368,7 +371,13 @@ function DashboardContent() {
         <AIChat
           isOpen={aiChatOpen}
           onClose={handleAIChatClose}
+
+
+
+
+
         />
+
 
         {/* Crisis Management Overlay */}
         <CrisisManagement
@@ -376,6 +385,16 @@ function DashboardContent() {
           onClose={handleCrisisManagementClose}
           event={crisisEvent}
         />
+
+
+
+
+
+
+
+
+
+
 
         {/* Debug Agent Panel */}
         <DebugAgentPanel
@@ -397,10 +416,18 @@ function DashboardContent() {
       <SettingsOverlay
         isOpen={activeView === "settings"}
         onClose={handleCloseOverlay}
+
       />
+
 
       {/* Alert Container */}
       <AlertContainer />
+
+
+
+
+      {/* Live Mode Indicator */}
+      <LiveModeIndicator />
     </div>
   );
 }

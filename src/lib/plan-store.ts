@@ -1,48 +1,86 @@
-export interface CrisisPlanNode {
-    id: string;
-    type: string;
-    title: string;
-    description: string;
-    status: string;
-    severity?: string;
-    position: { x: number; y: number };
-    metadata?: Record<string, any>;
+/**
+ * Plan Store - Manages crisis response plans and live mode state
+ */
+
+export interface CrisisPlan {
+    nodes: any[];
+    connections: any[];
+    acceptedAt: number;
+    title?: string;
+    description?: string;
 }
 
-export interface CrisisPlanConnection {
-    id: string;
-    from: string;
-    to: string;
-    type: string;
-    status: string;
-    label?: string;
-}
+// Global state for plan management
+let currentPlan: CrisisPlan | null = null;
+let isLiveMode = false;
+let planCallbacks: Array<() => void> = [];
 
-export interface CrisisPlanExport {
-    nodes: CrisisPlanNode[];
-    connections: CrisisPlanConnection[];
-    acceptedAt?: number;
-}
-
-let currentPlan: CrisisPlanExport | null = null;
-let planCallbacks: Array<(plan: CrisisPlanExport | null) => void> = [];
-
-export function setCurrentPlanExport(plan: CrisisPlanExport): void {
+/**
+ * Set the current plan export
+ */
+export function setCurrentPlanExport(plan: CrisisPlan): void {
     currentPlan = plan;
-    planCallbacks.forEach(cb => cb(currentPlan));
-    console.log('[PlanStore] Plan exported', { nodes: plan.nodes.length, connections: plan.connections.length });
+    planCallbacks.forEach(callback => callback());
+    console.log('Plan exported:', plan);
 }
 
-export function getCurrentPlanExport(): CrisisPlanExport | null {
+/**
+ * Get the current plan
+ */
+export function getCurrentPlan(): CrisisPlan | null {
     return currentPlan;
 }
 
-export function onPlanExportChange(cb: (plan: CrisisPlanExport | null) => void): () => void {
-    planCallbacks.push(cb);
+/**
+ * Clear the current plan
+ */
+export function clearCurrentPlan(): void {
+    currentPlan = null;
+    planCallbacks.forEach(callback => callback());
+    console.log('Plan cleared');
+}
+
+/**
+ * Set live mode state
+ */
+export function setLiveMode(active: boolean): void {
+    isLiveMode = active;
+    planCallbacks.forEach(callback => callback());
+    console.log('Live mode:', active ? 'activated' : 'deactivated');
+}
+
+/**
+ * Get live mode state
+ */
+export function isLiveModeActive(): boolean {
+    return isLiveMode;
+}
+
+/**
+ * Subscribe to plan changes
+ */
+export function onPlanChange(callback: () => void): () => void {
+    planCallbacks.push(callback);
     return () => {
-        const idx = planCallbacks.indexOf(cb);
-        if (idx > -1) planCallbacks.splice(idx, 1);
+        planCallbacks = planCallbacks.filter(cb => cb !== callback);
     };
 }
 
-
+/**
+ * Get plan summary for display
+ */
+export function getPlanSummary(): {
+    hasPlan: boolean;
+    isLive: boolean;
+    nodeCount: number;
+    connectionCount: number;
+    acceptedAt?: number;
+} {
+    return {
+        hasPlan: currentPlan !== null,
+        isLive: isLiveMode,
+        nodeCount: currentPlan?.nodes?.length || 0,
+        connectionCount: currentPlan?.connections?.length || 0,
+        acceptedAt: currentPlan?.acceptedAt
+    };
+}
