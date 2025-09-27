@@ -195,7 +195,7 @@ export function DebugAgentPanel({ isOpen, onClose, liveMode, onLiveModeToggle }:
 
   return (
     <div className="fixed bottom-4 left-4 z-50 w-80">
-      <Card className="bg-gray-900/95 backdrop-blur-sm border-gray-700 text-white">
+      <Card className="bg-gray-900/95 backdrop-blur-sm border-gray-700 text-white flex flex-col max-h-[80vh]">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -224,7 +224,7 @@ export function DebugAgentPanel({ isOpen, onClose, liveMode, onLiveModeToggle }:
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 overflow-y-auto flex-1 min-h-0">
           {/* Live Mode Toggle */}
           <div className="space-y-2">
             <div className="text-sm font-medium text-gray-300">Live Mode:</div>
