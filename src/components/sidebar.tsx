@@ -14,6 +14,8 @@ import {
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { placeToThumbnail } from "@/lib/staticMaps";
+import { useAlert } from "@/lib/alert-context";
+import { Alert } from "@/types/alert";
 
 interface SidebarProps {
   expanded: boolean;
@@ -23,22 +25,30 @@ interface SidebarProps {
   onAIChatOpen?: () => void;
   onDebugPanelOpen?: () => void;
   onSearchOpen?: () => void;
+  onCityClick?: (coordinates: [number, number], name: string) => void;
 }
 
-const places = [
-  {
-    id: "town-1",
-    name: "Zürich Stadelhofen",
-    lat: 47.36667969484764,
-    lng: 8.548521957630859,
-  },
-  {
-    id: "town-2",
-    name: "Castrop-Rauxel",
-    lat: 51.56672094619629,
-    lng: 7.317773114685705,
-  },
-];
+// Helper function to extract city/municipality name from alert location
+const extractCityName = (location: string | undefined): string | null => {
+  if (!location) return null;
+  // Extract the first part before comma (usually the city/municipality)
+  const parts = location.split(',');
+  return parts[0]?.trim() || null;
+};
+
+// Helper function to create place object from alert
+const alertToPlace = (alert: Alert) => {
+  const cityName = extractCityName(alert.location);
+  if (!cityName || !alert.coordinates) return null;
+  
+  return {
+    id: alert.id,
+    name: cityName,
+    lat: alert.coordinates.lat,
+    lng: alert.coordinates.lng,
+    alert: alert,
+  };
+};
 
 export function Sidebar({
   expanded,
@@ -48,7 +58,18 @@ export function Sidebar({
   onAIChatOpen,
   onDebugPanelOpen,
   onSearchOpen,
+  onCityClick,
 }: SidebarProps) {
+  const { alerts } = useAlert();
+  
+  // Get unique cities from current alerts with coordinates
+  const places = alerts
+    .map(alertToPlace)
+    .filter((place): place is NonNullable<typeof place> => place !== null)
+    .filter((place, index, self) => 
+      // Remove duplicates by city name
+      index === self.findIndex(p => p.name === place.name)
+    );
   const menuItems = [
     { id: "map", icon: Map, label: "Map View" },
     { id: "analytics", icon: BarChart3, label: "Analytics" },
@@ -76,6 +97,12 @@ export function Sidebar({
   const handleMenuClick = (itemId: string) => {
     if (onViewChange) {
       onViewChange(itemId);
+    }
+  };
+
+  const handleCityClick = (place: any) => {
+    if (onCityClick) {
+      onCityClick([place.lng, place.lat], place.name);
     }
   };
 
@@ -148,6 +175,7 @@ export function Sidebar({
                   className="town-preview-card cursor-pointer"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  onClick={() => handleCityClick(value)}
                 >
                   <div className="relative w-full h-32 rounded-lg overflow-hidden bg-black/20 border border-white/10">
                     <img

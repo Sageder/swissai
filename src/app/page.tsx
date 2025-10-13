@@ -324,7 +324,12 @@ function DashboardContent() {
         setActionsPanelPolygon(null);
     };
 
-
+    const handleCityClick = (coordinates: [number, number], name: string) => {
+        console.log("[Dashboard] City clicked:", name, coordinates);
+        if (mapRef.current) {
+            mapRef.current.flyToLocation(coordinates, 13);
+        }
+    };
 
     return (
         <div className={`h-screen w-full bg-background text-foreground overflow-hidden dark transition-all duration-300 ${getLiveModeStatus() ? 'border-4 border-red-500 border-dashed' : ''
@@ -389,6 +394,7 @@ function DashboardContent() {
                     onAIChatOpen={handleAIChatOpen}
                     onDebugPanelOpen={() => setDebugPanelOpen(!debugPanelOpen)}
                     onSearchOpen={handleSearchOpen}
+                    onCityClick={handleCityClick}
                 />
 
                 {/* AI Chat Overlay */}
