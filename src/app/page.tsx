@@ -13,9 +13,8 @@ import { PolygonPopup } from "@/components/polygon-popup";
 import { motion } from "framer-motion";
 import { AIChat } from "@/components/ai-chat";
 import { AlertContainer } from "@/components/alerts/alert-container";
-import { CrisisManagement } from "@/components/crisis-management";
 import { DebugAgentPanel } from "@/components/debug-agent-panel";
-import { ActionsSidePanel } from "@/components/actions-side-panel";
+import { BottomPane } from "@/components/bottom-pane";
 import { LiveModeIndicator } from "@/components/live-mode-indicator";
 import { Button } from "@/components/ui/button";
 import { onPlanChange, isLiveModeActive as getLiveModeStatus, getVehiclePredictions, onLiveModeChange } from "@/lib/plan-store";
@@ -42,13 +41,11 @@ function DashboardContent() {
     } | null>(null);
     const [editingPolygon, setEditingPolygon] = useState<PolygonData | null>(null);
     const [aiChatOpen, setAiChatOpen] = useState(false);
-    const [crisisManagementOpen, setCrisisManagementOpen] = useState(false);
-    const [crisisEvent, setCrisisEvent] = useState<any>(null);
     const [showPOIs, setShowPOIs] = useState(false);
     const [currentPOIs, setCurrentPOIs] = useState<any[]>([]);
     const [debugPanelOpen, setDebugPanelOpen] = useState(false);
-    const [actionsPanelOpen, setActionsPanelOpen] = useState(false);
-    const [actionsPanelPolygon, setActionsPanelPolygon] = useState<PolygonData | null>(null);
+    const [bottomPaneOpen, setBottomPaneOpen] = useState(true); // Always open by default
+    const [selectedContext, setSelectedContext] = useState<PolygonData | any>(null);
     const [searchOpen, setSearchOpen] = useState(false);
     const [liveMode, setLiveMode] = useState(false);
     const mapRef = useRef<MapRef>(null);
@@ -61,10 +58,10 @@ function DashboardContent() {
     useEffect(() => {
         setAlertContext(alertContext);
 
-        // Set up crisis management callback
+        // Set up crisis management callback - open bottom pane with event context
         setCrisisManagementCallback((event) => {
-            setCrisisEvent(event);
-            setCrisisManagementOpen(true);
+            setSelectedContext(event);
+            setBottomPaneOpen(true);
         });
     }, [alertContext]);
 
@@ -294,11 +291,6 @@ function DashboardContent() {
         setAiChatOpen(false);
     };
 
-    const handleCrisisManagementClose = () => {
-        setCrisisManagementOpen(false);
-        setCrisisEvent(null);
-    };
-
     const handleSearchOpen = () => {
         setSearchOpen(true);
     };
@@ -315,13 +307,12 @@ function DashboardContent() {
     };
 
     const handleActionsOpen = (polygon: PolygonData) => {
-        setActionsPanelPolygon(polygon);
-        setActionsPanelOpen(true);
+        setSelectedContext(polygon);
+        setBottomPaneOpen(true);
     };
 
-    const handleActionsPanelClose = () => {
-        setActionsPanelOpen(false);
-        setActionsPanelPolygon(null);
+    const handleBottomPaneClose = () => {
+        setBottomPaneOpen(false);
     };
 
     const handleCityClick = (coordinates: [number, number], name: string) => {
@@ -394,6 +385,8 @@ function DashboardContent() {
                     onAIChatOpen={handleAIChatOpen}
                     onDebugPanelOpen={() => setDebugPanelOpen(!debugPanelOpen)}
                     onSearchOpen={handleSearchOpen}
+                    onBottomPaneToggle={() => setBottomPaneOpen(!bottomPaneOpen)}
+                    bottomPaneOpen={bottomPaneOpen}
                     onCityClick={handleCityClick}
                 />
 
@@ -407,16 +400,6 @@ function DashboardContent() {
 
 
                 />
-
-
-                {/* Crisis Management Overlay */}
-                <CrisisManagement
-                    isOpen={crisisManagementOpen}
-                    onClose={handleCrisisManagementClose}
-                    event={crisisEvent}
-                />
-
-
 
 
 
@@ -434,11 +417,12 @@ function DashboardContent() {
                     onLiveModeToggle={toggleLiveMode}
                 />
 
-                {/* Actions Side Panel */}
-                <ActionsSidePanel
-                    isOpen={actionsPanelOpen}
-                    onClose={handleActionsPanelClose}
-                    polygon={actionsPanelPolygon}
+                {/* Bottom Pane with Actions and Workflow */}
+                <BottomPane
+                    isOpen={bottomPaneOpen}
+                    onClose={handleBottomPaneClose}
+                    context={selectedContext}
+                    sidebarWidth={sidebarExpanded ? 320 : 60}
                 />
             </div>
 

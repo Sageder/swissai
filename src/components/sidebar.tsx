@@ -10,6 +10,8 @@ import {
   Bot,
   Activity,
   Search,
+  PanelBottom,
+  PanelBottomClose,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,6 +27,8 @@ interface SidebarProps {
   onAIChatOpen?: () => void;
   onDebugPanelOpen?: () => void;
   onSearchOpen?: () => void;
+  onBottomPaneToggle?: () => void;
+  bottomPaneOpen?: boolean;
   onCityClick?: (coordinates: [number, number], name: string) => void;
 }
 
@@ -58,6 +62,8 @@ export function Sidebar({
   onAIChatOpen,
   onDebugPanelOpen,
   onSearchOpen,
+  onBottomPaneToggle,
+  bottomPaneOpen = true,
   onCityClick,
 }: SidebarProps) {
   const { alerts } = useAlert();
@@ -333,6 +339,33 @@ export function Sidebar({
                   transition={{ duration: 0.2 }}
                 >
                   Debug Panel
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Button>
+        </div>
+
+        {/* Bottom Pane Toggle Button */}
+        <div className="mt-2">
+          <Button
+            variant="ghost"
+            className={cn(
+              "w-full justify-start gap-3 border-0 hover:bg-white/10",
+              !expanded && "px-2",
+              bottomPaneOpen ? "text-orange-400 hover:text-orange-300" : "text-white/80 hover:text-white"
+            )}
+            onClick={onBottomPaneToggle}
+          >
+            {bottomPaneOpen ? <PanelBottomClose size={18} /> : <PanelBottom size={18} />}
+            <AnimatePresence mode="wait">
+              {expanded && (
+                <motion.span
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {bottomPaneOpen ? 'Hide Control Panel' : 'Show Control Panel'}
                 </motion.span>
               )}
             </AnimatePresence>

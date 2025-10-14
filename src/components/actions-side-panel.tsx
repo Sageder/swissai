@@ -30,6 +30,7 @@ interface ActionsSidePanelProps {
   isOpen: boolean;
   onClose: () => void;
   polygon: PolygonData | null;
+  embedded?: boolean; // When true, renders without slide-in animation and close button
 }
 
 interface EmergencyAction {
@@ -76,7 +77,7 @@ const riskLevelColors = {
   critical: "text-red-600 bg-red-100",
 };
 
-export function ActionsSidePanel({ isOpen, onClose, polygon }: ActionsSidePanelProps) {
+export function ActionsSidePanel({ isOpen, onClose, polygon, embedded = false }: ActionsSidePanelProps) {
   const [response, setResponse] = useState<EmergencyResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,17 +134,29 @@ export function ActionsSidePanel({ isOpen, onClose, polygon }: ActionsSidePanelP
   }, [messages]);
 
   const initializePolygonAnalysis = useCallback(async () => {
+    if (!polygon) {
+      console.log('No polygon/context provided');
+      return;
+    }
+
     setIsLoading(true);
 
-    // Send detailed polygon analysis request with full context
-    const polygonPrompt = `EMERGENCY POLYGON ANALYSIS REQUEST
+    // Check if this is a polygon or a crisis event
+    const isPolygon = polygon?.vertices !== undefined;
+    const isCrisisEvent = (polygon as any)?.type === 'crisis' || (polygon as any)?.severity !== undefined;
+
+    let analysisPrompt = '';
+
+    if (isPolygon) {
+      // Polygon analysis
+      analysisPrompt = `EMERGENCY POLYGON ANALYSIS REQUEST
 
 **Polygon Details:**
-- Name: ${polygon?.name || 'Emergency Zone'}
-- Vertices: ${polygon?.vertices.length || 0} coordinate points
-- Coordinates: ${JSON.stringify(polygon?.vertices || [])}
-- Area ID: ${polygon?.id || 'unknown'}
-- Color: ${polygon?.color || 'default'}
+- Name: ${polygon.name || 'Emergency Zone'}
+- Vertices: ${polygon.vertices?.length || 0} coordinate points
+- Coordinates: ${JSON.stringify(polygon.vertices || [])}
+- Area ID: ${polygon.id || 'unknown'}
+- Color: ${polygon.color || 'default'}
 
 **Analysis Required:**
 1. Assess the geographic area defined by these coordinates
@@ -158,13 +171,33 @@ export function ActionsSidePanel({ isOpen, onClose, polygon }: ActionsSidePanelP
 **Context:** This is a Swiss Alpine region emergency management scenario. Consider terrain, weather, and local infrastructure. Use your tools to gather data, dispatch resources, and coordinate response efforts.
 
 Please provide a comprehensive emergency response plan with specific actionable recommendations.`;
+    } else {
+      // Crisis event analysis
+      analysisPrompt = `CRISIS EVENT ANALYSIS REQUEST
+
+**Event Details:**
+${JSON.stringify(polygon, null, 2)}
+
+**Analysis Required:**
+1. Assess the crisis situation and severity
+2. Identify immediate threats and risks
+3. Recommend emergency response actions
+4. Suggest resource deployment and coordination
+5. Plan evacuation and shelter strategies
+6. Set up communication and notification systems
+7. Coordinate with relevant authorities
+
+**Context:** This is a Swiss Alpine region emergency management scenario. Use your tools to gather data, dispatch resources, and coordinate response efforts.
+
+Please provide a comprehensive crisis response plan with specific actionable recommendations.`;
+    }
 
     try {
-      console.log("Sending message to AI:", polygonPrompt.substring(0, 100) + "...");
-      await sendMessage({ text: polygonPrompt });
+      console.log("Sending message to AI:", analysisPrompt.substring(0, 100) + "...");
+      await sendMessage({ text: analysisPrompt });
       console.log("Message sent successfully");
     } catch (error) {
-      console.error('Error sending initial polygon analysis:', error);
+      console.error('Error sending initial analysis:', error);
     } finally {
       setIsLoading(false);
     }
@@ -381,16 +414,8 @@ Respond ONLY with valid JSON in this exact structure:
 
   if (!isOpen) return null;
 
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ x: "100%" }}
-        animate={{ x: 0 }}
-        exit={{ x: "100%" }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed right-0 top-0 h-full w-96 bg-black/40 backdrop-blur-xl border-l border-white/20 z-40"
-      >
-        <div className="flex flex-col h-full">
+  const panelContent = (
+    <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-white/20">
             <Button
@@ -401,14 +426,16 @@ Respond ONLY with valid JSON in this exact structure:
               <Network className="w-4 h-4 mr-2" />
               {showGraphEditor ? 'Hide Response Graph' : 'Show Response Graph'}
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="text-white/40 hover:text-white/60 ml-2"
-            >
-              <X size={18} />
-            </Button>
+            {!embedded && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="text-white/40 hover:text-white/60 ml-2"
+              >
+                <X size={18} />
+              </Button>
+            )}
           </div>
 
           {/* Main Content */}
@@ -618,7 +645,23 @@ Respond ONLY with valid JSON in this exact structure:
               </form>
             </div>
           </div>
-        </div>
+    </div>
+  );
+
+  if (embedded) {
+    return panelContent;
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="fixed right-0 top-0 h-full w-96 bg-black/40 backdrop-blur-xl border-l border-white/20 z-40"
+      >
+        {panelContent}
       </motion.div>
     </AnimatePresence>
   );

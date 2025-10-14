@@ -267,13 +267,13 @@ export class ExecutionEngine {
 
         case 'decision':
           // Analyze context and make a decision
-          const contextSummary = Object.entries(this.context.variables)
+          const decisionContextSummary = Object.entries(this.context.variables)
             .filter(([key]) => key.includes('_response'))
             .map(([key, value]) => `${key}: "${value}"`)
             .join(', ');
           
           const decisionPrompt = node.data.decisionPrompt || 'Analyzing situation...';
-          const decision = `Based on: ${contextSummary || 'initial context'}, I recommend: ${decisionPrompt}`;
+          const decision = `Based on: ${decisionContextSummary || 'initial context'}, I recommend: ${decisionPrompt}`;
           
           this.context.variables[`${nodeId}_decision`] = decision;
           this.addToKnowledgeBase(nodeId, 'decision', decision, decision);

@@ -80,6 +80,7 @@ export const CustomNode = memo(({ data, selected }: NodeProps<CustomNodeData>) =
         <Handle
           type="target"
           position={Position.Top}
+          id="input"
           className="w-3 h-3 !bg-gray-400 border-2 border-gray-600"
         />
       )}
@@ -115,6 +116,7 @@ export const CustomNode = memo(({ data, selected }: NodeProps<CustomNodeData>) =
         <Handle
           type="source"
           position={Position.Bottom}
+          id="output"
           className="w-3 h-3 !bg-gray-400 border-2 border-gray-600"
         />
       )}
