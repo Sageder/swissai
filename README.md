@@ -1,78 +1,9 @@
 # SwissAI
 
-A modern Next.js application with TypeScript, Tailwind CSS, and shadcn/ui components.
+[![Watch](https://i.vimeocdn.com/filter/overlay?src0=https%3A%2F%2Fi.vimeocdn.com%2Fvideo%2F2079632945-5fd74aad11ba1b8aba55c4040935f0210229e1aea6bc3435616626413bf49343-d_295x166%3Fregion%3Dus&src1=http%3A%2F%2Ff.vimeocdn.com%2Fp%2Fimages%2Fcrawler_play.png)](https://vimeo.com/1134608564)
 
-## Tech Stack
+### Problem:
+Blatten, Switzerland 2025 showed the gap: nine days advance warning, yet five days of coordination chaos led to inadequate flood protection, failed resource planning (emergency helicopter cow airlifts!), and citizens forced to evacuate in just 2 hours. Switzerland spends CHF 349 million annually on natural disasters, with current systems sending alerts but leaving coordination to emails and phone calls.
 
-- **Framework**: Next.js 15.1.6 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS v4
-- **UI Components**: shadcn/ui with Radix UI primitives
-- **Icons**: Lucide React
-- **Maps**: Mapbox GL
-- **Animations**: Framer Motion
-- **Charts**: Recharts
-- **Linting**: Biome
-- **Font**: Geist
-
-## Prerequisites
-
-- Node.js 18+ 
-- npm 11.6.1+ (or yarn/pnpm)
-
-## Getting Started
-
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-2. **Run the development server**:
-   ```bash
-   npm run dev
-   ```
-
-3. **Open your browser**:
-   Navigate to [http://localhost:3000](http://localhost:3000) to see the application.
-
-## Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run linting with Biome
-
-## Project Structure
-
-```
-src/
-├── app/                 # Next.js App Router pages
-├── components/          # React components
-│   ├── ui/             # shadcn/ui components
-│   └── tabs/           # Tab components
-└── lib/                # Utility functions
-```
-
-## Features
-
-- Modern UI with shadcn/ui components
-- Responsive design with Tailwind CSS
-- Interactive maps with Mapbox
-- Data visualization with Recharts
-- Smooth animations with Framer Motion
-- Type-safe development with TypeScript
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### What We Built:
+missionAlps transforms natural disaster warnings into coordinated emergency responses through AI-driven automation. When Switzerland's 6,000+ monitoring sites detect threats like glacier collapses, floods, or avalanches, our system instantly notifies all stakeholders and orchestrates resource allocation.
